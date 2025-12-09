@@ -2,29 +2,32 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, FlatList } from 'react-native';
 import { router } from 'expo-router';
 import { Colors } from '../constants/Colors';
-import { ChevronLeftIcon, MagnifyingGlassIcon, PlusIcon, HeartIcon } from "react-native-heroicons/outline";
-import { HeartIcon as HeartSolid } from "react-native-heroicons/solid";
+import { ChevronLeftIcon, MagnifyingGlassIcon, PlusIcon } from "react-native-heroicons/outline";
 
-// Dữ liệu giả lập (Mock Data)
+// Dữ liệu Món ăn Việt Nam giả lập (Đã bổ sung chỉ số Chất xơ - fib)
+// Số liệu tham khảo từ Bảng thành phần thực phẩm VN
 const FOOD_DB = [
-  { id: '1', name: 'Phở Bò Tái', cal: 456, p: 20, c: 58, f: 12, icon: '🍜' },
-  { id: '2', name: 'Cơm Tấm Sườn', cal: 620, p: 25, c: 80, f: 22, icon: '🍛' },
-  { id: '3', name: 'Bánh Mì Thịt', cal: 400, p: 15, c: 45, f: 18, icon: '🥖' },
-  { id: '4', name: 'Ức Gà Luộc', cal: 165, p: 31, c: 0, f: 3.6, icon: '🍗' },
-  { id: '5', name: 'Rau Muống Xào', cal: 120, p: 3, c: 8, f: 9, icon: '🥬' },
+  { id: '1', name: 'Phở Bò Tái', cal: 456, p: 20, c: 58, f: 12, fib: 1.5, icon: '🍜' },
+  { id: '2', name: 'Cơm Tấm Sườn', cal: 620, p: 25, c: 80, f: 22, fib: 2.0, icon: '🍛' },
+  { id: '3', name: 'Bánh Mì Thịt', cal: 400, p: 15, c: 45, f: 18, fib: 3.5, icon: '🥖' },
+  { id: '4', name: 'Gỏi Cuốn Tôm', cal: 65, p: 4, c: 10, f: 1, fib: 0.5, icon: '🍤' },
+  { id: '5', name: 'Bún Bò Huế', cal: 480, p: 22, c: 55, f: 18, fib: 1.8, icon: '🍜' },
+  { id: '6', name: 'Cà Phê Sữa Đá', cal: 150, p: 2, c: 25, f: 5, fib: 0, icon: '☕' },
+  { id: '7', name: 'Ức Gà Luộc (100g)', cal: 165, p: 31, c: 0, f: 3.6, fib: 0, icon: '🍗' },
+  { id: '8', name: 'Rau Muống Xào', cal: 120, p: 3, c: 8, f: 9, fib: 4.2, icon: '🥬' },
 ];
 
 export default function SearchFoodScreen() {
   const [query, setQuery] = useState('');
   const [tab, setTab] = useState('search'); // 'search' | 'favorite'
 
-  // Lọc món ăn
+  // Lọc món ăn theo từ khóa
   const filteredFood = FOOD_DB.filter(item => 
     item.name.toLowerCase().includes(query.toLowerCase())
   );
 
   const handleSelectFood = (food: any) => {
-    // Chuyển sang màn hình chi tiết món ăn
+    // Chuyển sang màn hình chi tiết món ăn kèm theo thông số Fiber
     router.push({
       pathname: '/food-detail',
       params: { 
@@ -34,6 +37,7 @@ export default function SearchFoodScreen() {
         p: food.p,
         c: food.c,
         f: food.f,
+        fib: food.fib, // <--- Đã thêm trường này
         icon: food.icon
       } as any
     });
@@ -55,7 +59,7 @@ export default function SearchFoodScreen() {
         <MagnifyingGlassIcon size={20} color={Colors.gray} style={{marginRight: 10}}/>
         <TextInput
           style={styles.input}
-          placeholder="Tìm phở, cơm tấm, ức gà..."
+          placeholder="Tìm phở, cơm tấm, rau muống..."
           value={query}
           onChangeText={setQuery}
           autoFocus
@@ -80,7 +84,7 @@ export default function SearchFoodScreen() {
 
       {/* Danh sách món ăn */}
       <FlatList
-        data={tab === 'search' ? filteredFood : []} // Tab yêu thích để trống demo
+        data={tab === 'search' ? filteredFood : []}
         keyExtractor={item => item.id}
         contentContainerStyle={{ paddingHorizontal: 20 }}
         ListEmptyComponent={

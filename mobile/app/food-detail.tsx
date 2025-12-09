@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
+// Đảm bảo đã import TextInput
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, TextInput } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Colors } from '../constants/Colors';
 import { ChevronLeftIcon, HeartIcon, CheckIcon } from "react-native-heroicons/outline";
@@ -18,31 +19,32 @@ export default function FoodDetailScreen() {
   const [unit, setUnit] = useState(SERVING_SIZES[0]); // Mặc định là Gram
   const [isFavorite, setIsFavorite] = useState(false);
 
-  // Tính toán dinh dưỡng động (Dynamic Calculation)
-  const baseCal = parseFloat(params.cal as string);
-  const baseP = parseFloat(params.p as string);
-  const baseC = parseFloat(params.c as string);
-  const baseF = parseFloat(params.f as string);
+  // Nhận dữ liệu dinh dưỡng gốc (trên 100g)
+  // Thêm fallback '0' để tránh lỗi nếu dữ liệu null
+  const baseCal = parseFloat((params.cal as string) || '0');
+  const baseP = parseFloat((params.p as string) || '0');
+  const baseC = parseFloat((params.c as string) || '0');
+  const baseF = parseFloat((params.f as string) || '0');
+  const baseFib = parseFloat((params.fib as string) || '0'); // <-- NHẬN FIBER
 
-  // Logic: (Số lượng * Tỷ lệ đơn vị * Calo gốc) / 100
-  // Ví dụ: 1 Tô (5.5) * 100 * 450 / 100 = 2475 kcal (hơi cao, demo logic thôi)
-  // Logic đúng cho user nhập: Nếu chọn Tô -> amount = 1. Nếu chọn g -> amount = 100.
+  // Logic tính toán: (Số lượng * Tỷ lệ đơn vị * Chỉ số gốc) / 100
   const multiplier = (parseFloat(amount || '0') * unit.ratio) / 100;
   
   const totalCal = Math.round(baseCal * multiplier);
   const totalP = Math.round(baseP * multiplier);
   const totalC = Math.round(baseC * multiplier);
   const totalF = Math.round(baseF * multiplier);
+  const totalFib = (baseFib * multiplier).toFixed(1); // <-- TÍNH FIBER (lấy 1 số lẻ)
 
   const handleAddToDiary = () => {
-    Alert.alert("Đã thêm!", `Đã thêm ${params.name} vào nhật ký.`, [
-      { text: "OK", onPress: () => router.navigate('/(tabs)') } // Quay về Home
+    Alert.alert("Đã thêm!", `Đã thêm ${params.name} vào nhật ký.\n(Bao gồm ${totalFib}g chất xơ)`, [
+      { text: "OK", onPress: () => router.navigate('/(tabs)') }
     ]);
   };
 
   return (
     <View style={styles.container}>
-      {/* Header Ảnh Món Ăn (Demo nền màu) */}
+      {/* Header Ảnh Món Ăn */}
       <View style={styles.imageHeader}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
           <ChevronLeftIcon size={24} color="#fff" />
@@ -58,7 +60,7 @@ export default function FoodDetailScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Bộ chọn khẩu phần (Serving Size Selector) */}
+        {/* Bộ chọn khẩu phần */}
         <View style={styles.servingBox}>
           <Text style={styles.sectionTitle}>Chọn khẩu phần</Text>
           <View style={styles.selectorRow}>
@@ -80,7 +82,7 @@ export default function FoodDetailScreen() {
                   style={[styles.unitBadge, unit.id === u.id && styles.unitActive]}
                   onPress={() => {
                     setUnit(u);
-                    setAmount(u.id === 'g' ? '100' : '1'); // Reset số lượng hợp lý
+                    setAmount(u.id === 'g' ? '100' : '1');
                   }}
                 >
                   <Text style={[styles.unitText, unit.id === u.id && styles.textActive]}>{u.label}</Text>
@@ -90,17 +92,38 @@ export default function FoodDetailScreen() {
           </View>
         </View>
 
-        {/* Kết quả Dinh dưỡng (Big Numbers) */}
+        {/* Kết quả Dinh dưỡng */}
         <View style={styles.resultCard}>
           <View style={styles.mainCal}>
             <Text style={styles.calNum}>{totalCal}</Text>
             <Text style={styles.calLabel}>KCAL</Text>
           </View>
+          
           <View style={styles.divider} />
+          
+          {/* Hàng Macro Chính (P-C-F) */}
           <View style={styles.macroRow}>
             <MacroItem label="Protein" val={totalP} color={Colors.secondary} />
             <MacroItem label="Carbs" val={totalC} color={Colors.primary} />
             <MacroItem label="Fat" val={totalF} color="#E53935" />
+          </View>
+
+          {/* --- Hàng Vi chất (Mới thêm) --- */}
+          <View style={[styles.divider, { marginTop: 15, backgroundColor: '#EEE' }]} />
+          <View style={styles.macroRow}>
+             {/* Hiển thị Chất xơ */}
+            <View style={{ alignItems: 'center', flex: 1 }}>
+              <Text style={{ fontWeight: 'bold', fontSize: 16, color: '#795548' }}>{totalFib}g</Text>
+              <Text style={{ fontSize: 12, color: Colors.gray }}>Chất xơ</Text>
+            </View>
+            
+            {/* Các ô trống để dành cho Vitamin sau này */}
+            <View style={{ alignItems: 'center', flex: 1 }}>
+               <Text style={{ fontSize: 12, color: '#DDD' }}>--</Text>
+            </View>
+            <View style={{ alignItems: 'center', flex: 1 }}>
+               <Text style={{ fontSize: 12, color: '#DDD' }}>--</Text>
+            </View>
           </View>
         </View>
 
@@ -116,7 +139,7 @@ export default function FoodDetailScreen() {
 
       </ScrollView>
 
-      {/* Floating Button Add */}
+      {/* Floating Button */}
       <View style={styles.footer}>
         <TouchableOpacity style={styles.addBtn} onPress={handleAddToDiary}>
           <CheckIcon size={24} color="#fff" />
