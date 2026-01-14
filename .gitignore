@@ -8,8 +8,5 @@ dist/
 .vscode/
 build/
 coverage/
-*.bak
-*.swp
-*.swo
 npm-debug.log*
 yarn-error.log*

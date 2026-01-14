@@ -1,8 +1,10 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
 import { Colors } from '../../constants/Colors';
 import { BellIcon, PlusIcon } from "react-native-heroicons/outline";
 import Svg, { Circle, G } from 'react-native-svg';
+import { getCalculatedMetrics, getProfile } from '../../services/userService';
+import type { CalculatedMetrics, User } from '../../services/userService';
 
 // --- Component: Vòng tròn năng lượng ---
 const EnergyRing = ({ consumed, target }: { consumed: number, target: number }) => {
@@ -69,41 +71,109 @@ const MacroBar = ({ label, current, max, color }: any) => {
 };
 
 export default function HomeScreen() {
+  const [metrics, setMetrics] = useState<CalculatedMetrics | null>(null);
+  const [profile, setProfile] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    try {
+      const [metricsData, profileData] = await Promise.all([
+        getCalculatedMetrics(),
+        getProfile(),
+      ]);
+      console.log('Metrics loaded:', metricsData);
+      console.log('BMI value:', metricsData?.bmi, 'Type:', typeof metricsData?.bmi);
+      setMetrics(metricsData);
+      setProfile(profileData);
+    } catch (error) {
+      console.error('Load data error:', error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    loadData();
+  };
+
+  if (loading) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={Colors.primary} />
+        <Text style={{ marginTop: 10, color: Colors.gray }}>Đang tải dữ liệu...</Text>
+      </View>
+    );
+  }
+
+  // TODO: Thay 1250 bằng tổng calories đã consume từ DailyLog
+  const consumedToday = 1250;
+
   return (
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <View>
-          <Text style={styles.date}>Hôm nay, 12 Tháng 10</Text>
-          <Text style={styles.greeting}>Chào bạn, An!</Text>
+          <Text style={styles.date}>{new Date().toLocaleDateString('vi-VN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</Text>
+          <Text style={styles.greeting}>Chào {profile?.full_name || 'bạn'}! 👋</Text>
         </View>
         <TouchableOpacity style={styles.bellBtn}>
           <BellIcon size={24} color={Colors.text} />
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        contentContainerStyle={{ paddingBottom: 100 }} 
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[Colors.primary]} />
+        }
+      >
         {/* Vòng tròn năng lượng */}
-        <EnergyRing consumed={1250} target={2000} />
+        <EnergyRing consumed={consumedToday} target={metrics?.target_calories || 2000} />
 
         {/* Macros */}
         <View style={styles.section}>
           <Text style={styles.secTitle}>Dinh dưỡng đa lượng</Text>
           <View style={styles.card}>
-            <MacroBar label="Protein (Đạm)" current={90} max={150} color={Colors.secondary} />
-            <MacroBar label="Carbs (Đường bột)" current={140} max={250} color={Colors.primary} />
-            <MacroBar label="Fat (Chất béo)" current={35} max={65} color="#E53935" />
+            <MacroBar label="Protein (Đạm)" current={90} max={metrics?.target_protein_g || 150} color={Colors.secondary} />
+            <MacroBar label="Carbs (Đường bột)" current={140} max={metrics?.target_carb_g || 250} color={Colors.primary} />
+            <MacroBar label="Fat (Chất béo)" current={35} max={metrics?.target_fat_g || 65} color="#E53935" />
           </View>
         </View>
 
-        {/* Gợi ý thích ứng */}
-        <View style={styles.advisorCard}>
-          <Text style={{ fontSize: 20, marginRight: 10 }}>💡</Text>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.advisorTitle}>Gợi ý bữa tối</Text>
-            <Text style={styles.advisorText}>Bạn còn thiếu 30g Protein. Hãy thử Ức gà áp chảo nhé!</Text>
+        {/* Thông tin sức khỏe */}
+        {metrics && typeof metrics.bmi === 'number' && !isNaN(metrics.bmi) ? (
+          <View style={styles.advisorCard}>
+            <Text style={{ fontSize: 20, marginRight: 10 }}>💪</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.advisorTitle}>Chỉ số sức khỏe</Text>
+              <Text style={styles.advisorText}>
+                BMI: {metrics.bmi.toFixed(1)} • BMR: {Math.round(metrics.bmr || 0)} kcal • TDEE: {Math.round(metrics.tdee || 0)} kcal
+              </Text>
+              <Text style={styles.advisorText}>
+                Mục tiêu: {metrics.current_goal === 'lose_weight' ? '📉 Giảm cân' : metrics.current_goal === 'maintain' ? '⚖️ Duy trì' : '💪 Tăng cân'} • 
+                Hoạt động: {metrics.current_activity_level === 'sedentary' ? 'Ít' : metrics.current_activity_level === 'light' ? 'Nhẹ' : metrics.current_activity_level === 'moderate' ? 'Vừa' : metrics.current_activity_level === 'active' ? 'Cao' : 'Rất cao'}
+              </Text>
+            </View>
           </View>
-        </View>
+        ) : (
+          <View style={styles.advisorCard}>
+            <Text style={{ fontSize: 20, marginRight: 10 }}>ℹ️</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.advisorTitle}>Hoàn thành hồ sơ</Text>
+              <Text style={styles.advisorText}>
+                Vui lòng hoàn tất các bước onboarding để xem chỉ số sức khỏe của bạn.
+              </Text>
+            </View>
+          </View>
+        )}
 
         {/* Danh sách bữa ăn */}
         <View style={styles.section}>
