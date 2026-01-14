@@ -1,8 +1,24 @@
 export const Colors = {
-  primary: '#4CAF50',    // Xanh lá Healio
-  secondary: '#FF9800',  // Cam năng lượng
-  background: '#FFFFFF',
-  text: '#1A1A1A',
-  gray: '#888888',
-  lightGray: '#F5F5F5',
+  primary: '#00D084',      // Vibrant Green (Logos, Login Button, Links)
+  primaryDark: '#00A86B',
+  primaryLight: '#E8F5E9', // Pale green background
+  
+  orange: '#F5A623',       // Action Orange (Register, Forgot Pass buttons)
+  orangeLight: '#FFF8E1',  // Pale orange
+  
+  background: '#FFFFFF',   // Pure white for this clean design mostly
+  surface: '#FFFFFF',
+  
+  text: '#1C1C1E',         // Almost black
+  textSecondary: '#666666',// Gray text
+  textPlaceholder: '#BDBDBD',
+  
+  border: '#E8E8E8',       // Light border
+  inputBg: '#FAFAFA',      // Very light gray for inputs if needed
+  
+  success: '#00D084',
+  error: '#FF3B30',
+  
+  // Third party
+  googleBorder: '#E0E0E0',
 };

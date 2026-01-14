@@ -23,7 +23,7 @@ export default function WelcomeScreen() {
         <Text style={styles.buttonText}>Bắt đầu ngay</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={{ marginTop: 20 }}>
+      <TouchableOpacity style={{ marginTop: 20 }} onPress={() => router.push('/auth/sign-in')}>
         <Text style={styles.loginText}>Đã có tài khoản? <Text style={{fontWeight: 'bold', color: Colors.primary}}>Đăng nhập</Text></Text>
       </TouchableOpacity>
     </View>
