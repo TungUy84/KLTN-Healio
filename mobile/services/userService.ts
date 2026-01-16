@@ -8,9 +8,9 @@ export interface DietPreset {
   code: string;
   name: string;
   description: string;
-  carbs_pct: number;
-  protein_pct: number;
-  fat_pct: number;
+  carb_ratio: number;
+  protein_ratio: number;
+  fat_ratio: number;
 }
 
 export interface UserNutritionTarget {
@@ -121,9 +121,9 @@ export const getCalculatedMetrics = async (): Promise<CalculatedMetrics> => {
     const targetCals = nutrition?.target_calories || calculated.targetCalories;
 
     // Macro splits
-    const carbsPct = diet ? diet.carbs_pct : 40;
-    const proteinPct = diet ? diet.protein_pct : 30;
-    const fatPct = diet ? diet.fat_pct : 30;
+    const carbsPct = diet ? diet.carb_ratio : 40;
+    const proteinPct = diet ? diet.protein_ratio : 30;
+    const fatPct = diet ? diet.fat_ratio : 30;
 
     const targetCarbs = Math.round((targetCals * (carbsPct / 100)) / 4);
     const targetProtein = Math.round((targetCals * (proteinPct / 100)) / 4);

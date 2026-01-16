@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Keyboard, TouchableWithoutFeedback, KeyboardAvoidingView, Platform, StatusBar } from 'react-native';
+import { View, Text, TextInput, Pressable, Keyboard, TouchableWithoutFeedback, KeyboardAvoidingView, Platform, StatusBar } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useOnboarding } from '../../context/OnboardingContext';
@@ -13,7 +13,7 @@ export default function Step4Goal() {
   const currentW = parseFloat(data.weight || '0');
   const targetW = parseFloat(goalWeight || '0');
 
-  // Auto detect goal type
+  // AC3: Hệ thống tự động so sánh
   useEffect(() => {
     if (targetW > 0 && currentW > 0) {
         let type: 'lose_weight' | 'maintain' | 'gain_weight' = 'maintain';
@@ -29,13 +29,14 @@ export default function Step4Goal() {
   const handleNext = () => {
     if (!goalWeight) return;
     updateData({ goalWeight });
-    router.push('/onboarding/step5-diet');
+    router.push('/onboarding/step5-diet'); // AC4
   };
 
+  // Helper để hiển thị thông báo trạng thái (AC3)
   const getReason = () => {
       if (currentW === 0 || targetW === 0) return 'Nhập cân nặng để xem mục tiêu';
-      if (targetW < currentW) return `Bạn muốn giảm ${(currentW - targetW).toFixed(1)} kg 🔥`;
-      if (targetW > currentW) return `Bạn muốn tăng ${(targetW - currentW).toFixed(1)} kg 💪`;
+      if (targetW < currentW) return `Bạn muốn giảm ${(currentW - targetW).toFixed(1).replace(/\.0$/, '')} kg 🔥`;
+      if (targetW > currentW) return `Bạn muốn tăng ${(targetW - currentW).toFixed(1).replace(/\.0$/, '')} kg 💪`;
       return 'Bạn muốn duy trì cân nặng 🧘';
   };
 
@@ -44,36 +45,36 @@ export default function Step4Goal() {
         <View className="flex-1 bg-white">
             <StatusBar barStyle="light-content" backgroundColor="#10b981" />
         
-            {/* Header - Emerald Background */}
+            {/*Header - Emerald Style (Đồng bộ Step 1 & 2) */}
             <View className="bg-emerald-500 pb-8 rounded-b-[40px] shadow-sm relative z-10 overflow-hidden">
                 <SafeAreaView edges={['top']} className="px-6 pb-4">
                     {/* Navbar */}
                     <View className="flex-row justify-between items-center mb-6 mt-2">
-                        <TouchableOpacity onPress={() => router.back()} className="p-2 bg-white/20 rounded-full">
+                        <Pressable onPress={() => router.back()} className="p-2 bg-white/20 rounded-full active:bg-white/30">
                             <Ionicons name="arrow-back" size={24} color="white" />
-                        </TouchableOpacity>
+                        </Pressable>
                         
-                        {/* Pagination Dots */}
+                        {/* Pagination Dots (Step 4/5) */}
                         <View className="flex-row gap-2">
-                             <View className="w-2 h-2 bg-white/30 rounded-full" />
+                            <View className="w-2 h-2 bg-white/30 rounded-full" />
                             <View className="w-2 h-2 bg-white/30 rounded-full" />
                             <View className="w-2 h-2 bg-white/30 rounded-full" />
                             <View className="w-8 h-2 bg-white rounded-full" />
                             <View className="w-2 h-2 bg-white/30 rounded-full" />
                         </View>
 
-                        <TouchableOpacity onPress={() => router.replace('/(tabs)')}>
+                        <Pressable onPress={() => router.replace('/(tabs)')}>
                             <Text className="text-white font-semibold text-base">Bỏ qua</Text>
-                        </TouchableOpacity>
+                        </Pressable>
                     </View>
 
                     {/* Header Content */}
-                    <View className="items-center mt-4">
-                         <View className="w-20 h-20 bg-white/20 rounded-full justify-center items-center mb-4 border border-white/30 backdrop-blur-md">
+                    <View className="items-center mt-2">
+                        <View className="w-20 h-20 bg-white/20 rounded-full justify-center items-center mb-4 border border-white/30 backdrop-blur-md">
                             <Ionicons name="flag-outline" size={40} color="white" />
                         </View>
                         <Text className="text-3xl font-bold text-white text-center mb-2">Mục tiêu của bạn</Text>
-                        <Text className="text-white/90 text-center text-base">
+                        <Text className="text-white/90 text-center text-base px-4">
                              Hãy cho chúng tôi biết cân nặng mong muốn
                         </Text>
                     </View>
@@ -86,81 +87,90 @@ export default function Step4Goal() {
 
             {/* Content Area */}
             <KeyboardAvoidingView 
-                behavior={Platform.OS === 'ios' ? 'padding' : undefined} 
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
                 className="flex-1"
             >
                 <View className="flex-1 px-6 pt-10 pb-8 justify-between">
                     <View className="gap-6">
-                         {/* Info Card */}
-                         <View className="bg-gray-50 border border-gray-100 rounded-3xl p-6 items-center">
-                            <Text className="text-gray-500 text-sm font-medium mb-1">Cân nặng hiện tại</Text>
-                            <Text className="text-3xl font-bold text-gray-800">
-                                {data.weight} <Text className="text-lg text-gray-400 font-normal">kg</Text>
-                            </Text>
+                         
+                         {/* AC1: Cân nặng hiện tại (Readonly) */}
+                         <View>
+                            <Text className="text-gray-700 text-base font-semibold mb-2 ml-1">Cân nặng hiện tại</Text>
+                            <View className="flex-row items-center border border-gray-200 rounded-2xl px-4 h-20 bg-gray-100">
+                                <View className="w-10 h-10 bg-gray-200 rounded-full items-center justify-center mr-3">
+                                    <Ionicons name="body-outline" size={24} color="#6b7280" />
+                                </View>
+                                <Text className="flex-1 text-3xl font-bold text-gray-500 h-full pt-4">
+                                    {data.weight || 0}
+                                </Text>
+                                <Text className="text-gray-400 text-lg font-medium">kg</Text>
+                                <Ionicons name="lock-closed" size={16} color="#9ca3af" style={{marginLeft: 8}}/>
+                            </View>
                          </View>
 
-                        {/* Input Section */}
+                        {/* AC1: Ô nhập Cân nặng mục tiêu */}
                         <View>
-                            <Text className="text-gray-800 text-lg font-semibold mb-3 ml-2">Cân nặng mong muốn (kg)</Text>
-                            <View className="bg-gray-50 border border-gray-200 rounded-2xl p-5 shadow-sm">
+                            <Text className="text-gray-700 text-base font-semibold mb-2 ml-1">Cân nặng mong muốn</Text>
+                            <View className="flex-row items-center border border-gray-200 rounded-2xl px-4 h-20 bg-gray-50 focus:border-emerald-500 transition-colors">
+                                <View className="w-10 h-10 bg-orange-100 rounded-full items-center justify-center mr-3">
+                                    <Ionicons name="trophy-outline" size={24} color="#f97316" />
+                                </View>
                                 <TextInput 
-                                    className="text-3xl font-bold text-gray-800 text-center"
+                                    className="flex-1 text-3xl font-bold text-gray-900 h-full pb-1"
                                     keyboardType="numeric"
-                                    placeholder="VD: 60"
+                                    placeholder="0"
                                     placeholderTextColor="#d1d5db"
                                     value={goalWeight}
+                                    maxLength={3} // AC2: Giới hạn độ dài hợp lý
                                     onChangeText={(t) => {
                                         setGoalWeight(t);
                                         updateData({ goalWeight: t });
                                     }}
                                 />
+                                <Text className="text-gray-500 text-lg font-medium">kg</Text>
                             </View>
                         </View>
 
-                        {/* Analysis Result */}
-                        {(() => {
-                           const containerClass = targetW && currentW 
-                                ? 'mt-2 p-4 rounded-2xl border flex-row items-center gap-4 bg-emerald-50 border-emerald-200' 
-                                : 'mt-2 p-4 rounded-2xl border flex-row items-center gap-4 bg-transparent border-transparent';
-                           
-                           return (
-                                <View className={containerClass}>
-                                     {targetW && currentW ? (
-                                        <>
-                                            <View className="w-10 h-10 rounded-full bg-emerald-100 items-center justify-center">
-                                                <Ionicons 
-                                                    name={targetW < currentW ? "trending-down" : targetW > currentW ? "trending-up" : "remove"} 
-                                                    size={24} 
-                                                    color="#10b981" 
-                                                />
-                                            </View>
-                                            <Text className="text-emerald-700 font-semibold flex-1">
-                                                {getReason()}
-                                            </Text>
-                                        </>
-                                     ) : null}
+                        {/* AC3: Hiển thị phân tích (Tự động so sánh) */}
+                        {targetW > 0 && currentW > 0 && (
+                            <View className={`mt-2 p-4 rounded-2xl border flex-row items-center gap-3 ${
+                                targetW < currentW ? 'bg-orange-50 border-orange-200' : // Giảm cân
+                                targetW > currentW ? 'bg-blue-50 border-blue-200' :     // Tăng cân
+                                'bg-emerald-50 border-emerald-200'                      // Giữ cân
+                            }`}>
+                                <View className={`w-8 h-8 rounded-full items-center justify-center ${
+                                    targetW < currentW ? 'bg-orange-100' : 
+                                    targetW > currentW ? 'bg-blue-100' : 
+                                    'bg-emerald-100'
+                                }`}>
+                                    <Ionicons 
+                                        name={targetW < currentW ? "trending-down" : targetW > currentW ? "trending-up" : "remove"} 
+                                        size={18} 
+                                        color={targetW < currentW ? "#f97316" : targetW > currentW ? "#3b82f6" : "#10b981"} 
+                                    />
                                 </View>
-                           );
-                        })()}
+                                <Text className={`font-semibold flex-1 text-base ${
+                                    targetW < currentW ? 'text-orange-700' : 
+                                    targetW > currentW ? 'text-blue-700' : 
+                                    'text-emerald-700'
+                                }`}>
+                                    {getReason()}
+                                </Text>
+                            </View>
+                        )}
                     </View>
 
-                    {/* Footer Button - Accent Orange */}
-                    {(() => {
-                        const btnClass = !goalWeight 
-                            ? "bg-orange-500 w-full p-5 rounded-full flex-row items-center justify-center shadow-lg shadow-orange-500/30 opacity-50"
-                            : "bg-orange-500 w-full p-5 rounded-full flex-row items-center justify-center shadow-lg shadow-orange-500/30";
-                        
-                        return (
-                            <TouchableOpacity 
-                                className={btnClass}
-                                onPress={handleNext}
-                                disabled={!goalWeight}
-                            >
-                                <Text className="text-white text-xl font-bold mr-2">Tiếp tục</Text>
-                                <Ionicons name="arrow-forward" size={24} color="white" />
-                            </TouchableOpacity>
-                        );
-                    })()}
+                    {/* Footer Button - Style nút Cam bo tròn */}
+                    <Pressable 
+                        className={`w-full p-5 rounded-full flex-row items-center justify-center shadow-lg transition-all active:scale-[0.98] ${
+                            !goalWeight ? 'bg-gray-300 opacity-70' : 'bg-orange-500 shadow-orange-500/30'
+                        }`}
+                        onPress={handleNext}
+                        disabled={!goalWeight}
+                    >
+                        <Text className="text-white text-xl font-bold mr-2">Tiếp tục</Text>
+                        <Ionicons name="arrow-forward" size={24} color="white" />
+                    </Pressable>
                 </View>
             </KeyboardAvoidingView>
         </View>
