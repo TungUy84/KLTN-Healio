@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
 import { 
-  View, Text, TextInput, StyleSheet, TouchableOpacity, 
-  Alert, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView 
+  View, Text, TextInput, TouchableOpacity, 
+  Alert, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, StatusBar
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { authService } from '../../services/authService';
-import { Colors } from '../../constants/Colors';
 import { LockClosedIcon, EyeIcon, EyeSlashIcon, ChevronLeftIcon, CheckCircleIcon } from "react-native-heroicons/solid";
 
 export default function ResetPasswordScreen() {
@@ -58,112 +57,116 @@ export default function ResetPasswordScreen() {
     };
   
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView className="flex-1 bg-gray-50">
+        <StatusBar barStyle="dark-content" />
         <KeyboardAvoidingView 
             behavior={Platform.OS === "ios" ? "padding" : "height"}
-            style={{ flex: 1 }}
+            className="flex-1"
         >
         <ScrollView contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false}>
             
-             <View style={styles.topNav}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                    <ChevronLeftIcon size={24} color="#111" />
+             <View className="flex-row items-center px-4 pt-2 mb-8">
+                <TouchableOpacity onPress={() => router.back()} className="p-2 mr-4 bg-white rounded-full shadow-sm">
+                    <ChevronLeftIcon size={20} color="#111" />
                 </TouchableOpacity>
-                <View style={styles.progressContainer}>
-                     <View style={styles.headerRow}>
-                        <View style={styles.progressBarBackground}>
-                            <View style={[styles.progressBarFill, { width: '100%' }]} />
+                <View className="flex-1">
+                     <View className="items-end">
+                        <View className="w-full h-1 bg-gray-200 rounded-full mb-1">
+                            <View className="h-1 bg-emerald-500 rounded-full w-full" />
                         </View>
-                        <Text style={styles.stepText}>STEP 3: RESET</Text>
+                        <Text className="text-[10px] text-emerald-600 font-bold uppercase">Bước 3: Đổi mật khẩu</Text>
                      </View>
                 </View>
             </View>
     
-            <View style={styles.content}>
-                
-                <Text style={styles.title}>Tạo mật khẩu mới</Text>
-                <Text style={styles.subtitle}>
+            <View className="px-6"> 
+                <Text className="text-2xl font-bold text-gray-900 mb-2 mt-4">Tạo mật khẩu mới</Text>
+                <Text className="text-base text-gray-500 mb-8 leading-6">
                     Vui lòng nhập mật khẩu mới khác với mật khẩu cũ để đảm bảo an toàn.
                 </Text>
 
-                <View style={styles.form}>
+                <View className="w-full">
                     
                     {/* New Password */}
-                    <Text style={styles.label}>Mật khẩu mới</Text>
-                    <View style={styles.inputContainer}>
-                        <LockClosedIcon size={20} color={Colors.textSecondary} style={{ marginRight: 10 }} />
+                    <Text className="text-sm font-medium text-gray-700 mb-2">Mật khẩu mới</Text>
+                    <View className="flex-row items-center w-full bg-white border border-gray-200 rounded-xl px-4 h-14 mb-4 focus:border-emerald-500">
+                        <LockClosedIcon size={20} color="#9CA3AF" style={{ marginRight: 10 }} />
                         <TextInput 
-                            style={styles.input} 
+                            className="flex-1 text-base text-gray-900 h-full"
                             placeholder="••••••••" 
-                            placeholderTextColor={Colors.textPlaceholder}
+                            placeholderTextColor="#9CA3AF"
                             value={password} 
                             onChangeText={setPassword} 
                             secureTextEntry={!showPassword}
                         />
-                        <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.iconRight}>
+                        <TouchableOpacity onPress={() => setShowPassword(!showPassword)} className="p-2">
                             {showPassword ? 
-                                <EyeSlashIcon size={20} color={Colors.textSecondary} /> : 
-                                <EyeIcon size={20} color={Colors.textSecondary} />
+                                <EyeSlashIcon size={20} color="#6B7280" /> : 
+                                <EyeIcon size={20} color="#6B7280" />
                             }
                         </TouchableOpacity>
                     </View>
 
                     {/* Confirm Password */}
-                    <Text style={styles.label}>Nhập lại mật khẩu</Text>
-                    <View style={styles.inputContainer}>
-                        <LockClosedIcon size={20} color={Colors.textSecondary} style={{ marginRight: 10 }} />
+                    <Text className="text-sm font-medium text-gray-700 mb-2">Nhập lại mật khẩu</Text>
+                    <View className="flex-row items-center w-full bg-white border border-gray-200 rounded-xl px-4 h-14 mb-6 focus:border-emerald-500">
+                        <LockClosedIcon size={20} color="#9CA3AF" style={{ marginRight: 10 }} />
                         <TextInput 
-                            style={styles.input} 
+                            className="flex-1 text-base text-gray-900 h-full"
                             placeholder="••••••••" 
-                            placeholderTextColor={Colors.textPlaceholder}
+                            placeholderTextColor="#9CA3AF"
                             value={confirmPassword} 
                             onChangeText={setConfirmPassword} 
                             secureTextEntry={!showConfirmPassword}
                         />
-                        <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)} style={styles.iconRight}>
+                        <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)} className="p-2">
                             {showConfirmPassword ? 
-                                <EyeSlashIcon size={20} color={Colors.textSecondary} /> : 
-                                <EyeIcon size={20} color={Colors.textSecondary} />
+                                <EyeSlashIcon size={20} color="#6B7280" /> : 
+                                <EyeIcon size={20} color="#6B7280" />
                             }
                         </TouchableOpacity>
                     </View>
 
                     {/* Requirements Box */}
-                    <View style={styles.requirementsContainer}>
-                        <Text style={styles.reqTitle}>YÊU CẦU BẢO MẬT</Text>
+                    <View className="bg-white p-5 rounded-xl border border-gray-200 mb-8">
+                        <Text className="text-xs text-gray-500 font-bold mb-4 uppercase">Yêu cầu bảo mật</Text>
                         
-                        <View style={styles.reqItem}>
+                        <View className="flex-row items-center mb-3">
                             {hasMinLength ? 
-                                <CheckCircleIcon size={20} color={Colors.success} /> : 
-                                <View style={styles.uncheckedCircle} />
+                                <CheckCircleIcon size={20} color="#10b981" /> : 
+                                <View className="w-5 h-5 rounded-full border border-gray-300" />
                             }
-                            <Text style={styles.reqText}>Ít nhất 8 ký tự</Text>
+                            <Text className={`ml-3 text-sm ${hasMinLength ? 'text-gray-900' : 'text-gray-500'}`}>
+                                Ít nhất 8 ký tự
+                            </Text>
                         </View>
 
-                        <View style={styles.reqItem}>
+                        <View className="flex-row items-center mb-3">
                             {hasLettersAndNumbers ? 
-                                <CheckCircleIcon size={20} color={Colors.success} /> : 
-                                <View style={styles.uncheckedCircle} />
+                                <CheckCircleIcon size={20} color="#10b981" /> : 
+                                <View className="w-5 h-5 rounded-full border border-gray-300" />
                             }
-                            <Text style={styles.reqText}>Bao gồm chữ và số</Text>
+                            <Text className={`ml-3 text-sm ${hasLettersAndNumbers ? 'text-gray-900' : 'text-gray-500'}`}>
+                                Bao gồm chữ và số
+                            </Text>
                         </View>
 
-                        <View style={styles.reqItem}>
-                             <View style={styles.uncheckedCircle} />
-                            <Text style={styles.reqText}>Khác với mật khẩu gần nhất</Text>
+                        <View className="flex-row items-center">
+                             <View className="w-5 h-5 rounded-full border border-gray-300" />
+                            <Text className="ml-3 text-sm text-gray-500">Khác với mật khẩu gần nhất</Text>
                         </View>
                     </View>
 
                     {/* Reset Button */}
                     <TouchableOpacity 
-                        style={styles.button} 
+                        className="w-full bg-emerald-500 h-14 rounded-xl justify-center items-center shadow-lg shadow-emerald-200 mb-6"
                         onPress={handleReset}
                         disabled={loading}
                     >
                         {loading ? (
                             <ActivityIndicator color="#fff" />
                         ) : (
-                            <Text style={styles.buttonText}>Đổi mật khẩu</Text>
+                            <Text className="text-white text-lg font-bold">Đổi mật khẩu</Text>
                         )}
                     </TouchableOpacity>
 
@@ -174,37 +177,3 @@ export default function ResetPasswordScreen() {
       </SafeAreaView>
     );
 }
-
-const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#FAFAFA' },
-    topNav: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 10, marginBottom: 20 },
-    backButton: { padding: 5, marginRight: 10 },
-    progressContainer: { flex: 1 },
-    headerRow: { flexDirection: 'column', alignItems: 'flex-end' },
-    progressBarBackground: { width: '100%', height: 4, backgroundColor: '#E0E0E0', borderRadius: 2, marginBottom: 5 },
-    progressBarFill: { height: '100%', backgroundColor: Colors.orange, borderRadius: 2 },
-    stepText: { fontSize: 10, color: Colors.orange, fontWeight: 'bold' },
-    
-    content: { paddingHorizontal: 24 },
-    title: { fontSize: 26, fontWeight: 'bold', color: '#111', marginBottom: 10, marginTop: 10 },
-    subtitle: { fontSize: 15, color: Colors.textSecondary, lineHeight: 22, marginBottom: 30 },
-    
-    form: { width: '100%' },
-    label: { fontSize: 14, fontWeight: '600', color: '#111', marginBottom: 8 },
-    inputContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderWidth: 1, borderColor: '#E0E0E0', borderRadius: 12, paddingHorizontal: 15, height: 52, marginBottom: 20 },
-    input: { flex: 1, fontSize: 16, color: '#212121', height: '100%' },
-    iconRight: { padding: 5 },
-    
-    requirementsContainer: { marginTop: 10, marginBottom: 30, backgroundColor: '#fff', padding: 20, borderRadius: 12, borderWidth: 1, borderColor: '#E0E0E0' },
-    reqTitle: { fontSize: 12, color: Colors.textSecondary, fontWeight: 'bold', marginBottom: 15, textTransform: 'uppercase' },
-    reqItem: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-    uncheckedCircle: { width: 20, height: 20, borderRadius: 10, borderWidth: 1.5, borderColor: '#BDBDBD' },
-    reqText: { marginLeft: 10, color: '#424242', fontSize: 14 },
-    
-    button: {
-        backgroundColor: Colors.orange, height: 52, borderRadius: 12,
-        justifyContent: 'center', alignItems: 'center',
-        shadowColor: Colors.orange, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4,
-    },
-    buttonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
-});

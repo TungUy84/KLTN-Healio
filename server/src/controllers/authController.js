@@ -3,6 +3,8 @@ const jwt = require('jsonwebtoken');
 const { Op } = require('sequelize');
 const User = require('../models/User');
 const Otp = require('../models/Otp');
+const UserProfile = require('../models/UserProfile');
+const UserNutritionTarget = require('../models/UserNutritionTarget');
 const { sendEmail, generateOTP } = require('../utils/emailService');
 
 // --- Helper Functions ---
@@ -45,6 +47,10 @@ exports.login = async (req, res) => {
     // 5. Sign Token
     const token = generateToken(user);
 
+    // Check Onboarding Status
+    const nutritionTarget = await UserNutritionTarget.findOne({ where: { user_id: user.id } });
+    const isOnboarded = !!nutritionTarget;
+
     res.json({
         token,
         user: {
@@ -52,7 +58,8 @@ exports.login = async (req, res) => {
             email: user.email,
             full_name: user.full_name,
             role: user.role,
-            avatar: user.avatar
+            avatar: user.avatar,
+            is_onboarded: isOnboarded
         }
     });
   } catch (err) {
@@ -163,7 +170,13 @@ exports.verifyRegisterOtp = async (req, res) => {
         res.json({
             message: 'Kích hoạt tài khoản thành công',
             token,
-            user: { id: user.id, email: user.email, full_name: user.full_name, role: user.role }
+            user: { 
+                id: user.id, 
+                email: user.email, 
+                full_name: user.full_name, 
+                role: user.role,
+                is_onboarded: false
+            }
         });
 
     } catch (err) {
@@ -293,9 +306,20 @@ exports.googleLogin = async (req, res) => {
         }
 
         const token = generateToken(user);
+
+        const nutritionTarget = await UserNutritionTarget.findOne({ where: { user_id: user.id } });
+        const isOnboarded = !!nutritionTarget;
+
         res.json({
             token,
-            user: { id: user.id, email: user.email, full_name: user.full_name, role: user.role, avatar: user.avatar }
+            user: { 
+                id: user.id, 
+                email: user.email, 
+                full_name: user.full_name, 
+                role: user.role, 
+                avatar: user.avatar,
+                is_onboarded: isOnboarded
+            }
         });
 
     } catch (err) {

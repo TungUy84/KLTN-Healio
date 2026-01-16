@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
 import { 
-  View, Text, TextInput, StyleSheet, TouchableOpacity, 
-  Alert, ActivityIndicator, Image, KeyboardAvoidingView, Platform, ScrollView 
+  View, Text, TextInput, TouchableOpacity, 
+  Alert, ActivityIndicator, Image, KeyboardAvoidingView, Platform, ScrollView, StatusBar
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { authService } from '../../services/authService';
-import { Colors } from '../../constants/Colors';
 import { EyeIcon, EyeSlashIcon } from "react-native-heroicons/outline";
 
 export default function SignInScreen() {
@@ -23,9 +22,13 @@ export default function SignInScreen() {
         }
         try {
             setLoading(true);
-            await authService.login(email, password);
+            const data = await authService.login(email, password);
              // Success
-            router.replace('/(tabs)'); 
+            if (data.user?.is_onboarded) {
+                router.replace('/(tabs)');
+            } else {
+                router.replace('/onboarding');
+            }
         } catch (err: any) {
              if (err.response?.status === 403 && err.response?.data?.mustVerify) {
                  Alert.alert('Chưa kích hoạt', 'Tài khoản chưa xác thực. OTP đã được gửi.');
@@ -40,81 +43,85 @@ export default function SignInScreen() {
     };
   
     return (
-      <SafeAreaView style={styles.container}>
-        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
-        <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: 20 }} showsVerticalScrollIndicator={false}>
+      <SafeAreaView className="flex-1 bg-gray-50">
+        <StatusBar barStyle="dark-content" />
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} className="flex-1">
+        <ScrollView contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false} className="px-6">
             
-            <View style={styles.header}>
-                <View style={styles.logoContainer}>
-                    <Image source={require('../../assets/images/icon.png')} style={styles.logo} resizeMode="contain" />
+            <View className="items-center mt-10 mb-8">
+                <View className="w-20 h-20 bg-emerald-50 rounded-2xl justify-center items-center mb-4 shadow-sm">
+                    <Image source={require('../../assets/images/icon.png')} className="w-10 h-10" style={{ tintColor: '#10b981' }} resizeMode="contain" />
                 </View>
-                <Text style={styles.appName}>Healio</Text>
-                <Text style={styles.tagline}>Chăm sóc sức khỏe mỗi ngày</Text>
+                <Text className="text-2xl font-bold text-gray-900 mb-1">Healio</Text>
+                <Text className="text-gray-500 text-sm">Chăm sóc sức khỏe mỗi ngày</Text>
                 
-                <Text style={styles.welcomeText}>Chào mừng bạn quay lại!</Text>
+                <Text className="text-xl font-semibold text-gray-900 mt-8 self-start">Chào mừng bạn quay lại!</Text>
             </View>
     
-            <View style={styles.form}>
+            <View className="w-full">
                 
-                <Text style={styles.label}>Email</Text>
+                <Text className="text-sm font-medium text-gray-700 mb-2 mt-2">Email</Text>
                 <TextInput 
-                    style={styles.input} 
+                    className="w-full bg-white border border-gray-200 rounded-xl px-4 h-14 text-base text-gray-900 mb-4 focus:border-emerald-500"
                     placeholder="nhap_email_cua_ban@example.com"
-                    placeholderTextColor={Colors.textPlaceholder}
+                    placeholderTextColor="#9CA3AF"
                     value={email} 
                     onChangeText={setEmail} 
                     keyboardType="email-address"
                     autoCapitalize="none"
                 />
 
-                <Text style={styles.label}>Mật khẩu</Text>
-                <View style={styles.passwordContainer}>
+                <Text className="text-sm font-medium text-gray-700 mb-2">Mật khẩu</Text>
+                <View className="flex-row items-center w-full bg-white border border-gray-200 rounded-xl px-4 h-14 mb-2 focus:border-emerald-500">
                     <TextInput 
-                        style={styles.passwordInput} 
+                        className="flex-1 text-base text-gray-900 h-full"
                         placeholder="••••••••" 
-                        placeholderTextColor={Colors.textPlaceholder}
+                        placeholderTextColor="#9CA3AF"
                         value={password} 
                         onChangeText={setPassword} 
                         secureTextEntry={!showPassword}
                     />
-                    <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
+                    <TouchableOpacity onPress={() => setShowPassword(!showPassword)} className="p-2">
                         {showPassword ? 
-                            <EyeIcon size={20} color={Colors.primary} /> : 
-                            <EyeSlashIcon size={20} color={Colors.primary} />
+                            <EyeIcon size={20} color="#10b981" /> : 
+                            <EyeSlashIcon size={20} color="#6B7280" />
                         }
                     </TouchableOpacity>
                 </View>
 
                 <TouchableOpacity 
-                    style={styles.forgotPassContainer}
+                    className="items-end mb-6"
                     onPress={() => router.push('/auth/forgot-password')}
                 >
-                    <Text style={styles.forgotPassText}>Quên mật khẩu?</Text>
+                    <Text className="text-emerald-600 font-medium text-sm">Quên mật khẩu?</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity 
-                    style={styles.loginButton} 
+                    className="w-full bg-emerald-500 h-14 rounded-xl justify-center items-center shadow-lg shadow-emerald-200 mb-6"
                     onPress={handleLogin}
                     disabled={loading}
                 >
-                    {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.loginButtonText}>Đăng nhập</Text>}
+                    {loading ? <ActivityIndicator color="#fff" /> : <Text className="text-white text-lg font-bold">Đăng nhập</Text>}
                 </TouchableOpacity>
 
-                <View style={styles.dividerContainer}>
-                    <View style={styles.dividerLine} />
-                    <Text style={styles.dividerText}>HOẶC</Text>
-                    <View style={styles.dividerLine} />
+                <View className="flex-row items-center mb-6">
+                    <View className="flex-1 h-[1px] bg-gray-200" />
+                    <Text className="mx-4 text-gray-400 text-xs font-medium">HOẶC</Text>
+                    <View className="flex-1 h-[1px] bg-gray-200" />
                 </View>
 
-                <TouchableOpacity style={styles.googleButton} onPress={() => Alert.alert("Coming soon")}>
-                    <Text style={{color: '#EA4335', fontSize: 18, fontWeight: 'bold', marginRight: 10}}>G</Text>
-                    <Text style={styles.googleButtonText}>Đăng nhập bằng Google</Text>
+                <TouchableOpacity 
+                    className="w-full bg-white border border-gray-200 h-14 rounded-xl justify-center items-center flex-row mb-8"
+                    onPress={() => Alert.alert("Coming soon")}
+                >
+                    <Text className="text-red-500 text-xl font-bold mr-3">G</Text>
+                    <Text className="text-gray-700 text-base font-medium">Đăng nhập bằng Google</Text>
                 </TouchableOpacity>
 
-                <View style={styles.footer}>
-                    <Text style={styles.footerText}>Chưa có tài khoản? </Text>
+                <View className="flex-row justify-center mb-10">
+                    <Text className="text-gray-500 text-sm">Chưa có tài khoản? </Text>
                     <TouchableOpacity onPress={() => router.push('/auth/sign-up')}>
-                        <Text style={styles.signUpLink}>Đăng ký ngay</Text>
+                        <Text className="text-orange-500 font-bold text-sm">Đăng ký ngay</Text>
                     </TouchableOpacity>
                 </View>
             </View>
@@ -123,47 +130,3 @@ export default function SignInScreen() {
       </SafeAreaView>
     );
 }
-
-const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#FAFAFA', paddingHorizontal: 24 },
-    header: { alignItems: 'center', marginTop: 40, marginBottom: 30 },
-    logoContainer: {
-        width: 80, height: 80, backgroundColor: '#E0F2F1',
-        borderRadius: 20, justifyContent: 'center', alignItems: 'center', marginBottom: 10,
-    },
-    logo: { width: 40, height: 40, tintColor: Colors.primary },
-    appName: { fontSize: 24, fontWeight: 'bold', color: '#000', marginBottom: 5 },
-    tagline: { fontSize: 14, color: '#666', marginBottom: 30 },
-    welcomeText: { fontSize: 22, fontWeight: 'bold', color: '#000' },
-    form: { width: '100%' },
-    label: { fontSize: 14, fontWeight: '500', color: '#000', marginBottom: 8, marginTop: 10 },
-    input: {
-        backgroundColor: '#fff', borderWidth: 1, borderColor: '#E0E0E0', borderRadius: 12,
-        paddingHorizontal: 15, height: 52, fontSize: 16, color: '#000',
-    },
-    passwordContainer: {
-        flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff',
-        borderWidth: 1, borderColor: '#E0E0E0', borderRadius: 12, paddingHorizontal: 15, height: 52,
-    },
-    passwordInput: { flex: 1, fontSize: 16, color: '#000', height: '100%' },
-    eyeIcon: { padding: 5 },
-    forgotPassContainer: { alignItems: 'flex-end', marginTop: 10, marginBottom: 20 },
-    forgotPassText: { color: Colors.primary, fontSize: 14, fontWeight: '500' },
-    loginButton: {
-        backgroundColor: Colors.primary, height: 52, borderRadius: 12,
-        justifyContent: 'center', alignItems: 'center', shadowColor: Colors.primary,
-        shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4,
-    },
-    loginButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
-    dividerContainer: { flexDirection: 'row', alignItems: 'center', marginVertical: 25 },
-    dividerLine: { flex: 1, height: 1, backgroundColor: '#E0E0E0' },
-    dividerText: { marginHorizontal: 10, color: '#999', fontSize: 12 },
-    googleButton: {
-        backgroundColor: '#fff', borderWidth: 1, borderColor: '#E0E0E0', height: 52,
-        borderRadius: 12, justifyContent: 'center', alignItems: 'center', flexDirection: 'row',
-    },
-    googleButtonText: { color: '#000', fontSize: 16, fontWeight: '500' },
-    footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 30 },
-    footerText: { color: '#666', fontSize: 14 },
-    signUpLink: { color: Colors.success, fontWeight: 'bold', fontSize: 14 },
-});
