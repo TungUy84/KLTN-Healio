@@ -1,169 +1,174 @@
 import React, { useState } from 'react';
-import { 
-  View, Text, TextInput, StyleSheet, TouchableOpacity, 
-  Alert, ActivityIndicator, Image, KeyboardAvoidingView, Platform, ScrollView 
-} from 'react-native';
+import { View, Text, TextInput, Pressable, StatusBar, Alert, Image, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
+import { userService } from '../../services/userService'; 
 import { authService } from '../../services/authService';
-import { Colors } from '../../constants/Colors';
-import { EyeIcon, EyeSlashIcon } from "react-native-heroicons/outline";
 
 export default function SignInScreen() {
     const router = useRouter();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
-  
+    const [showPassword, setShowPassword] = useState(false);
+
+    // PB_01 - AC3 & AC4: Xử lý đăng nhập
     const handleLogin = async () => {
         if (!email || !password) {
-            Alert.alert('Thông báo', 'Vui lòng nhập email và mật khẩu');
+            Alert.alert('Lỗi', 'Vui lòng nhập đầy đủ Email và Mật khẩu');
             return;
         }
+
+        setLoading(true);
         try {
-            setLoading(true);
-            await authService.login(email, password);
-             // Success
-            router.replace('/(tabs)'); 
-        } catch (err: any) {
-             if (err.response?.status === 403 && err.response?.data?.mustVerify) {
-                 Alert.alert('Chưa kích hoạt', 'Tài khoản chưa xác thực. OTP đã được gửi.');
-                 router.push({ pathname: '/auth/otp', params: { email, type: 'register' } });
-                 return;
-             }
-             const msg = err.response?.data?.message || 'Đăng nhập thất bại';
-             Alert.alert('Lỗi', msg);
+            // Gọi API Login thật
+            const data = await authService.login(email, password);
+             
+            // Check nếu chưa Onboard -> Chuyển sang Onboarding Step 1
+            if (data.user?.is_onboarded) {
+                router.replace('/(tabs)');
+            } else {
+                router.replace('/onboarding');
+            }
+        } catch (error: any) {
+            console.log("Login fail:", error);
+            
+            // Check tài khoản chưa kích hoạt (status 403 & pending)
+            if (error.response?.status === 403 && error.response?.data?.mustVerify) {
+                Alert.alert(
+                    'Chưa kích hoạt', 
+                    'Tài khoản này chưa xác thực OTP. Bạn có muốn nhập mã ngay?',
+                    [
+                        { text: 'Hủy', style: 'cancel' },
+                        { 
+                            text: 'Nhập OTP', 
+                            onPress: () => {
+                                // Gửi lại OTP mới luôn cho tiện người dùng (Optional)
+                                authService.resendOtp(email, 'register').catch(() => {});
+                                router.push({ pathname: '/auth/otp', params: { email, type: 'register' } });
+                            }
+                        }
+                    ]
+                );
+                return;
+            }
+
+            const msg = error.response?.data?.message || 'Tài khoản hoặc mật khẩu không đúng';
+            Alert.alert('Đăng nhập thất bại', msg);
         } finally {
             setLoading(false);
         }
     };
-  
+
+    const handleGoogleLogin = () => {
+        // PB_02: Tạm thời chỉ hiện UI/Log
+        console.log("Đăng nhập Google");
+        Alert.alert("Thông báo", "Tính năng Đăng nhập Google đang phát triển");
+    };
+
     return (
-      <SafeAreaView style={styles.container}>
-        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
-        <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: 20 }} showsVerticalScrollIndicator={false}>
-            
-            <View style={styles.header}>
-                <View style={styles.logoContainer}>
-                    <Image source={require('../../assets/images/icon.png')} style={styles.logo} resizeMode="contain" />
-                </View>
-                <Text style={styles.appName}>Healio</Text>
-                <Text style={styles.tagline}>Chăm sóc sức khỏe mỗi ngày</Text>
-                
-                <Text style={styles.welcomeText}>Chào mừng bạn quay lại!</Text>
-            </View>
-    
-            <View style={styles.form}>
-                
-                <Text style={styles.label}>Email</Text>
-                <TextInput 
-                    style={styles.input} 
-                    placeholder="nhap_email_cua_ban@example.com"
-                    placeholderTextColor={Colors.textPlaceholder}
-                    value={email} 
-                    onChangeText={setEmail} 
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                />
+        <View className="flex-1 bg-white">
+            <StatusBar barStyle="dark-content" />
+            <SafeAreaView className="flex-1">
+                {/* Dùng ScrollView để đảm bảo không bị che khi bật bàn phím trên màn nhỏ */}
+                <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', paddingHorizontal: 24 }}>
+                    
+                    {/* Header Logo/Title */}
+                    <View className="items-center mb-6">
+                        <Image
+                            source={require('../../assets/images/logohealio.png')}
+                            className="w-60 h-40 mb-4 rounded-3xl"
+                            resizeMode="contain"
+                        />
+                        <Text className="text-3xl font-bold text-gray-900">Chào mừng trở lại</Text>
+                        <Text className="text-gray-500 mt-2">Đăng nhập để tiếp tục lộ trình sức khỏe</Text>
+                    </View>
 
-                <Text style={styles.label}>Mật khẩu</Text>
-                <View style={styles.passwordContainer}>
-                    <TextInput 
-                        style={styles.passwordInput} 
-                        placeholder="••••••••" 
-                        placeholderTextColor={Colors.textPlaceholder}
-                        value={password} 
-                        onChangeText={setPassword} 
-                        secureTextEntry={!showPassword}
-                    />
-                    <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
-                        {showPassword ? 
-                            <EyeIcon size={20} color={Colors.primary} /> : 
-                            <EyeSlashIcon size={20} color={Colors.primary} />
-                        }
-                    </TouchableOpacity>
-                </View>
+                    {/* Form Input */}
+                    <View className="gap-4">
+                        {/* Email */}
+                        <View>
+                            <Text className="text-gray-700 font-medium mb-1.5 ml-1">Email</Text>
+                            <View className="flex-row items-center border border-gray-200 rounded-2xl px-4 h-14 bg-gray-50 focus:border-emerald-500">
+                                <Ionicons name="mail-outline" size={20} color="#9ca3af" />
+                                <TextInput
+                                    className="flex-1 ml-3 text-gray-900 text-base"
+                                    placeholder="nhapemail@example.com"
+                                    value={email}
+                                    onChangeText={setEmail}
+                                    keyboardType="email-address"
+                                    autoCapitalize="none"
+                                />
+                            </View>
+                        </View>
 
-                <TouchableOpacity 
-                    style={styles.forgotPassContainer}
-                    onPress={() => router.push('/auth/forgot-password')}
-                >
-                    <Text style={styles.forgotPassText}>Quên mật khẩu?</Text>
-                </TouchableOpacity>
+                        {/* Password */}
+                        <View>
+                            <Text className="text-gray-700 font-medium mb-1.5 ml-1">Mật khẩu</Text>
+                            <View className="flex-row items-center border border-gray-200 rounded-2xl px-4 h-14 bg-gray-50 focus:border-emerald-500">
+                                <Ionicons name="lock-closed-outline" size={20} color="#9ca3af" />
+                                <TextInput
+                                    className="flex-1 ml-3 text-gray-900 text-base"
+                                    placeholder="••••••••"
+                                    value={password}
+                                    onChangeText={setPassword}
+                                    secureTextEntry={!showPassword}
+                                />
+                                <Pressable onPress={() => setShowPassword(!showPassword)}>
+                                    <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={20} color="#9ca3af" />
+                                </Pressable>
+                            </View>
+                            <Pressable className="self-end mt-2" onPress={() => router.push('/auth/forgot-password')}>
+                                <Text className="text-emerald-600 font-medium text-sm">Quên mật khẩu?</Text>
+                            </Pressable>
+                        </View>
+                    </View>
 
-                <TouchableOpacity 
-                    style={styles.loginButton} 
-                    onPress={handleLogin}
-                    disabled={loading}
-                >
-                    {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.loginButtonText}>Đăng nhập</Text>}
-                </TouchableOpacity>
+                    {/* Action Buttons */}
+                    <View className="mt-8 gap-4">
+                        {/* Login Button */}
+                        <Pressable
+                            onPress={handleLogin}
+                            disabled={loading}
+                            className={`h-14 rounded-full items-center justify-center shadow-lg shadow-emerald-500/20 active:opacity-90 ${loading ? 'bg-gray-400' : 'bg-emerald-500'}`}
+                        >
+                            <Text className="text-white text-lg font-bold">
+                                {loading ? 'Đang xử lý...' : 'Đăng nhập'}
+                            </Text>
+                        </Pressable>
 
-                <View style={styles.dividerContainer}>
-                    <View style={styles.dividerLine} />
-                    <Text style={styles.dividerText}>HOẶC</Text>
-                    <View style={styles.dividerLine} />
-                </View>
+                        {/* Divider */}
+                        <View className="flex-row items-center my-2">
+                            <View className="flex-1 h-[1px] bg-gray-200" />
+                            <Text className="mx-4 text-gray-400 text-sm">Hoặc đăng nhập với</Text>
+                            <View className="flex-1 h-[1px] bg-gray-200" />
+                        </View>
 
-                <TouchableOpacity style={styles.googleButton} onPress={() => Alert.alert("Coming soon")}>
-                    <Text style={{color: '#EA4335', fontSize: 18, fontWeight: 'bold', marginRight: 10}}>G</Text>
-                    <Text style={styles.googleButtonText}>Đăng nhập bằng Google</Text>
-                </TouchableOpacity>
+                        {/* Google Login */}
+                        <Pressable
+                            onPress={handleGoogleLogin}
+                            className="h-14 rounded-full border border-gray-200 flex-row items-center justify-center bg-white active:bg-gray-50"
+                        >
+                            <Image
+                                source={require('../../assets/images/google-logo.png')}
+                                className="w-6 h-6"
+                                resizeMode="contain"
+                            />
+                            <Text className="ml-3 text-gray-700 font-semibold text-base">Google</Text>
+                        </Pressable>
+                    </View>
 
-                <View style={styles.footer}>
-                    <Text style={styles.footerText}>Chưa có tài khoản? </Text>
-                    <TouchableOpacity onPress={() => router.push('/auth/sign-up')}>
-                        <Text style={styles.signUpLink}>Đăng ký ngay</Text>
-                    </TouchableOpacity>
-                </View>
-            </View>
-        </ScrollView>
-        </KeyboardAvoidingView>
-      </SafeAreaView>
+                    {/* Footer Link */}
+                    <View className="flex-row justify-center mt-8 mb-4">
+                        <Text className="text-gray-500">Chưa có tài khoản? </Text>
+                        <Pressable onPress={() => router.push('/auth/sign-up')}>
+                            <Text className="text-emerald-600 font-bold">Đăng ký ngay</Text>
+                        </Pressable>
+                    </View>
+
+                </ScrollView>
+            </SafeAreaView>
+        </View>
     );
 }
-
-const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#FAFAFA', paddingHorizontal: 24 },
-    header: { alignItems: 'center', marginTop: 40, marginBottom: 30 },
-    logoContainer: {
-        width: 80, height: 80, backgroundColor: '#E0F2F1',
-        borderRadius: 20, justifyContent: 'center', alignItems: 'center', marginBottom: 10,
-    },
-    logo: { width: 40, height: 40, tintColor: Colors.primary },
-    appName: { fontSize: 24, fontWeight: 'bold', color: '#000', marginBottom: 5 },
-    tagline: { fontSize: 14, color: '#666', marginBottom: 30 },
-    welcomeText: { fontSize: 22, fontWeight: 'bold', color: '#000' },
-    form: { width: '100%' },
-    label: { fontSize: 14, fontWeight: '500', color: '#000', marginBottom: 8, marginTop: 10 },
-    input: {
-        backgroundColor: '#fff', borderWidth: 1, borderColor: '#E0E0E0', borderRadius: 12,
-        paddingHorizontal: 15, height: 52, fontSize: 16, color: '#000',
-    },
-    passwordContainer: {
-        flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff',
-        borderWidth: 1, borderColor: '#E0E0E0', borderRadius: 12, paddingHorizontal: 15, height: 52,
-    },
-    passwordInput: { flex: 1, fontSize: 16, color: '#000', height: '100%' },
-    eyeIcon: { padding: 5 },
-    forgotPassContainer: { alignItems: 'flex-end', marginTop: 10, marginBottom: 20 },
-    forgotPassText: { color: Colors.primary, fontSize: 14, fontWeight: '500' },
-    loginButton: {
-        backgroundColor: Colors.primary, height: 52, borderRadius: 12,
-        justifyContent: 'center', alignItems: 'center', shadowColor: Colors.primary,
-        shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4,
-    },
-    loginButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
-    dividerContainer: { flexDirection: 'row', alignItems: 'center', marginVertical: 25 },
-    dividerLine: { flex: 1, height: 1, backgroundColor: '#E0E0E0' },
-    dividerText: { marginHorizontal: 10, color: '#999', fontSize: 12 },
-    googleButton: {
-        backgroundColor: '#fff', borderWidth: 1, borderColor: '#E0E0E0', height: 52,
-        borderRadius: 12, justifyContent: 'center', alignItems: 'center', flexDirection: 'row',
-    },
-    googleButtonText: { color: '#000', fontSize: 16, fontWeight: '500' },
-    footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 30 },
-    footerText: { color: '#666', fontSize: 14 },
-    signUpLink: { color: Colors.success, fontWeight: 'bold', fontSize: 14 },
-});

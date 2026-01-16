@@ -2,6 +2,7 @@ const router = require('express').Router();
 const authController = require('../controllers/authController');
 
 router.post('/register', authController.register);  // PB_03 Step 1: Send OTP
+router.post('/resend-otp', authController.resendOtp); // New: Resend OTP
 router.post('/register/verify', authController.verifyRegisterOtp); // PB_03 Step 2: Verify OTP -> Active
 
 router.post('/login', authController.login); // PB_01: Login

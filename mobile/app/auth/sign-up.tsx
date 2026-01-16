@@ -1,235 +1,252 @@
-import React, { useState } from 'react';
-import { 
-  View, Text, TextInput, StyleSheet, TouchableOpacity, 
-  Alert, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, Image
-} from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TextInput, Pressable, StatusBar, Alert, ScrollView, Image, KeyboardAvoidingView, Platform, LayoutAnimation, UIManager, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { authService } from '../../services/authService';
-import { Colors } from '../../constants/Colors';
-import { EyeIcon, EyeSlashIcon, LockClosedIcon, EnvelopeIcon, ArrowLeftIcon } from "react-native-heroicons/outline";
 
-export default function SignUpScreen() {
-    const router = useRouter();
-    const [name, setName] = useState(''); // Note: Design doesn't show Name, but API needs it. Keeping invisible or adding a "Full Name" step? The image just says "Email", "Password". I'll assume standard registration needs name or we infer it. I'll keep Email/Password as main UI to match image, maybe add Name if user needs it. But image shows "Email" and "Password".
-    // Wait, standard signup usually asks for Name. I'll keep it but if user says "match image", maybe I should check image again. Image 2: "Đăng ký tài khoản", Email, Mật khẩu. No Name field.
-    // I will hide Name field to match image and pass a default or ask later?
-    // Actually, I'll keep Name field but minimal, or better yet, just Email and Password and Auto-generate name/ask later.
-    // But backend needs name? `authService.register(email, password, full_name)`. I'll pass email as name for now or add the field if I can make it look good.
-    // Let's add the field but keep it clean.
-    
-    // Correcting: The user said "làm giao diện như hình". The image has:
-    // Header: "Đăng ký tài khoản", "Bắt đầu...", 
-    // Email input (envelope icon placeholder?) -> No, just text.
-    // Password input (lock icon?)
-    // Password strength bar (orange/yellow lines).
-    // Orange Button "Đăng ký".
-    // Google/Apple buttons.
-    
-    // I will stick to this. I will remove "Name" from UI to match image fidelity, and pass `email` as `full_name` to backend for now.
-    
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [showPassword, setShowPassword] = useState(false);
-    const [loading, setLoading] = useState(false);
-  
-    // Calculate Password Strength
-    const getStrength = (pass: string) => {
-        let score = 0;
-        if (!pass) return 0;
-        if (pass.length > 4) score++;
-        if (pass.length >= 8) score++;
-        if (/[A-Z]/.test(pass) || /[0-9]/.test(pass)) score++;
-        if (/[^A-Za-z0-9]/.test(pass)) score++;
-        return score;
-    };
-
-    const strengthScore = getStrength(password);
-    
-    // Helper to get Color based on score
-    const getBarColor = (index: number) => {
-        if (index >= strengthScore) return '#E0E0E0'; // Empty
-        if (strengthScore <= 2) return Colors.orange; // Weak/Medium
-        return '#00D084'; // Strong (Green)
-    };
-
-    const getStrengthText = () => {
-        switch(strengthScore) {
-            case 0: return 'Chưa nhập';
-            case 1: return 'Yếu';
-            case 2: return 'Trung bình';
-            case 3: return 'Khá';
-            case 4: return 'Mạnh';
-            default: return '';
-        }
-    };
-
-    const handleRegister = async () => {
-        if (!email || !password) {
-            Alert.alert('Thông báo', 'Vui lòng nhập email và mật khẩu');
-            return;
-        }
-        try {
-            setLoading(true);
-            await authService.register(email, password, email.split('@')[0]); // Use part of email as name
-            Alert.alert('Thành công', 'OTP đã được gửi.');
-            router.push({ pathname: '/auth/otp', params: { email, type: 'register' } });
-        } catch (err: any) {
-            const msg = err.response?.data?.message || 'Đăng ký thất bại';
-            Alert.alert('Lỗi', msg);
-        } finally {
-            setLoading(false);
-        }
-    };
-  
-    return (
-      <SafeAreaView style={styles.container}>
-        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
-        <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: 20 }} showsVerticalScrollIndicator={false}>
-            
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()} style={{alignSelf: 'flex-start', marginBottom: 20}}>
-                     <ArrowLeftIcon size={24} color="#000" />
-                </TouchableOpacity>
-                <Text style={styles.title}>Đăng ký tài khoản</Text>
-                <Text style={styles.subtitle}>Bắt đầu hành trình dinh dưỡng của bạn cùng Healio</Text>
-            </View>
-    
-            <View style={styles.form}>
-                
-                <Text style={styles.label}>Email</Text>
-                <View style={styles.inputContainer}>
-                    <EnvelopeIcon size={20} color="#9E9E9E" style={{marginRight: 10}} />
-                    <TextInput 
-                        style={styles.input} 
-                        placeholder="nhập địa chỉ email"
-                        placeholderTextColor={Colors.textPlaceholder}
-                        value={email} 
-                        onChangeText={setEmail} 
-                        keyboardType="email-address"
-                        autoCapitalize="none"
-                    />
-                </View>
-
-                <Text style={styles.label}>Mật khẩu</Text>
-                <View style={styles.inputContainer}>
-                     <LockClosedIcon size={20} color="#9E9E9E" style={{marginRight: 10}} />
-                    <TextInput 
-                        style={styles.input} 
-                        placeholder="••••••••" 
-                        placeholderTextColor={Colors.textPlaceholder}
-                        value={password} 
-                        onChangeText={setPassword} 
-                        secureTextEntry={!showPassword}
-                    />
-                    <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
-                        {showPassword ? 
-                            <EyeIcon size={20} color="#9E9E9E" /> : 
-                            <EyeSlashIcon size={20} color="#9E9E9E" />
-                        }
-                    </TouchableOpacity>
-                </View>
-
-                {/* Password Strength Bar (Dynamic) */}
-                <View style={styles.strengthContainer}>
-                    {[0, 1, 2, 3].map((i) => (
-                        <View key={i} style={[styles.strengthBar, { backgroundColor: getBarColor(i) }]} />
-                    ))}
-                </View>
-                <View style={{flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20}}>
-                    <Text style={{color: strengthScore > 2 ? '#00D084' : Colors.orange, fontSize: 12}}>
-                        ● Độ mạnh: {getStrengthText()}
-                    </Text>
-                    <Text style={{color: '#9E9E9E', fontSize: 12}}>Ít nhất 8 ký tự</Text>
-                </View>
-
-                 {/* Confirm Pass (Image shows "Xác nhận mật khẩu" in bottom half? No, Image 2 only shows 1 Password field. But Reset Pass has 2. I'll stick to Image 2 which has 2 inputs: Email, Password. And a Strength bar. Then "Xác nhận mật khẩu" below? Ah, the cropped image 3 shows "Xác nhận mật khẩu" at the bottom. Okay, I will add it.) 
-                 Wait, Image 2 (Register) has Email, Password, Strength Bar, then "Xác nhận mật khẩu".
-                 */}
-                 <Text style={styles.label}>Xác nhận mật khẩu</Text>
-                 <View style={styles.inputContainer}>
-                     <View style={{width: 20, marginRight: 10}} /> 
-                     {/* Icon placeholder to align text if needed, or just padding. Image shows 'lock' or 'refresh'? Text says "nhập lại mật khẩu". */}
-                     <TextInput 
-                        style={styles.input} 
-                        placeholder="nhập lại mật khẩu"
-                        placeholderTextColor={Colors.textPlaceholder}
-                        secureTextEntry
-                    />
-                    <EyeSlashIcon size={20} color="#9E9E9E" />
-                 </View>
-
-                {/* Register Button - ORANGE */}
-                <TouchableOpacity 
-                    style={styles.registerButton} 
-                    onPress={handleRegister}
-                    disabled={loading}
-                >
-                    {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.registerButtonText}>Đăng ký</Text>}
-                </TouchableOpacity>
-
-                <View style={styles.dividerContainer}>
-                    <View style={styles.dividerLine} />
-                    <Text style={styles.dividerText}>hoặc đăng ký với</Text>
-                    <View style={styles.dividerLine} />
-                </View>
-
-                <View style={styles.socialRow}>
-                    <TouchableOpacity style={styles.socialButton}>
-                        <Text style={{fontSize: 18, fontWeight: 'bold', color: '#EA4335'}}>G</Text>
-                        <Text style={styles.socialBtnText}>Google</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.socialButton}>
-                        <Text style={{fontSize: 18, fontWeight: 'bold', color: '#000'}}></Text>
-                        <Text style={styles.socialBtnText}>Apple</Text>
-                    </TouchableOpacity>
-                </View>
-
-                <View style={styles.footer}>
-                     <Text style={styles.footerText}>Bạn đã có tài khoản? </Text>
-                    <TouchableOpacity onPress={() => router.push('/auth/sign-in')}>
-                        <Text style={styles.signInLink}>Đăng nhập</Text>
-                    </TouchableOpacity>
-                </View>
-
-            </View>
-        </ScrollView>
-        </KeyboardAvoidingView>
-      </SafeAreaView>
-    );
+// Bật Animation cho Android
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#FFFFFF', paddingHorizontal: 24 },
-    header: { marginTop: 20, marginBottom: 30 },
-    title: { fontSize: 28, fontWeight: 'bold', color: '#000', marginBottom: 10 },
-    subtitle: { fontSize: 16, color: '#666', lineHeight: 24 },
-    form: { width: '100%' },
-    label: { fontSize: 14, fontWeight: '500', color: '#000', marginBottom: 8, marginTop: 10 },
-    inputContainer: {
-        flexDirection: 'row', alignItems: 'center', backgroundColor: '#FAFAFA',
-        borderWidth: 1, borderColor: '#E0E0E0', borderRadius: 12, paddingHorizontal: 15, height: 52,
-    },
-    input: { flex: 1, fontSize: 16, color: '#000', height: '100%' },
-    eyeIcon: { padding: 5 },
-    strengthContainer: { flexDirection: 'row', marginTop: 10, marginBottom: 5, gap: 5 },
-    strengthBar: { height: 4, flex: 1, borderRadius: 2 },
-    registerButton: {
-        backgroundColor: Colors.orange, height: 52, borderRadius: 12, marginTop: 20,
-        justifyContent: 'center', alignItems: 'center', shadowColor: Colors.orange,
-        shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4,
-    },
-    registerButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
-    dividerContainer: { flexDirection: 'row', alignItems: 'center', marginVertical: 25 },
-    dividerLine: { flex: 1, height: 1, backgroundColor: '#E0E0E0' },
-    dividerText: { marginHorizontal: 10, color: '#999', fontSize: 12 },
-    socialRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 15 },
-    socialButton: {
-        flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-        height: 50, borderWidth: 1, borderColor: '#E0E0E0', borderRadius: 12, gap: 10
-    },
-    socialBtnText: { fontWeight: '500', color: '#000' },
-    footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 30 },
-    footerText: { color: '#666', fontSize: 14 },
-    signInLink: { color: Colors.orange, fontWeight: 'bold', fontSize: 14 },
-});
+export default function SignUpScreen() {
+  const router = useRouter();
+  
+  // Form State
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  
+  // Validation State
+  const [passwordStrength, setPasswordStrength] = useState<'Weak' | 'Medium' | 'Strong'>('Weak');
+  const [passwordScore, setPasswordScore] = useState(0); // 0-3
+
+  // PB_03 - AC3: Kiểm tra độ mạnh mật khẩu
+  useEffect(() => {
+    let score = 0;
+    if (password.length > 10) score++;
+    if (/[A-Z]/.test(password)) score++;
+    if (/[0-9!@#$%^&*]/.test(password)) score++;
+    
+    // Kích hoạt Animation mượt mà khi điểm số thay đổi
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    
+    setPasswordScore(score);
+    if (score === 3) setPasswordStrength('Strong');
+    else if (score === 2) setPasswordStrength('Medium');
+    else setPasswordStrength('Weak');
+
+  }, [password]);
+
+  // PB_03 - AC4 & AC5: Xử lý đăng ký
+  const handleSignUp = async () => {
+    // Validate Email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      Alert.alert('Lỗi', 'Email không đúng định dạng');
+      return;
+    }
+
+    // Validate Password
+    if (password.length <= 10) {
+      Alert.alert('Lỗi', 'Mật khẩu phải có trên 10 ký tự');
+      return;
+    }
+    if (password !== confirmPassword) {
+      Alert.alert('Lỗi', 'Mật khẩu xác nhận không khớp');
+      return;
+    }
+
+    try {
+        setLoading(true);
+        // Auto-generate full name from email prefix (to satisfy backend requirement without UI field)
+        const autoFullName = email.split('@')[0];
+        
+        // Gọi API đăng ký thực tế
+        await authService.register(email, password, autoFullName);
+        
+        // AC5: Thành công -> Chuyển hướng sang màn hình nhập OTP
+        router.push({ pathname: '/auth/otp', params: { email, type: 'register' } });
+    } catch (error: any) {
+        console.log('Sign up error:', error);
+        Alert.alert('Lỗi đăng ký', error.response?.data?.message || 'Không thể đăng ký. Vui lòng thử lại.');
+    } finally {
+        setLoading(false);
+    }
+  };
+
+  // Helper render thanh độ mạnh mật khẩu (Dạng Progress Bar liền mạch)
+  const renderStrengthBar = () => {
+    if (password.length === 0) return null;
+
+    // Cấu hình hiển thị theo điểm số
+    const config = {
+        0: { width: '10%', color: '#ef4444', label: 'Quá yếu' }, // Đỏ
+        1: { width: '35%', color: '#ef4444', label: 'Yếu' },     // Đỏ
+        2: { width: '65%', color: '#f59e0b', label: 'Trung bình' }, // Cam
+        3: { width: '100%', color: '#10b981', label: 'Mạnh' }    // Xanh
+    };
+    
+    // Lấy cấu hình tương ứng với điểm hiện tại
+    const current = config[passwordScore as 0 | 1 | 2 | 3] || config[0];
+    
+    return (
+      <View className="mt-3">
+        {/* Thanh nền xám */}
+        <View className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
+            {/* Thanh màu chạy bên trong */}
+             <View 
+                className="h-full rounded-full"
+                style={{ 
+                    width: current.width, 
+                    backgroundColor: current.color 
+                }} 
+             />
+        </View>
+        
+        {/* Chữ hiển thị trạng thái */}
+        <View className="flex-row justify-end items-center mt-2">
+            <Text className="text-xs text-gray-400 mr-1">Độ an toàn:</Text>
+            <Text className="text-xs font-bold" style={{ color: current.color }}>
+                {current.label}
+            </Text>
+        </View>
+      </View>
+    );
+  };
+
+  return (
+    <View className="flex-1 bg-white">
+      <StatusBar barStyle="dark-content" />
+      <SafeAreaView className="flex-1">
+        
+        {/* Header với nút Back */}
+        <View className="px-6 py-2 z-10">
+            <Pressable 
+                onPress={() => router.back()} 
+                className="w-10 h-10 bg-gray-50 rounded-full items-center justify-center border border-gray-100 active:bg-gray-200"
+            >
+                <Ionicons name="arrow-back" size={24} color="#374151" />
+            </Pressable>
+        </View>
+
+        <KeyboardAvoidingView 
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            className="flex-1"
+        >
+            <ScrollView 
+                showsVerticalScrollIndicator={false} 
+                contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 24, paddingBottom: 40 }}
+            >
+            
+            {/* Header Content */}
+            <View className="items-center mb-8 mt-2">
+                <Image 
+                    source={require('../../assets/images/logohealio.png')} 
+                    className="w-60 h-40 mb-4 rounded-3xl" 
+                    resizeMode="contain"
+                />
+                <Text className="text-3xl font-bold text-gray-900 text-center">Tạo tài khoản</Text>
+                <Text className="text-gray-500 mt-2 text-center">Bắt đầu hành trình sống khỏe cùng Healio</Text>
+            </View>
+
+            <View className="gap-5">
+                {/* Email Field */}
+                <View>
+                <Text className="text-gray-700 font-medium mb-2 ml-1">Email</Text>
+                <View className="flex-row items-center border border-gray-200 rounded-2xl px-4 h-14 bg-gray-50 focus:border-emerald-500 transition-colors">
+                    <Ionicons name="mail-outline" size={20} color="#9ca3af" />
+                    <TextInput
+                    className="flex-1 ml-3 text-gray-900 text-base"
+                    placeholder="email@domain.com"
+                    value={email}
+                    onChangeText={setEmail}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    placeholderTextColor="#9ca3af"
+                    />
+                </View>
+                </View>
+
+                {/* Password Field */}
+                <View>
+                <Text className="text-gray-700 font-medium mb-2 ml-1">Mật khẩu</Text>
+                <View className="flex-row items-center border border-gray-200 rounded-2xl px-4 h-14 bg-gray-50 focus:border-emerald-500 transition-colors">
+                    <Ionicons name="lock-closed-outline" size={20} color="#9ca3af" />
+                    <TextInput
+                    className="flex-1 ml-3 text-gray-900 text-base"
+                    placeholder="Trên 10 ký tự"
+                    value={password}
+                    onChangeText={setPassword}
+                    secureTextEntry={!showPassword}
+                    placeholderTextColor="#9ca3af"
+                    />
+                    <Pressable onPress={() => setShowPassword(!showPassword)} className="p-2">
+                    <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={20} color="#9ca3af" />
+                    </Pressable>
+                </View>
+                
+                {/* Thanh độ mạnh mật khẩu (Đã sửa thành Progress Bar) */}
+                {renderStrengthBar()}
+                
+                {/* Gợi ý mật khẩu */}
+                {password.length === 0 && (
+                    <Text className="text-xs text-gray-400 mt-2 ml-1 italic">
+                    * Mật khẩu nên có chữ hoa, số và ký tự đặc biệt
+                    </Text>
+                )}
+                </View>
+
+                {/* Confirm Password Field */}
+                <View>
+                <Text className="text-gray-700 font-medium mb-2 ml-1">Xác nhận mật khẩu</Text>
+                <View className={`flex-row items-center border rounded-2xl px-4 h-14 bg-gray-50 transition-colors ${confirmPassword && password !== confirmPassword ? 'border-red-400 bg-red-50' : 'border-gray-200 focus:border-emerald-500'}`}>
+                    <Ionicons name="shield-checkmark-outline" size={20} color={confirmPassword && password !== confirmPassword ? "#ef4444" : "#9ca3af"} />
+                    <TextInput
+                    className="flex-1 ml-3 text-gray-900 text-base"
+                    placeholder="Nhập lại mật khẩu"
+                    value={confirmPassword}
+                    onChangeText={setConfirmPassword}
+                    secureTextEntry={!showPassword}
+                    placeholderTextColor="#9ca3af"
+                    />
+                </View>
+                {confirmPassword && password !== confirmPassword && (
+                    <View className="flex-row items-center mt-2 ml-1">
+                        <Ionicons name="alert-circle" size={14} color="#ef4444" />
+                        <Text className="text-red-500 text-xs ml-1 font-medium">Mật khẩu không trùng khớp</Text>
+                    </View>
+                )}
+                </View>
+            </View>
+
+            {/* Sign Up Button */}
+            <Pressable 
+                onPress={loading ? undefined : handleSignUp}
+                disabled={loading}
+                className={`mt-10 h-14 rounded-full items-center justify-center shadow-lg shadow-emerald-500/20 transition-all ${loading ? 'bg-emerald-300' : 'bg-emerald-500 active:opacity-90 active:scale-[0.99]'}`}
+            >
+                {loading ? (
+                    <ActivityIndicator color="white" />
+                ) : (
+                    <Text className="text-white text-lg font-bold">Đăng ký tài khoản</Text>
+                )}
+            </Pressable>
+
+            {/* Login Link */}
+            <View className="flex-row justify-center mt-8 mb-4">
+                <Text className="text-gray-500">Đã có tài khoản? </Text>
+                <Pressable onPress={() => router.back()} className="active:opacity-70">
+                <Text className="text-emerald-600 font-bold">Đăng nhập ngay</Text>
+                </Pressable>
+            </View>
+
+            </ScrollView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </View>
+  );
+}

@@ -3,6 +3,8 @@ const jwt = require('jsonwebtoken');
 const { Op } = require('sequelize');
 const User = require('../models/User');
 const Otp = require('../models/Otp');
+const UserProfile = require('../models/UserProfile');
+const UserNutritionTarget = require('../models/UserNutritionTarget');
 const { sendEmail, generateOTP } = require('../utils/emailService');
 
 // --- Helper Functions ---
@@ -45,6 +47,10 @@ exports.login = async (req, res) => {
     // 5. Sign Token
     const token = generateToken(user);
 
+    // Check Onboarding Status
+    const nutritionTarget = await UserNutritionTarget.findOne({ where: { user_id: user.id } });
+    const isOnboarded = !!nutritionTarget;
+
     res.json({
         token,
         user: {
@@ -52,7 +58,8 @@ exports.login = async (req, res) => {
             email: user.email,
             full_name: user.full_name,
             role: user.role,
-            avatar: user.avatar
+            avatar: user.avatar,
+            is_onboarded: isOnboarded
         }
     });
   } catch (err) {
@@ -69,14 +76,7 @@ exports.register = async (req, res) => {
     // 1. Check exist
     const userExists = await User.findOne({ where: { email } });
     if (userExists) {
-        // If pending, maybe clean up old user or just say exist? 
-        // PB_03 AC4 says "Email already used".
-        // However, if it's pending, we should probably allow re-register or resend OTP.
-        // For simplicity: If verified, block. If pending, update info & resend OTP.
-        if (userExists.status === 'active') {
-            return res.status(400).json({ message: 'Email này đã được sử dụng' });
-        }
-        // If pending, we will update the existing record below instead of creating new
+        return res.status(400).json({ message: 'Email này đã được sử dụng' });
     }
 
     // 2. Hash password
@@ -130,6 +130,53 @@ exports.register = async (req, res) => {
   }
 };
 
+// --- Resend OTP ---
+exports.resendOtp = async (req, res) => {
+    try {
+        const { email, type } = req.body; // type: 'register' | 'forgot-password'
+        
+        // Check user
+        const user = await User.findOne({ where: { email } });
+        if (!user) {
+             return res.status(404).json({ message: 'Email chưa được đăng ký' });
+        }
+
+        const otpType = type === 'forgot-password' ? 'reset_password' : 'register';
+
+        // Check status for register
+        if (otpType === 'register' && user.status === 'active') {
+             return res.status(400).json({ message: 'Tài khoản đã được kích hoạt. Vui lòng đăng nhập.' });
+        }
+
+        // Generate OTP
+        const otpCode = generateOTP();
+        const expiresAt = new Date(Date.now() + 2 * 60 * 1000); // 2 minutes
+
+        // Invalidate old
+        await Otp.update({ is_used: true }, { where: { email, type: otpType } });
+
+        await Otp.create({
+            email,
+            otp_code: otpCode,
+            type: otpType,
+            expires_at: expiresAt
+        });
+
+        // Send Email
+        const subject = otpType === 'register' ? "Healio - Mã xác thực tài khoản" : "Healio - Quên mật khẩu";
+        const content = `Mã OTP mới của bạn là: ${otpCode}. Mã có hiệu lực trong 2 phút.`;
+        
+        await sendEmail(email, subject, content);
+        console.log(`[DEV] Resend OTP (${otpType}) for ${email}: ${otpCode}`);
+
+        res.json({ message: 'Đã gửi lại mã OTP' });
+
+    } catch (err) {
+        console.error('Resend OTP Error:', err);
+        res.status(500).json({ message: err.message });
+    }
+};
+
 // --- PB_03: Register Step 2 (Verify OTP) ---
 exports.verifyRegisterOtp = async (req, res) => {
     try {
@@ -163,7 +210,13 @@ exports.verifyRegisterOtp = async (req, res) => {
         res.json({
             message: 'Kích hoạt tài khoản thành công',
             token,
-            user: { id: user.id, email: user.email, full_name: user.full_name, role: user.role }
+            user: { 
+                id: user.id, 
+                email: user.email, 
+                full_name: user.full_name, 
+                role: user.role,
+                is_onboarded: false
+            }
         });
 
     } catch (err) {
@@ -293,9 +346,20 @@ exports.googleLogin = async (req, res) => {
         }
 
         const token = generateToken(user);
+
+        const nutritionTarget = await UserNutritionTarget.findOne({ where: { user_id: user.id } });
+        const isOnboarded = !!nutritionTarget;
+
         res.json({
             token,
-            user: { id: user.id, email: user.email, full_name: user.full_name, role: user.role, avatar: user.avatar }
+            user: { 
+                id: user.id, 
+                email: user.email, 
+                full_name: user.full_name, 
+                role: user.role, 
+                avatar: user.avatar,
+                is_onboarded: isOnboarded
+            }
         });
 
     } catch (err) {

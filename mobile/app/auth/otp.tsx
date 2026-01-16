@@ -1,13 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
-  View, Text, TextInput, StyleSheet, TouchableOpacity, 
-  Alert, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, Pressable 
+  View, Text, TextInput, TouchableOpacity, 
+  Alert, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, Pressable, StatusBar, Image 
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { authService } from '../../services/authService';
-import { Colors } from '../../constants/Colors';
-import { ChevronLeftIcon } from "react-native-heroicons/solid";
+import { Ionicons } from '@expo/vector-icons'; // Dùng Ionicons cho đồng bộ
 
 export default function OtpScreen() {
     const router = useRouter();
@@ -16,8 +15,10 @@ export default function OtpScreen() {
 
     const [otp, setOtp] = useState('');
     const [loading, setLoading] = useState(false);
-    const [timeLeft, setTimeLeft] = useState(105); // 01:45 = 105 seconds
+    const [timeLeft, setTimeLeft] = useState(105); // 1 phút 45 giây
+    const inputRef = useRef<TextInput>(null);
 
+    // Timer đếm ngược
     useEffect(() => {
         const timer = setInterval(() => {
             setTimeLeft((prev) => (prev > 0 ? prev - 1 : 0));
@@ -31,6 +32,7 @@ export default function OtpScreen() {
         return `${m < 10 ? '0' : ''}${m}:${s < 10 ? '0' : ''}${s}`;
     };
 
+    // Xử lý xác thực OTP
     const handleVerify = async () => {
         if (!otp || otp.length < 6) {
             Alert.alert('Thông báo', 'Vui lòng nhập mã OTP hợp lệ (6 số)');
@@ -41,164 +43,146 @@ export default function OtpScreen() {
             setLoading(true);
             
             if (type === 'register') {
+                // Case 1: Kích hoạt tài khoản đăng ký
                 await authService.verifyRegisterOtp(email as string, otp);
-                Alert.alert('Thành công', 'Tài khoản đã được kích hoạt.');
-                router.replace('/(tabs)'); 
+                
+                // Chuyển hướng sang Onboarding
+                router.replace('/onboarding');
+
             } else if (type === 'forgot-password') {
+                // Case 2: Xác thực để đặt lại mật khẩu
                 await authService.verifyResetOtp(email as string, otp);
+                
+                // Chuyển sang màn hình đặt lại mật khẩu
                 router.push({ pathname: '/auth/reset-password', params: { email, otp } });
             } else {
                  Alert.alert('Lỗi', 'Loại xác thực không hợp lệ');
             }
             
         } catch (err: any) {
-             const msg = err.response?.data?.message || 'Xác thực thất bại';
+             const msg = err.response?.data?.message || 'Mã xác thực không đúng';
              Alert.alert('Lỗi', msg);
         } finally {
             setLoading(false);
         }
     };
 
+    // Xử lý gửi lại mã
     const handleResend = async () => {
         if (timeLeft > 0) return;
         try {
             setTimeLeft(120); 
-            if (type === 'register') {
-                 // await authService.resendRegisterOtp(email);
-                 Alert.alert('Đã gửi', 'Mã OTP mới đã được gửi (Giả lập).');
-            } else if (type === 'forgot-password') {
-                 await authService.forgotPassword(email as string);
-                 Alert.alert('Đã gửi', 'Mã OTP mới đã được gửi.');
-            }
+            // Gọi API gửi lại OTP
+            await authService.resendOtp(email as string, type as 'register' | 'forgot-password');
+            
+            Alert.alert('Đã gửi', 'Mã OTP mới đã được gửi vào email của bạn.');
         } catch (err: any) {
-            Alert.alert('Lỗi', 'Không thể gửi lại mã OTP');
+             const msg = err.response?.data?.message || 'Không thể gửi lại mã OTP';
+            Alert.alert('Lỗi', msg);
         }
     }
 
     return (
-      <SafeAreaView style={styles.container}>
-        <KeyboardAvoidingView 
-            behavior={Platform.OS === "ios" ? "padding" : "height"}
-            style={{ flex: 1 }}
-        >
-        <ScrollView contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false}>
+      <View className="flex-1 bg-white">
+        <StatusBar barStyle="dark-content" />
+        <SafeAreaView className="flex-1">
             
-            <View style={styles.topNav}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                    <ChevronLeftIcon size={24} color="#111" />
-                </TouchableOpacity>
-                <View style={styles.progressContainer}>
-                     <View style={styles.headerRow}>
-                        <View style={styles.progressBarBackground}>
-                            <View style={[styles.progressBarFill, { width: '66%' }]} />
-                        </View>
-                        <Text style={styles.stepText}>STEP 2: VERIFY</Text>
-                     </View>
-                </View>
+            {/* Header: Nút Back */}
+            <View className="px-6 py-2">
+                <Pressable onPress={() => router.back()} className="w-10 h-10 bg-gray-50 rounded-full items-center justify-center border border-gray-100 active:bg-gray-200">
+                    <Ionicons name="arrow-back" size={24} color="#374151" />
+                </Pressable>
             </View>
-    
-            <View style={styles.content}>
+
+            <KeyboardAvoidingView 
+                behavior={Platform.OS === "ios" ? "padding" : "height"}
+                className="flex-1"
+            >
+            <ScrollView contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false}>
                 
-                <Text style={styles.title}>Nhập mã xác thực</Text>
-                <Text style={styles.subtitle}>
-                    Nhập mã 6 số chúng tôi vừa gửi tới{'\n'}
-                    <Text style={{fontWeight: 'bold', color: '#111'}}>{email}</Text>
-                </Text>
-
-                <View style={styles.otpContainer}>
-                    <TextInput 
-                        style={styles.hiddenInput} 
-                        value={otp}
-                        onChangeText={(text) => setOtp(text.slice(0, 6))}
-                        keyboardType="number-pad"
-                        maxLength={6}
-                        autoFocus
-                        caretHidden
-                    />
+                <View className="flex-1 px-6 items-center pt-6">
                     
-                    <View style={styles.otpBoxesContainer}>
-                        {[0, 1, 2, 3, 4, 5].map((index) => (
-                             <Pressable 
-                                key={index} 
-                                style={[
-                                    styles.otpBox, 
-                                    otp.length === index && styles.otpBoxActive, 
-                                    otp.length > index && styles.otpBoxFilled 
-                                ]}
-                                onPress={() => {/* focus logic handled by hidden input overlay */}}
-                             >
-                                <Text style={[
-                                    styles.otpText,
-                                    otp.length === index && { color: Colors.orange },
-                                    otp.length > index && { color: '#000' }
-                                ]}>
-                                    {otp[index] || ''}
-                                </Text>
-                             </Pressable>
-                        ))}
+                    {/* Icon trang trí */}
+                    <View className="w-20 h-20 bg-emerald-50 rounded-full items-center justify-center mb-6">
+                        <Ionicons name="shield-checkmark-outline" size={40} color="#10b981" />
                     </View>
-                </View>
 
-                <Text style={styles.timerText}>
-                    Mã có hiệu lực trong <Text style={{color: Colors.orange, fontWeight: 'bold'}}>{formatTime(timeLeft)}</Text>
-                </Text>
-
-                <TouchableOpacity 
-                    style={styles.button} 
-                    onPress={handleVerify}
-                    disabled={loading}
-                >
-                    {loading ? (
-                        <ActivityIndicator color="#fff" />
-                    ) : (
-                        <Text style={styles.buttonText}>Xác nhận</Text>
-                    )}
-                </TouchableOpacity>
-
-                <TouchableOpacity style={styles.resendContainer} onPress={handleResend} disabled={timeLeft > 0}>
-                    <Text style={[styles.resendText, timeLeft > 0 ? {color: '#BDBDBD'} : {color: '#666'}]}>
-                        Bạn chưa nhận được mã? <Text style={[styles.resendLink, timeLeft > 0 ? {color: '#BDBDBD'} : {color: Colors.orange}]}>Gửi lại</Text>
+                    <Text className="text-2xl font-bold text-gray-900 mb-2 text-center">Xác thực tài khoản</Text>
+                    <Text className="text-base text-gray-500 text-center mb-10 leading-6 px-4">
+                        Vui lòng nhập mã 6 số chúng tôi vừa gửi tới email{'\n'}
+                        <Text className="font-bold text-gray-900">{email}</Text>
                     </Text>
-                </TouchableOpacity>
 
-            </View>
-        </ScrollView>
-        </KeyboardAvoidingView>
-      </SafeAreaView>
+                    {/* Ô Nhập OTP */}
+                    <View className="w-full items-center mb-8 h-16 justify-center">
+                        <TextInput 
+                            ref={inputRef}
+                            className="absolute w-full h-full opacity-0 z-10"
+                            value={otp}
+                            onChangeText={(text) => setOtp(text.replace(/[^0-9]/g, '').slice(0, 6))}
+                            keyboardType="number-pad"
+                            maxLength={6}
+                            autoFocus
+                        />
+                        
+                        <View className="flex-row justify-between w-full gap-2">
+                            {[0, 1, 2, 3, 4, 5].map((index) => {
+                                const isActive = otp.length === index;
+                                const isFilled = otp.length > index;
+                                
+                                return (
+                                    <Pressable 
+                                        key={index} 
+                                        onPress={() => inputRef.current?.focus()}
+                                        className={`flex-1 h-14 border rounded-xl justify-center items-center transition-all ${
+                                            isActive ? 'border-emerald-500 border-2 bg-white' : 
+                                            isFilled ? 'border-emerald-500 bg-emerald-50' : 'border-gray-200 bg-gray-50'
+                                        }`}
+                                    >
+                                        <Text className={`text-2xl font-bold ${isFilled || isActive ? 'text-emerald-600' : 'text-gray-400'}`}>
+                                            {otp[index] || ''}
+                                        </Text>
+                                    </Pressable>
+                                );
+                            })}
+                        </View>
+                    </View>
+
+                    {/* Timer */}
+                    <Text className="text-sm text-gray-500 mb-8">
+                        Mã có hiệu lực trong <Text className="text-orange-500 font-bold">{formatTime(timeLeft)}</Text>
+                    </Text>
+
+                    {/* Nút Xác nhận */}
+                    <Pressable 
+                        className={`w-full h-14 rounded-full justify-center items-center shadow-lg active:scale-[0.98] transition-all ${
+                            otp.length === 6 ? 'bg-emerald-500 shadow-emerald-500/30' : 'bg-gray-300'
+                        }`}
+                        onPress={handleVerify}
+                        disabled={loading || otp.length < 6}
+                    >
+                        {loading ? (
+                            <ActivityIndicator color="#fff" />
+                        ) : (
+                            <Text className="text-white text-lg font-bold">Xác nhận</Text>
+                        )}
+                    </Pressable>
+
+                    {/* Gửi lại mã */}
+                    <Pressable 
+                        className="mt-8 p-4" 
+                        onPress={handleResend} 
+                        disabled={timeLeft > 0}
+                    >
+                        <Text className={`text-sm text-center ${timeLeft > 0 ? 'text-gray-400' : 'text-gray-600'}`}>
+                            Bạn chưa nhận được mã? <Text className={`font-bold ${timeLeft > 0 ? 'text-gray-400' : 'text-emerald-600'}`}>Gửi lại</Text>
+                        </Text>
+                    </Pressable>
+
+                </View>
+            </ScrollView>
+            </KeyboardAvoidingView>
+        </SafeAreaView>
+      </View>
     );
 }
-
-const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#FAFAFA' },
-    topNav: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 10, marginBottom: 40 },
-    backButton: { padding: 5, marginRight: 10 },
-    progressContainer: { flex: 1 },
-    headerRow: { flexDirection: 'column', alignItems: 'flex-end' },
-    progressBarBackground: { width: '100%', height: 4, backgroundColor: '#E0E0E0', borderRadius: 2, marginBottom: 5 },
-    progressBarFill: { height: '100%', backgroundColor: Colors.orange, borderRadius: 2 },
-    stepText: { fontSize: 10, color: Colors.orange, fontWeight: 'bold' },
-    
-    content: { paddingHorizontal: 24, alignItems: 'center' },
-    title: { fontSize: 26, fontWeight: 'bold', color: '#111', marginBottom: 10, textAlign: 'center' },
-    subtitle: { fontSize: 15, color: Colors.textSecondary, textAlign: 'center', lineHeight: 22, marginBottom: 40 },
-    
-    otpContainer: { width: '100%', alignItems: 'center', marginBottom: 30, height: 60, justifyContent: 'center' },
-    hiddenInput: { position: 'absolute', width: '100%', height: '100%', opacity: 0, zIndex: 2 },
-    otpBoxesContainer: { flexDirection: 'row', justifyContent: 'space-between', width: '100%' },
-    otpBox: { width: 48, height: 58, borderWidth: 1, borderColor: '#E0E0E0', borderRadius: 12, backgroundColor: '#fff', justifyContent: 'center', alignItems: 'center' },
-    otpBoxActive: { borderColor: Colors.orange, borderWidth: 2 },
-    otpBoxFilled: { borderColor: Colors.orange, backgroundColor: '#FFF8E1' }, 
-    otpText: { fontSize: 24, fontWeight: 'bold', color: '#111' },
-    
-    timerText: { fontSize: 14, color: Colors.textSecondary, marginBottom: 30 },
-    button: {
-        backgroundColor: Colors.orange, height: 52, borderRadius: 12,
-        justifyContent: 'center', alignItems: 'center', width: '100%',
-        shadowColor: Colors.orange, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4,
-    },
-    buttonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
-    
-    resendContainer: { marginTop: 20 },
-    resendText: { fontSize: 14 },
-    resendLink: { fontWeight: 'bold' },
-});

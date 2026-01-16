@@ -2,7 +2,7 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 
-// LAN IP 
+// LAN IP (Thay đổi IP này nếu đổi mạng Wifi: chạy ipconfig để xem)
 const BASE_URL = 'http://192.168.1.161:3000/api';
 
 const api = axios.create({

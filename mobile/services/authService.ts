@@ -18,6 +18,12 @@ export const authService = {
     return response.data;
   },
 
+  // Resend OTP
+  resendOtp: async (email: string, type: 'register' | 'forgot-password') => {
+    const response = await api.post('/auth/resend-otp', { email, type });
+    return response.data;
+  },
+
   // PB_03: Register Step 2 (Verify OTP & Active)
   verifyRegisterOtp: async (email: string, otp: string) => {
     const response = await api.post('/auth/register/verify', { email, otp });

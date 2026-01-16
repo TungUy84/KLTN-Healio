@@ -7,7 +7,8 @@ export const calculateMetrics = (
   weight: number,
   height: number,
   activityLevel: 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active',
-  goal: 'lose_weight' | 'maintain' | 'gain_weight'
+  goal: 'lose_weight' | 'maintain' | 'gain_weight',
+  dietPreset?: any
 ) => {
   // 1. Calculate BMR
   let bmr = 10 * weight + 6.25 * height - 5 * age;
@@ -46,5 +47,25 @@ export const calculateMetrics = (
   const heightM = height / 100;
   const bmi = parseFloat((weight / (heightM * heightM)).toFixed(1));
 
-  return { bmr, tdee, targetCalories, bmi };
+  // 5. Calculate Macros (if preset provided)
+  let macros = { carb: 0, protein: 0, fat: 0 };
+  if (dietPreset) {
+      // Allow lowercase keys just in case, but assume step5 structure
+      const c = dietPreset.carb_ratio || 50;
+      const p = dietPreset.protein_ratio || 30;
+      const f = dietPreset.fat_ratio || 20;
+
+      macros.carb = Math.round((targetCalories * c / 100) / 4);
+      macros.protein = Math.round((targetCalories * p / 100) / 4);
+      macros.fat = Math.round((targetCalories * f / 100) / 9);
+  }
+
+  return { 
+    bmr, 
+    tdee, 
+    daily_calories: Math.round(targetCalories), // Sync naming with Result screen (daily_calories)
+    targetCalories: Math.round(targetCalories),
+    bmi, 
+    ...macros 
+  };
 };
