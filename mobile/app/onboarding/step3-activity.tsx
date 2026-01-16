@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StatusBar } from 'react-native';
+import { View, Text, ScrollView, StatusBar, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useOnboarding } from '../../context/OnboardingContext';
@@ -26,26 +26,30 @@ export default function Step3Activity() {
     <View className="flex-1 bg-white">
         <StatusBar barStyle="light-content" backgroundColor="#10b981" />
     
-        <View className="bg-emerald-500 pb-8 rounded-b-[40px] shadow-sm relative overflow-hidden">
+        {/* Header */}
+        <View className="bg-emerald-500 pb-8 rounded-b-[40px] shadow-sm relative z-10 overflow-hidden">
             <SafeAreaView edges={['top']} className="px-6 pb-4">
+                {/* Navbar */}
                 <View className="flex-row justify-between items-center mb-6 mt-2">
-                    <TouchableOpacity onPress={() => router.back()} className="p-2 bg-white/20 rounded-full">
+                    <Pressable onPress={() => router.back()} className="p-2 bg-white/20 rounded-full active:bg-white/30">
                         <Ionicons name="arrow-back" size={24} color="white" />
-                    </TouchableOpacity>
+                    </Pressable>
                     
+                    {/* Pagination Dots */}
                     <View className="flex-row gap-2">
                         <View className="w-2 h-2 bg-white/30 rounded-full" />
                         <View className="w-2 h-2 bg-white/30 rounded-full" />
-                        <View className="w-8 h-2 bg-white rounded-full bg-white" />
+                        <View className="w-8 h-2 bg-white rounded-full" />
                         <View className="w-2 h-2 bg-white/30 rounded-full" />
                         <View className="w-2 h-2 bg-white/30 rounded-full" />
                     </View>
 
-                    <TouchableOpacity onPress={() => router.replace('/(tabs)')}>
+                    <Pressable onPress={() => router.replace('/(tabs)')}>
                          <Text className="text-white font-semibold text-base">Bỏ qua</Text>
-                    </TouchableOpacity>
+                    </Pressable>
                 </View>
 
+                {/* Header Content */}
                 <View className="items-center mt-4">
                      <View className="w-20 h-20 bg-white/20 rounded-full justify-center items-center mb-4 border border-white/30 backdrop-blur-md">
                         <Ionicons name="fitness-outline" size={40} color="white" />
@@ -57,10 +61,12 @@ export default function Step3Activity() {
                 </View>
             </SafeAreaView>
             
+            {/* Decorative circles */}
             <View className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-10 -mt-10" />
             <View className="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full -ml-10 -mb-10" />
         </View>
 
+        {/* Content Area */}
         <View className="flex-1 px-6 pt-6 pb-8 justify-between">
             <ScrollView showsVerticalScrollIndicator={false} className="flex-1 mb-4">
                 <View className="gap-4 py-2">
@@ -68,12 +74,13 @@ export default function Step3Activity() {
                         const isSelected = data.activityLevel === level.key;
                         
                         return (
-                            <TouchableOpacity 
+                            <Pressable 
                                 key={level.key}
                                 onPress={() => updateData({ activityLevel: level.key as any })}
-                                className={`flex-row items-center p-5 rounded-2xl border ${
+                                // Sử dụng template literal để đổi style khi chọn
+                                className={`flex-row items-center p-5 rounded-2xl border shadow-sm transition-all active:opacity-80 ${
                                     isSelected 
-                                    ? 'bg-emerald-50 border-emerald-500 shadow-sm' 
+                                    ? 'bg-emerald-50 border-emerald-500' 
                                     : 'bg-gray-50 border-gray-200'
                                 }`}
                             >
@@ -86,26 +93,31 @@ export default function Step3Activity() {
                                     </Text>
                                 </View>
                                 <View className={`w-6 h-6 rounded-full border-2 items-center justify-center ${
-                                    isSelected ? 'border-emerald-500 bg-emerald-500' : 'border-gray-300'
+                                    isSelected 
+                                    ? 'border-emerald-500 bg-emerald-500' 
+                                    : 'border-gray-300 bg-transparent'
                                 }`}>
                                     {isSelected && <Ionicons name="checkmark" size={16} color="white" />}
                                 </View>
-                            </TouchableOpacity>
+                            </Pressable>
                         );
                     })}
                 </View>
             </ScrollView>
 
-            <TouchableOpacity 
-                className={`w-full p-5 rounded-full flex-row items-center justify-center shadow-lg shadow-orange-500/30 ${
-                    !data.activityLevel ? 'bg-gray-300 opacity-50' : 'bg-orange-500'
-                }`}
+            {/* Footer Button */}
+            <Pressable 
                 onPress={handleNext}
                 disabled={!data.activityLevel}
+                className={`w-full p-5 rounded-full flex-row items-center justify-center shadow-lg active:opacity-90 ${
+                    data.activityLevel 
+                    ? 'bg-orange-500 shadow-orange-500/30' 
+                    : 'bg-gray-300 opacity-50'
+                }`}
             >
                 <Text className="text-white text-xl font-bold mr-2">Tiếp tục</Text>
                 <Ionicons name="arrow-forward" size={24} color="white" />
-            </TouchableOpacity>
+            </Pressable>
         </View>
     </View>
   );

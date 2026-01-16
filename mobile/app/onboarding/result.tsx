@@ -1,186 +1,283 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Dimensions, StatusBar } from 'react-native';
+import { View, Text, ScrollView, ActivityIndicator, StatusBar, Pressable, Alert, Dimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Svg, { Circle, G } from 'react-native-svg'; // Đã có trong package.json
 import { useOnboarding } from '../../context/OnboardingContext';
 import { calculateMetrics } from '../../utils/calculations';
 import { userService } from '../../services/userService';
 import { Ionicons } from '@expo/vector-icons';
 
+const { width } = Dimensions.get('window');
+
+// Component vẽ biểu đồ tròn (Donut Chart)
+const MacroDonut = ({ 
+    protein, carb, fat, 
+    size = 180, 
+    strokeWidth = 15 
+}: { protein: number, carb: number, fat: number, size?: number, strokeWidth?: number }) => {
+    const center = size / 2;
+    const radius = (size - strokeWidth) / 2;
+    const circumference = 2 * Math.PI * radius;
+
+    // Tính góc xoay cho từng đoạn (360 độ = 100%)
+    const pAngle = (protein / 100) * 360;
+    const cAngle = (carb / 100) * 360;
+    // const fAngle = (fat / 100) * 360; // Phần còn lại
+
+    return (
+        <View className="items-center justify-center" style={{ width: size, height: size }}>
+            <Svg width={size} height={size}>
+                {/* 1. Vòng tròn nền (màu xám nhạt) */}
+                <Circle
+                    cx={center} cy={center} r={radius}
+                    stroke="#F3F4F6" strokeWidth={strokeWidth}
+                    fill="transparent"
+                />
+
+                {/* 2. Protein (Màu Cam) - Bắt đầu từ -90 độ (12h) */}
+                <G rotation="-90" origin={`${center}, ${center}`}>
+                    <Circle
+                        cx={center} cy={center} r={radius}
+                        stroke="#f97316" // Orange-500
+                        strokeWidth={strokeWidth}
+                        fill="transparent"
+                        strokeDasharray={circumference}
+                        strokeDashoffset={circumference - (circumference * protein) / 100}
+                        strokeLinecap="round"
+                    />
+                </G>
+
+                {/* 3. Carbs (Màu Xanh) - Xoay tiếp theo sau Protein */}
+                <G rotation={-90 + pAngle} origin={`${center}, ${center}`}>
+                    <Circle
+                        cx={center} cy={center} r={radius}
+                        stroke="#3b82f6" // Blue-500
+                        strokeWidth={strokeWidth}
+                        fill="transparent"
+                        strokeDasharray={circumference}
+                        strokeDashoffset={circumference - (circumference * carb) / 100}
+                        strokeLinecap="round"
+                    />
+                </G>
+
+                {/* 4. Fat (Màu Vàng) - Xoay tiếp theo sau Carb */}
+                <G rotation={-90 + pAngle + cAngle} origin={`${center}, ${center}`}>
+                    <Circle
+                        cx={center} cy={center} r={radius}
+                        stroke="#eab308" // Yellow-500
+                        strokeWidth={strokeWidth}
+                        fill="transparent"
+                        strokeDasharray={circumference}
+                        strokeDashoffset={circumference - (circumference * fat) / 100}
+                        strokeLinecap="round"
+                    />
+                </G>
+            </Svg>
+
+            {/* Số liệu ở giữa vòng tròn */}
+            <View className="absolute items-center">
+                <Text className="text-gray-400 text-xs font-medium uppercase tracking-wider">Tỷ lệ</Text>
+                <Text className="text-gray-800 text-2xl font-bold">Macro</Text>
+            </View>
+        </View>
+    );
+};
+
 export default function ResultScreen() {
-  const router = useRouter();
-  const { data } = useOnboarding();
-  const [loading, setLoading] = useState(false);
-  const [metrics, setMetrics] = useState<any>(null);
+    const router = useRouter();
+    const { data } = useOnboarding();
+    const [loading, setLoading] = useState(false);
+    const [metrics, setMetrics] = useState<any>(null);
 
-  useEffect(() => {
-    if (data.weight && data.height) {
-        const height = parseFloat(data.height);
-        const weight = parseFloat(data.weight);
-        // Note: Check date carefully
-        const dobDate = data.dob instanceof Date ? data.dob : new Date(data.dob);
-        const age = new Date().getFullYear() - dobDate.getFullYear();
-        
-        const result = calculateMetrics(
-            age, 
-            data.gender, 
-            weight, 
-            height,
-            data.activityLevel,
-            data.goalType,
-            data.dietPreset
+    useEffect(() => {
+        if (data.weight && data.height && data.dob && data.gender) {
+            try {
+                const height = parseFloat(data.height);
+                const weight = parseFloat(data.weight);
+                const dobDate = data.dob instanceof Date ? data.dob : new Date(data.dob);
+                const age = new Date().getFullYear() - dobDate.getFullYear();
+                
+                const result = calculateMetrics(
+                    age, data.gender, weight, height,
+                    data.activityLevel, data.goalType, data.dietPreset
+                );
+                setMetrics(result);
+            } catch (error) {
+                console.error("Calculation Error:", error);
+            }
+        }
+    }, [data]);
+
+    const handleFinish = async () => {
+        if (!metrics) return;
+        setLoading(true);
+        try {
+            const payload = {
+                gender: data.gender,
+                dob: data.dob,
+                height: parseFloat(data.height),
+                current_weight: parseFloat(data.weight),
+                activity_level: data.activityLevel,
+                goal_type: data.goalType,
+                goal_weight: parseFloat(data.goalWeight || data.weight),
+                diet_preset_code: data.dietPreset?.code || 'balanced',
+                tdee: Math.round(metrics.tdee),
+                bmr: Math.round(metrics.bmr),
+                target_calories: Math.round(metrics.daily_calories)
+            };
+            
+            await userService.completeOnboarding(payload);
+            router.replace('/(tabs)');
+        } catch (error) {
+            Alert.alert("Lỗi", "Không thể lưu hồ sơ. Vui lòng thử lại.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    if (!metrics) {
+        return (
+            <View className="flex-1 justify-center items-center bg-white">
+                <ActivityIndicator size="large" color="#10b981" />
+            </View>
         );
-        setMetrics(result);
     }
-  }, [data]);
 
-  const handleFinish = async () => {
-    setLoading(true);
-    try {
-        const payload = {
-            ...data,
-            nutrition_target: metrics
-        };
-        await userService.completeOnboarding(payload);
-        router.replace('/(tabs)');
-    } catch (error) {
-        console.log("Error saving profile", error);
-        Alert.alert("Lỗi", "Không thể lưu hồ sơ. Vui lòng thử lại.");
-    } finally {
-        setLoading(false);
-    }
-  };
+    // Helper hiển thị BMI
+    const getBMIInfo = (bmi: number) => {
+        if (bmi < 18.5) return { label: 'Thiếu cân', color: 'text-blue-600', bg: 'bg-blue-100' };
+        if (bmi < 24.9) return { label: 'Bình thường', color: 'text-emerald-600', bg: 'bg-emerald-100' };
+        if (bmi < 29.9) return { label: 'Thừa cân', color: 'text-orange-600', bg: 'bg-orange-100' };
+        return { label: 'Béo phì', color: 'text-red-600', bg: 'bg-red-100' };
+    };
+    const bmiInfo = getBMIInfo(metrics.bmi);
 
-  if (!metrics) return null;
+    // Lấy tỷ lệ % từ dietPreset (fallback về mặc định nếu null)
+    const pPercent = data.dietPreset?.macros?.p || 30;
+    const cPercent = data.dietPreset?.macros?.c || 50;
+    const fPercent = data.dietPreset?.macros?.f || 20;
 
-  return (
-    <View className="flex-1 bg-white">
-        <StatusBar barStyle="light-content" backgroundColor="#10b981" />
-        
-       {/* Header - Emerald Background */}
-       <View className="bg-emerald-500 pb-8 rounded-b-[40px] shadow-sm relative z-10 overflow-hidden">
-            <SafeAreaView edges={['top']} className="px-6 pb-4">
-                {/* Navbar */}
-                <View className="flex-row justify-between items-center mb-6 mt-2">
-                     <View className="p-2"/> 
-                     <Text className="text-white font-bold text-lg">Kế hoạch của bạn</Text>
-                     <View className="p-2"/> 
+    return (
+        <View className="flex-1 bg-gray-50">
+            <StatusBar barStyle="light-content" backgroundColor="#10b981" />
+            
+            {/* === HEADER === */}
+            <View className="bg-emerald-500 pb-12 pt-4 rounded-b-[40px] shadow-lg overflow-hidden">
+                <SafeAreaView edges={['top']} className="px-6">
+                    <View className="items-center">
+                        <Text className="text-emerald-100 font-medium text-sm uppercase tracking-widest mb-2">Mục tiêu hàng ngày</Text>
+                        <View className="flex-row items-baseline">
+                            <Text className="text-6xl font-extrabold text-white">{Math.round(metrics.daily_calories)}</Text>
+                            <Text className="text-xl text-emerald-100 font-medium ml-1">Kcal</Text>
+                        </View>
+                        
+                        {/* Chỉ số phụ (TDEE, BMR) */}
+                        <View className="flex-row gap-8 mt-6">
+                            <View className="items-center">
+                                <Text className="text-emerald-100 text-xs mb-1">TDEE (Tiêu hao)</Text>
+                                <Text className="text-white font-bold text-lg">{Math.round(metrics.tdee)}</Text>
+                            </View>
+                            <View className="w-[1px] h-8 bg-emerald-400/50" />
+                            <View className="items-center">
+                                <Text className="text-emerald-100 text-xs mb-1">BMR (Nghỉ)</Text>
+                                <Text className="text-white font-bold text-lg">{Math.round(metrics.bmr)}</Text>
+                            </View>
+                        </View>
+                    </View>
+                </SafeAreaView>
+                {/* Họa tiết nền */}
+                <View className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-20 -mt-20 blur-2xl" />
+            </View>
+
+            {/* === BODY CONTENT === */}
+            <ScrollView className="flex-1 px-5 -mt-8" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
+                
+                {/* 1. Thẻ BMI */}
+                <View className="bg-white rounded-3xl p-5 mb-4 shadow-sm flex-row items-center justify-between">
+                    <View>
+                        <Text className="text-gray-400 text-xs font-bold uppercase mb-1">Chỉ số BMI</Text>
+                        <View className="flex-row items-center">
+                            <Text className={`text-3xl font-bold ${bmiInfo.color} mr-3`}>{metrics.bmi}</Text>
+                            <View className={`px-3 py-1 rounded-full ${bmiInfo.bg}`}>
+                                <Text className={`text-xs font-bold ${bmiInfo.color}`}>{bmiInfo.label}</Text>
+                            </View>
+                        </View>
+                    </View>
+                    <View className="w-12 h-12 bg-gray-50 rounded-full items-center justify-center">
+                        <Ionicons name="body" size={24} color="#9ca3af" />
+                    </View>
                 </View>
 
-                {/* Header Content */}
-                <View className="items-center mt-2">
-                     <View className="bg-white/20 px-6 py-2 rounded-full border border-white/30 backdrop-blur-md mb-4">
-                        <Text className="text-white font-bold text-lg">✨ Hoàn tất cá nhân hóa</Text>
+                {/* 2. Biểu đồ Macro Tròn (Donut Chart) */}
+                <View className="bg-white rounded-3xl p-6 mb-4 shadow-sm">
+                    <Text className="text-gray-800 font-bold text-lg mb-4 text-center">Phân bổ dinh dưỡng</Text>
+                    
+                    {/* Vòng tròn biểu đồ */}
+                    <View className="items-center mb-6">
+                        <MacroDonut protein={pPercent} carb={cPercent} fat={fPercent} size={160} strokeWidth={18} />
                     </View>
-                    <Text className="text-4xl font-bold text-white text-center mb-2">{metrics.daily_calories}</Text>
-                    <Text className="text-white/90 text-center text-base">
-                        Calories mỗi ngày
+
+                    {/* Chú thích chi tiết */}
+                    <View className="flex-row justify-between gap-2">
+                        {/* Protein */}
+                        <View className="flex-1 items-center">
+                            <Text className="text-orange-500 font-bold text-lg">{Math.round(metrics.daily_protein)}g</Text>
+                            <View className="flex-row items-center gap-1">
+                                <View className="w-2 h-2 rounded-full bg-orange-500" />
+                                <Text className="text-gray-500 text-xs">Đạm</Text>
+                            </View>
+                        </View>
+
+                        {/* Carb */}
+                        <View className="flex-1 items-center border-l border-r border-gray-100">
+                            <Text className="text-blue-500 font-bold text-lg">{Math.round(metrics.daily_carb)}g</Text>
+                            <View className="flex-row items-center gap-1">
+                                <View className="w-2 h-2 rounded-full bg-blue-500" />
+                                <Text className="text-gray-500 text-xs">Carb</Text>
+                            </View>
+                        </View>
+
+                        {/* Fat */}
+                        <View className="flex-1 items-center">
+                            <Text className="text-yellow-500 font-bold text-lg">{Math.round(metrics.daily_fat)}g</Text>
+                            <View className="flex-row items-center gap-1">
+                                <View className="w-2 h-2 rounded-full bg-yellow-500" />
+                                <Text className="text-gray-500 text-xs">Béo</Text>
+                            </View>
+                        </View>
+                    </View>
+                </View>
+
+                {/* 3. Lời khuyên */}
+                <View className="bg-blue-50 rounded-2xl p-4 border border-blue-100 flex-row gap-3">
+                    <Ionicons name="bulb" size={24} color="#3b82f6" />
+                    <Text className="text-blue-800 text-sm flex-1 leading-5">
+                        Dựa trên mục tiêu <Text className="font-bold">{data.goalType === 'lose_weight' ? 'Giảm cân' : data.goalType === 'gain_weight' ? 'Tăng cân' : 'Giữ cân'}</Text>, 
+                        chúng tôi đề xuất mức năng lượng {Math.round(metrics.daily_calories)} kcal/ngày.
                     </Text>
                 </View>
-            </SafeAreaView>
-            
-             {/* Decorative circles */}
-             <View className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-10 -mt-10" />
-            <View className="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full -ml-10 -mb-10" />
-        </View>
+            </ScrollView>
 
-        <ScrollView className="flex-1 px-6 -mt-8 pt-10" showsVerticalScrollIndicator={false}>
-            {/* BMI Card */}
-            <View className="bg-white rounded-3xl p-6 mb-6 shadow-sm border border-gray-100 items-center relative z-20">
-                <Text className="text-gray-500 font-medium mb-2">Chỉ số BMI của bạn</Text>
-                {(() => {
-                    let bmiColor = 'text-red-500';
-                    let bmiBg = 'bg-red-100';
-                    let bmiTx = 'text-red-700';
-                    let bmiLabel = 'Béo phì';
-
-                    if (metrics.bmi < 18.5) {
-                        bmiColor = 'text-blue-500';
-                        bmiBg = 'bg-blue-100';
-                        bmiTx = 'text-blue-700';
-                        bmiLabel = 'Thiếu cân';
-                    } else if (metrics.bmi < 24.9) {
-                        bmiColor = 'text-emerald-500';
-                        bmiBg = 'bg-emerald-100';
-                        bmiTx = 'text-emerald-700';
-                        bmiLabel = 'Bình thường';
-                    } else if (metrics.bmi < 29.9) {
-                        bmiColor = 'text-orange-500';
-                        bmiBg = 'bg-orange-100';
-                        bmiTx = 'text-orange-700';
-                        bmiLabel = 'Thừa cân';
-                    }
-
-                    return (
+            {/* === FOOTER BUTTON === */}
+            <View className="absolute bottom-0 left-0 right-0 p-6 bg-white border-t border-gray-50">
+                <Pressable 
+                    className={`w-full p-4 rounded-full flex-row items-center justify-center shadow-lg active:scale-[0.98] transition-all ${
+                        loading ? 'bg-gray-300' : 'bg-orange-500 shadow-orange-500/30'
+                    }`}
+                    onPress={handleFinish}
+                    disabled={loading}
+                >
+                    {loading ? (
+                        <ActivityIndicator color="white" />
+                    ) : (
                         <>
-                            <Text className={`text-4xl font-bold mb-2 ${bmiColor}`}>
-                                {metrics.bmi}
-                            </Text>
-                            <View className={`px-3 py-1 rounded-full ${bmiBg}`}>
-                                <Text className={`font-bold text-sm ${bmiTx}`}>
-                                    {bmiLabel}
-                                </Text>
-                            </View>
+                            <Text className="text-white text-xl font-bold mr-2">Bắt đầu ngay</Text>
+                            <Ionicons name="arrow-forward" size={24} color="white" />
                         </>
-                    );
-                })()}
+                    )}
+                </Pressable>
             </View>
-
-            {/* Macros Distribution */}
-            <View className="bg-gray-50 rounded-3xl p-6 mb-6">
-                <Text className="text-gray-800 font-bold text-lg mb-4">Phân bổ dinh dưỡng</Text>
-                
-                <View className="flex-row gap-3 h-3 mb-4 rounded-full overflow-hidden">
-                    <View className="bg-red-500 h-full" style={{ flex: metrics.daily_protein }} />
-                    <View className="bg-yellow-500 h-full" style={{ flex: metrics.daily_carb }} />
-                    <View className="bg-blue-500 h-full" style={{ flex: metrics.daily_fat }} />
-                </View>
-
-                <View className="gap-4">
-                    <View className="flex-row justify-between items-center p-3 bg-white rounded-xl border border-gray-100">
-                        <View className="flex-row items-center gap-2">
-                             <View className="w-3 h-3 bg-red-500 rounded-full" />
-                             <Text className="font-semibold text-gray-700">Protein</Text>
-                        </View>
-                        <Text className="font-bold text-gray-900">{metrics.daily_protein}g</Text>
-                    </View>
-                     <View className="flex-row justify-between items-center p-3 bg-white rounded-xl border border-gray-100">
-                        <View className="flex-row items-center gap-2">
-                             <View className="w-3 h-3 bg-yellow-500 rounded-full" />
-                             <Text className="font-semibold text-gray-700">Carbs</Text>
-                        </View>
-                        <Text className="font-bold text-gray-900">{metrics.daily_carb}g</Text>
-                    </View>
-                     <View className="flex-row justify-between items-center p-3 bg-white rounded-xl border border-gray-100">
-                        <View className="flex-row items-center gap-2">
-                             <View className="w-3 h-3 bg-blue-500 rounded-full" />
-                             <Text className="font-semibold text-gray-700">Fat</Text>
-                        </View>
-                        <Text className="font-bold text-gray-900">{metrics.daily_fat}g</Text>
-                    </View>
-                </View>
-            </View>
-
-            <View className="h-24" />
-        </ScrollView>
-
-        {/* Footer Button - Sticky */}
-        <View className="absolute bottom-0 left-0 right-0 p-6 bg-white border-t border-gray-50">
-            <TouchableOpacity 
-                className="bg-orange-500 w-full p-5 rounded-full flex-row items-center justify-center shadow-lg shadow-orange-500/30"
-                onPress={handleFinish}
-                disabled={loading}
-            >
-                {loading ? (
-                    <ActivityIndicator color="white" />
-                ) : (
-                    <>
-                        <Text className="text-white text-xl font-bold mr-2">Bắt đầu ngay</Text>
-                        <Ionicons name="rocket-outline" size={24} color="white" />
-                    </>
-                )}
-            </TouchableOpacity>
         </View>
-    </View>
-  );
+    );
 }

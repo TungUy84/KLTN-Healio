@@ -1,8 +1,19 @@
 import { Stack } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-// 👇 1. IMPORT CÁI NÀY (Đảm bảo đường dẫn đúng tới file Context của bạn)
 import { OnboardingProvider } from '../context/OnboardingContext'; 
 import '../global.css';
+
+// TẮT CẢNH BÁO VÀNG
+import {
+  configureReanimatedLogger,
+  ReanimatedLogLevel,
+} from 'react-native-reanimated';
+
+// Cấu hình tắt strict mode
+configureReanimatedLogger({
+  level: ReanimatedLogLevel.warn,
+  strict: false, // Tắt cảnh báo strict
+});
 
 export default function RootLayout() {
   return (
