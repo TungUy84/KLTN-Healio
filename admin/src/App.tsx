@@ -6,6 +6,8 @@ import RawFoodList from './pages/raw-food/RawFoodList';
 import RawFoodForm from './pages/raw-food/RawFoodForm';
 import RawFoodImport from './pages/raw-food/RawFoodImport';
 import RawFoodDetail from './pages/raw-food/RawFoodDetail';
+import MealList from './pages/meal/MealList';
+import MealForm from './pages/meal/MealForm';
 import AdminLayout from './layouts/AdminLayout';
 import { authService } from './services/authService';
 import './App.css';
@@ -85,8 +87,40 @@ function App() {
             } 
         />
         
+        {/* Meal Routes */}
+        <Route 
+            path="/meals" 
+            element={
+                <PrivateRoute>
+                    <AdminLayout>
+                        <MealList />
+                    </AdminLayout>
+                </PrivateRoute>
+            } 
+        />
+        <Route 
+            path="/meals/new" 
+            element={
+                <PrivateRoute>
+                    <AdminLayout>
+                        <MealForm />
+                    </AdminLayout>
+                </PrivateRoute>
+            } 
+        />
+        <Route 
+            path="/meals/edit/:id" 
+            element={
+                <PrivateRoute>
+                    <AdminLayout>
+                        <MealForm />
+                    </AdminLayout>
+                </PrivateRoute>
+            } 
+        />
+        
         {/* Placeholder Routes for Sidebar Links */}
-        <Route path="/foods" element={<PrivateRoute><AdminLayout><h1>Quản lý Món ăn (Coming Soon)</h1></AdminLayout></PrivateRoute>} />
+        <Route path="/foods" element={<PrivateRoute><AdminLayout><Navigate to="/meals" replace /></AdminLayout></PrivateRoute>} />
         <Route path="/users" element={<PrivateRoute><AdminLayout><h1>Quản lý Account (Coming Soon)</h1></AdminLayout></PrivateRoute>} />
         <Route path="/statistics" element={<PrivateRoute><AdminLayout><h1>Thống kê Apps (Coming Soon)</h1></AdminLayout></PrivateRoute>} />
 

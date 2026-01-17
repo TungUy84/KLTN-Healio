@@ -11,16 +11,47 @@ const EnergyRing = ({ consumed, target }: { consumed: number, target: number }) 
   const radius = 70;
   const stroke = 12;
   const circum = 2 * Math.PI * radius;
+  const percentValue = (consumed / target) * 100; // % Calo đã nạp
   const percent = Math.min(consumed / target, 1);
   const strokeDashoffset = circum - (percent * circum);
   const remaining = target - consumed;
 
-  // Đổi màu khi vượt quá
-  const progressColor = remaining < 0 ? '#E53935' : Colors.primary;
+  // AC3: Màu sắc thanh tiến độ thay đổi theo trạng thái
+  // Xanh (<80%), Vàng (80-100%), Đỏ (>100%)
+  let progressColor: string;
+  if (percentValue < 80) {
+    progressColor = Colors.primary; // Xanh (An toàn)
+  } else if (percentValue <= 100) {
+    progressColor = Colors.warning; // Vàng (Sắp đạt ngưỡng)
+  } else {
+    progressColor = Colors.error; // Đỏ (Vượt quá mục tiêu)
+  }
 
   return (
     <View style={styles.ringCard}>
-      <Text style={styles.cardHeader}>Năng lượng còn lại</Text>
+      <Text style={styles.cardHeader}>Tổng quan Năng lượng</Text>
+      
+      {/* AC2: Thanh tiến độ (Progress Bar) thể hiện % lượng Calo đã nạp */}
+      <View style={styles.progressBarContainer}>
+        <View style={styles.progressBarLabelRow}>
+          <Text style={styles.progressBarLabel}>Tiến độ hôm nay</Text>
+          <Text style={[styles.progressBarPercent, { color: progressColor }]}>
+            {percentValue.toFixed(0)}%
+          </Text>
+        </View>
+        <View style={styles.progressBarBg}>
+          <View 
+            style={[
+              styles.progressBarFill, 
+              { 
+                width: `${Math.min(percentValue, 100)}%`, 
+                backgroundColor: progressColor 
+              }
+            ]} 
+          />
+        </View>
+      </View>
+
       <View style={styles.chartArea}>
         <Svg width={160} height={160} viewBox="0 0 160 160">
           <G rotation="-90" origin="80, 80">
@@ -35,19 +66,29 @@ const EnergyRing = ({ consumed, target }: { consumed: number, target: number }) 
         <View style={styles.centerText}>
           <Text style={[styles.bigNum, { color: progressColor }]}>{Math.abs(remaining)}</Text>
           <Text style={styles.unit}>KCAL</Text>
-          {remaining < 0 && <Text style={{fontSize: 10, color: 'red'}}>Vượt mức</Text>}
+          {remaining < 0 && <Text style={{fontSize: 10, color: Colors.error}}>Vượt mức</Text>}
         </View>
       </View>
       
-      <View style={styles.statsRow}>
-        <View style={styles.stat}>
-          <Text style={styles.statLabel}>Đã nạp</Text>
-          <Text style={styles.statVal}>{consumed}</Text>
+      {/* AC1: Hiển thị công thức tổng quát: Mục tiêu - Đã ăn = Còn lại */}
+      <View style={styles.formulaContainer}>
+        <View style={styles.formulaRow}>
+          <Text style={styles.formulaLabel}>Mục tiêu:</Text>
+          <Text style={styles.formulaValue}>{target} kcal</Text>
         </View>
-        <View style={styles.divider} />
-        <View style={styles.stat}>
-          <Text style={styles.statLabel}>Mục tiêu</Text>
-          <Text style={styles.statVal}>{target}</Text>
+        <View style={styles.formulaRow}>
+          <Text style={styles.formulaLabel}>Đã ăn:</Text>
+          <Text style={styles.formulaValue}>{consumed} kcal</Text>
+        </View>
+        <View style={styles.formulaDivider} />
+        <View style={styles.formulaRow}>
+          <Text style={[styles.formulaLabel, { color: progressColor, fontWeight: 'bold' }]}>Còn lại:</Text>
+          <Text style={[styles.formulaValue, { color: progressColor, fontWeight: 'bold' }]}>{Math.abs(remaining)} kcal</Text>
+        </View>
+        <View style={styles.formulaEquation}>
+          <Text style={styles.formulaEquationText}>
+            {target} - {consumed} = {Math.abs(remaining)} kcal
+          </Text>
         </View>
       </View>
     </View>
@@ -203,11 +244,29 @@ const styles = StyleSheet.create({
   bellBtn: { width: 40, height: 40, backgroundColor: '#fff', borderRadius: 20, justifyContent: 'center', alignItems: 'center', elevation: 2 },
   
   ringCard: { backgroundColor: '#fff', marginHorizontal: 20, borderRadius: 24, padding: 20, alignItems: 'center', elevation: 2, marginBottom: 20 },
-  cardHeader: { fontSize: 16, color: Colors.gray, fontWeight: '500' },
+  cardHeader: { fontSize: 16, color: Colors.gray, fontWeight: '600', marginBottom: 16 },
+  
+  // Progress Bar styles
+  progressBarContainer: { width: '100%', marginBottom: 20 },
+  progressBarLabelRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
+  progressBarLabel: { fontSize: 14, fontWeight: '600', color: Colors.text },
+  progressBarPercent: { fontSize: 14, fontWeight: 'bold' },
+  progressBarBg: { height: 12, backgroundColor: '#F5F5F5', borderRadius: 6, overflow: 'hidden' },
+  progressBarFill: { height: '100%', borderRadius: 6 },
+  
   chartArea: { marginVertical: 20, alignItems: 'center', justifyContent: 'center' },
   centerText: { position: 'absolute', alignItems: 'center' },
   bigNum: { fontSize: 36, fontWeight: 'bold', color: Colors.primary },
   unit: { fontSize: 12, fontWeight: 'bold', color: Colors.gray },
+  
+  // Formula styles (AC1: Mục tiêu - Đã ăn = Còn lại)
+  formulaContainer: { width: '100%', marginTop: 16, paddingTop: 16, borderTopWidth: 1, borderTopColor: '#F5F5F5' },
+  formulaRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginVertical: 4 },
+  formulaLabel: { fontSize: 14, color: Colors.gray, fontWeight: '500' },
+  formulaValue: { fontSize: 16, fontWeight: '600', color: Colors.text },
+  formulaDivider: { height: 1, backgroundColor: '#F5F5F5', marginVertical: 8 },
+  formulaEquation: { marginTop: 8, padding: 12, backgroundColor: '#F8F9FA', borderRadius: 8 },
+  formulaEquationText: { fontSize: 15, fontWeight: '600', color: Colors.text, textAlign: 'center' },
   
   statsRow: { flexDirection: 'row', width: '100%', justifyContent: 'space-around' },
   stat: { alignItems: 'center' },
