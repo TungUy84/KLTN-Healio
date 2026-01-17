@@ -103,7 +103,7 @@ export default function SignUpScreen() {
                         style={{
                             width: current.width,
                             backgroundColor: current.color
-                        }}
+                        } as any}
                     />
                 </View>
 

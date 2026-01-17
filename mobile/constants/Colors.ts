@@ -12,6 +12,7 @@ export const Colors = {
   text: '#1C1C1E',         // Almost black
   textSecondary: '#666666',// Gray text
   textPlaceholder: '#BDBDBD',
+  gray: '#9CA3AF',
   
   border: '#E8E8E8',       // Light border
   inputBg: '#FAFAFA',      // Very light gray for inputs if needed
