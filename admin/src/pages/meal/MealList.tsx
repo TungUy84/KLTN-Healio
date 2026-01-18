@@ -7,7 +7,7 @@ const MealList: React.FC = () => {
     const [meals, setMeals] = useState<Meal[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
-    const [sort, setSort] = useState('createdAt');
+    const [sort, setSort] = useState('created_at');
     const [order, setOrder] = useState<'ASC' | 'DESC'>('DESC');
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
@@ -61,7 +61,7 @@ const MealList: React.FC = () => {
     };
 
     const handleDelete = async (id: number) => {
-        if (window.confirm('Bạn có chắc chắn muốn xóa món ăn này không?')) {
+        if (window.confirm('Bạn có chắc muốn xóa món này? Hành động này sẽ ẩn món ăn khỏi ứng dụng.')) {
             try {
                 await mealService.delete(id);
                 fetchMeals();
@@ -142,9 +142,9 @@ const MealList: React.FC = () => {
                         }}
                         className="px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-indigo-500 outline-none bg-white cursor-pointer"
                     >
-                        <option value="createdAt">Ngày tạo</option>
+                        <option value="created_at">Ngày tạo</option>
                         <option value="name">Tên</option>
-                        <option value="total_calories">Tổng Calo</option>
+                        <option value="calories">Tổng Calo</option>
                     </select>
                     <button 
                         onClick={() => setOrder(order === 'ASC' ? 'DESC' : 'ASC')}
@@ -263,7 +263,7 @@ const MealList: React.FC = () => {
                             <th className="bg-gray-50 px-4 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-200">Hình ảnh</th>
                             <th className="bg-gray-50 px-4 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-200 cursor-pointer select-none hover:bg-gray-100 transition-colors" onClick={() => handleSortChange('name')}>Tên món {sort === 'name' && (order === 'ASC' ? '↑' : '↓')}</th>
                             <th className="bg-gray-50 px-4 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-200">Nhóm bữa ăn</th>
-                            <th className="bg-gray-50 px-4 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-200 cursor-pointer select-none hover:bg-gray-100 transition-colors" onClick={() => handleSortChange('total_calories')}>Tổng Calo {sort === 'total_calories' && (order === 'ASC' ? '↑' : '↓')}</th>
+                            <th className="bg-gray-50 px-4 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-200 cursor-pointer select-none hover:bg-gray-100 transition-colors" onClick={() => handleSortChange('calories')}>Tổng Calo {sort === 'total_calories' && (order === 'ASC' ? '↑' : '↓')}</th>
                             <th className="bg-gray-50 px-4 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-200">Tag Chế độ</th>
                             <th className="bg-gray-50 px-4 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-200">Trạng thái</th>
                             <th className="bg-gray-50 px-4 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-200">Hành động</th>
@@ -305,7 +305,7 @@ const MealList: React.FC = () => {
                                         )}
                                     </td>
                                     <td className="px-4 py-4 text-sm text-gray-700 align-middle font-semibold">
-                                        {meal.total_calories ? `${Math.round(meal.total_calories)} kcal` : '0 kcal'}
+                                        {meal.calories ? `${Math.round(meal.calories)} kcal` : '0 kcal'}
                                     </td>
                                     <td className="px-4 py-4 text-sm text-gray-700 align-middle">
                                         {meal.diet_tags && meal.diet_tags.length > 0 ? (

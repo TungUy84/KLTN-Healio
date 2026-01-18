@@ -9,7 +9,9 @@ const rawFoodRoutes = require('./src/routes/rawFoods');
 const mealRoutes = require('./src/routes/meals');
 
 // Require models để đảm bảo chúng được sync
+require('./src/models/RawFood');
 require('./src/models/Meal');
+require('./src/models/FoodIngredient'); // Junction table for Meal <-> RawFood relationship
 
 const app = express();
 

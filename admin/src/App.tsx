@@ -8,6 +8,7 @@ import RawFoodImport from './pages/raw-food/RawFoodImport';
 import RawFoodDetail from './pages/raw-food/RawFoodDetail';
 import MealList from './pages/meal/MealList';
 import MealForm from './pages/meal/MealForm';
+import MealDetail from './pages/meal/MealDetail';
 import AdminLayout from './layouts/AdminLayout';
 import { authService } from './services/authService';
 import './App.css';
@@ -114,6 +115,16 @@ function App() {
                 <PrivateRoute>
                     <AdminLayout>
                         <MealForm />
+                    </AdminLayout>
+                </PrivateRoute>
+            } 
+        />
+        <Route 
+            path="/meals/:id" 
+            element={
+                <PrivateRoute>
+                    <AdminLayout>
+                        <MealDetail />
                     </AdminLayout>
                 </PrivateRoute>
             } 

@@ -1,16 +1,31 @@
 import api from './api';
+import { type RawFood } from './rawFoodService';
 
 export interface Meal {
     id: number;
     name: string;
     image: string | null;
-    description: string;
+    description?: string; // Optional, may come from cooking field
+    cooking?: string; // Database field name
     meal_categories: string[]; // ['breakfast', 'lunch', 'dinner', 'snack']
-    total_calories: number;
+    total_calories?: number; // Keep for backward compatibility
+    calories?: number; // Database field name
+    protein?: number;
+    carb?: number;
+    fat?: number;
+    micronutrients?: Record<string, number>; // JSONB object for micronutrients
     status: 'active' | 'inactive';
     diet_tags: string[]; // ['keto', 'low_carb', 'high_protein', etc.]
     createdAt: string;
     updatedAt: string;
+    // PB_52: Ingredients (only included when fetching by ID)
+    ingredients?: Array<RawFood & {
+        FoodIngredient?: {
+            amount_in_grams: number;
+            original_unit_name?: string | null;
+            original_amount?: number | null;
+        };
+    }>;
 }
 
 export interface MealListResponse {
@@ -28,7 +43,7 @@ export const mealService = {
         page = 1, 
         limit = 10, 
         search = '', 
-        sort = 'createdAt', 
+        sort = 'created_at', 
         order = 'DESC',
         filters?: {
             meal_category?: string;

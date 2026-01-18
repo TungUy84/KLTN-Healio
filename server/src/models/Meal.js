@@ -11,27 +11,54 @@ const Meal = sequelize.define('Meal', {
         type: DataTypes.STRING,
         allowNull: false
     },
+    cooking: {
+        type: DataTypes.TEXT,
+        defaultValue: '',
+        field: 'cooking'
+    },
     image: {
         type: DataTypes.STRING,
         allowNull: true
     },
-    description: {
-        type: DataTypes.TEXT,
-        defaultValue: ''
+    created_by_user_id: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        field: 'created_by_user_id'
     },
+    calories: {
+        type: DataTypes.DECIMAL(10, 2),
+        defaultValue: 0,
+        field: 'calories'
+    },
+    protein: {
+        type: DataTypes.DECIMAL(10, 2),
+        defaultValue: 0,
+        field: 'protein'
+    },
+    carb: {
+        type: DataTypes.DECIMAL(10, 2),
+        defaultValue: 0,
+        field: 'carb'
+    },
+    fat: {
+        type: DataTypes.DECIMAL(10, 2),
+        defaultValue: 0,
+        field: 'fat'
+    },
+    micronutrients: {
+        type: DataTypes.JSONB,
+        defaultValue: {},
+        field: 'micronutrients'
+    },
+    // Additional fields for app logic (may not be in DB schema but needed)
     // AC2: Meal Categories - Array of strings: ['breakfast', 'lunch', 'dinner', 'snack']
     meal_categories: {
         type: DataTypes.ARRAY(DataTypes.STRING), // PostgreSQL ARRAY
         defaultValue: []
     },
-    // Total calories (calculated from ingredients)
-    total_calories: {
-        type: DataTypes.FLOAT,
-        defaultValue: 0
-    },
-    // Status: active or inactive
+    // Status: active, inactive, or deleted (soft delete)
     status: {
-        type: DataTypes.ENUM('active', 'inactive'),
+        type: DataTypes.ENUM('active', 'inactive', 'deleted'),
         defaultValue: 'active'
     },
     // Diet tags: Auto tag based on macro ratios (e.g., 'keto', 'low_carb', 'high_protein')
@@ -41,7 +68,9 @@ const Meal = sequelize.define('Meal', {
     }
 }, {
     timestamps: true,
-    tableName: 'meals'
+    createdAt: 'created_at',
+    updatedAt: 'updated_at',
+    tableName: 'food'
 });
 
 module.exports = Meal;
