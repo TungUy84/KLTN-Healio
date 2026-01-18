@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { mealService, type Meal } from '../../services/mealService';
+import { foodService, type Food } from '../../services/foodService';
 import { FaPlus, FaSearch, FaEdit, FaTrash, FaEye, FaFilter } from 'react-icons/fa';
 
-const MealList: React.FC = () => {
-    const [meals, setMeals] = useState<Meal[]>([]);
+const FoodList: React.FC = () => {
+    const [foods, setFoods] = useState<Food[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
     const [sort, setSort] = useState('created_at');
@@ -21,7 +21,7 @@ const MealList: React.FC = () => {
     const [statusFilter, setStatusFilter] = useState<string>('');
     const [showFilters, setShowFilters] = useState(false);
 
-    const fetchMeals = async () => {
+    const fetchFoods = async () => {
         try {
             setLoading(true);
             const filters = {
@@ -31,18 +31,18 @@ const MealList: React.FC = () => {
                 calorie_max: calorieMax ? parseFloat(calorieMax) : undefined,
                 status: statusFilter || undefined
             };
-            const response = await mealService.getAll(page, LIMIT, search, sort, order, filters);
-            setMeals(response.data);
+            const response = await foodService.getAll(page, LIMIT, search, sort, order, filters);
+            setFoods(response.data);
             setTotalPages(response.pagination.totalPages);
         } catch (error) {
-            console.error('Error fetching meals', error);
+            console.error('Error fetching foods', error);
         } finally {
             setLoading(false);
         }
     };
 
     useEffect(() => {
-        fetchMeals();
+        fetchFoods();
     }, [page, search, sort, order, mealCategoryFilter, dietTagFilter, calorieMin, calorieMax, statusFilter]);
 
     const handleSortChange = (newSort: string) => {
@@ -57,16 +57,16 @@ const MealList: React.FC = () => {
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
         setPage(1);
-        fetchMeals();
+        fetchFoods();
     };
 
     const handleDelete = async (id: number) => {
         if (window.confirm('Bạn có chắc muốn xóa món này? Hành động này sẽ ẩn món ăn khỏi ứng dụng.')) {
             try {
-                await mealService.delete(id);
-                fetchMeals();
+                await foodService.delete(id);
+                fetchFoods();
             } catch (error) {
-                console.error('Error deleting meal', error);
+                console.error('Error deleting food', error);
                 alert('Không thể xóa món ăn.');
             }
         }
@@ -106,7 +106,7 @@ const MealList: React.FC = () => {
         <div className="w-full">
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-2xl font-bold text-gray-900">Quản lý Món ăn</h1>
-                <Link to="/meals/new" className="flex items-center bg-indigo-600 text-white px-4 py-2.5 rounded-lg hover:bg-indigo-700 transition-colors font-medium text-sm">
+                <Link to="/foods/new" className="flex items-center bg-indigo-600 text-white px-4 py-2.5 rounded-lg hover:bg-indigo-700 transition-colors font-medium text-sm">
                     <FaPlus className="mr-2" /> Thêm mới
                 </Link>
             </div>
@@ -274,27 +274,27 @@ const MealList: React.FC = () => {
                             <tr>
                                 <td colSpan={7} className="text-center p-5">Đang tải...</td>
                             </tr>
-                        ) : meals.length === 0 ? (
+                        ) : foods.length === 0 ? (
                             <tr>
                                 <td colSpan={7} className="text-center p-5">Không có dữ liệu.</td>
                             </tr>
                         ) : (
-                            meals.map((meal) => (
-                                <tr key={meal.id} className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
+                            foods.map((food) => (
+                                <tr key={food.id} className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
                                     <td className="px-4 py-4 text-sm text-gray-700 align-middle">
                                         <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center text-[10px] text-gray-400 overflow-hidden border border-gray-200">
-                                            {meal.image ? (
-                                                <img src={`http://localhost:3000${meal.image}`} alt={meal.name} className="w-full h-full object-cover" />
+                                            {food.image ? (
+                                                <img src={`http://localhost:3000${food.image}`} alt={food.name} className="w-full h-full object-cover" />
                                             ) : (
                                                 'No Image'
                                             )}
                                         </div>
                                     </td>
-                                    <td className="px-4 py-4 text-sm text-gray-700 align-middle font-medium">{meal.name}</td>
+                                    <td className="px-4 py-4 text-sm text-gray-700 align-middle font-medium">{food.name}</td>
                                     <td className="px-4 py-4 text-sm text-gray-700 align-middle">
-                                        {meal.meal_categories && meal.meal_categories.length > 0 ? (
+                                        {food.meal_categories && food.meal_categories.length > 0 ? (
                                             <div className="flex flex-wrap gap-1">
-                                                {meal.meal_categories.map((cat, idx) => (
+                                                {food.meal_categories.map((cat, idx) => (
                                                     <span key={idx} className="px-2 py-1 bg-indigo-100 text-indigo-700 rounded text-xs font-medium">
                                                         {getCategoryLabel(cat)}
                                                     </span>
@@ -305,12 +305,12 @@ const MealList: React.FC = () => {
                                         )}
                                     </td>
                                     <td className="px-4 py-4 text-sm text-gray-700 align-middle font-semibold">
-                                        {meal.calories ? `${Math.round(meal.calories)} kcal` : '0 kcal'}
+                                        {food.calories ? `${Math.round(food.calories)} kcal` : '0 kcal'}
                                     </td>
                                     <td className="px-4 py-4 text-sm text-gray-700 align-middle">
-                                        {meal.diet_tags && meal.diet_tags.length > 0 ? (
+                                        {food.diet_tags && food.diet_tags.length > 0 ? (
                                             <div className="flex flex-wrap gap-1">
-                                                {meal.diet_tags.map((tag, idx) => (
+                                                {food.diet_tags.map((tag, idx) => (
                                                     <span key={idx} className="px-2 py-1 bg-emerald-100 text-emerald-700 rounded text-xs font-medium">
                                                         {getDietTagLabel(tag)}
                                                     </span>
@@ -322,22 +322,22 @@ const MealList: React.FC = () => {
                                     </td>
                                     <td className="px-4 py-4 text-sm text-gray-700 align-middle">
                                         <span className={`px-2 py-1 rounded text-xs font-medium ${
-                                            meal.status === 'active' 
+                                            food.status === 'active' 
                                                 ? 'bg-green-100 text-green-700' 
                                                 : 'bg-red-100 text-red-700'
                                         }`}>
-                                            {meal.status === 'active' ? 'Active' : 'Inactive'}
+                                            {food.status === 'active' ? 'Active' : 'Inactive'}
                                         </span>
                                     </td>
                                     <td className="px-4 py-4 text-sm text-gray-700 align-middle">
                                         <div className="flex gap-2">
-                                            <Link to={`/meals/${meal.id}`} className="p-1.5 rounded-md text-gray-500 hover:bg-gray-100 hover:text-indigo-600 transition-colors flex items-center justify-center" title="Xem chi tiết">
+                                            <Link to={`/foods/${food.id}`} className="p-1.5 rounded-md text-gray-500 hover:bg-gray-100 hover:text-indigo-600 transition-colors flex items-center justify-center" title="Xem chi tiết">
                                                 <FaEye />
                                             </Link>
-                                            <Link to={`/meals/edit/${meal.id}`} className="p-1.5 rounded-md text-gray-500 hover:bg-gray-100 hover:text-indigo-600 transition-colors flex items-center justify-center" title="Sửa">
+                                            <Link to={`/foods/edit/${food.id}`} className="p-1.5 rounded-md text-gray-500 hover:bg-gray-100 hover:text-indigo-600 transition-colors flex items-center justify-center" title="Sửa">
                                                 <FaEdit />
                                             </Link>
-                                            <button onClick={() => handleDelete(meal.id)} className="p-1.5 rounded-md text-red-500 hover:bg-red-50 hover:text-red-700 transition-colors flex items-center justify-center border-none bg-transparent cursor-pointer" title="Xóa">
+                                            <button onClick={() => handleDelete(food.id)} className="p-1.5 rounded-md text-red-500 hover:bg-red-50 hover:text-red-700 transition-colors flex items-center justify-center border-none bg-transparent cursor-pointer" title="Xóa">
                                                 <FaTrash />
                                             </button>
                                         </div>
@@ -371,4 +371,4 @@ const MealList: React.FC = () => {
     );
 };
 
-export default MealList;
+export default FoodList;

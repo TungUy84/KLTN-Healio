@@ -1,11 +1,11 @@
-const Meal = require('../models/Meal');
+const Food = require('../models/Food');
 const RawFood = require('../models/RawFood');
 const FoodIngredient = require('../models/FoodIngredient');
 const sequelize = require('../config/database');
 const { Op } = require('sequelize');
 
-// PB_51: Get List Meals with Pagination, Search and Filters
-exports.getMeals = async (req, res) => {
+// PB_51: Get List Foods with Pagination, Search and Filters
+exports.getFoods = async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
@@ -14,11 +14,11 @@ exports.getMeals = async (req, res) => {
         const order = req.query.order || 'DESC';
         
         // AC2: Filters
-        const mealCategory = req.query.meal_category; // Filter by meal category
-        const dietTag = req.query.diet_tag; // Filter by diet tag
+        const mealCategory = req.query.meal_category; // Keep as meal_category for backward compatibility or rename if needed
+        const dietTag = req.query.diet_tag; 
         const calorieMin = req.query.calorie_min ? parseFloat(req.query.calorie_min) : null;
         const calorieMax = req.query.calorie_max ? parseFloat(req.query.calorie_max) : null;
-        const status = req.query.status; // Filter by status
+        const status = req.query.status; 
 
         const where = {};
         
@@ -27,17 +27,14 @@ exports.getMeals = async (req, res) => {
             where.name = { [Op.iLike]: `%${search}%` };
         }
         
-        // AC2: Filter by meal category
         if (mealCategory) {
             where.meal_categories = { [Op.contains]: [mealCategory] };
         }
         
-        // AC2: Filter by diet tag
         if (dietTag) {
             where.diet_tags = { [Op.contains]: [dietTag] };
         }
         
-        // AC2: Filter by calorie range
         if (calorieMin !== null || calorieMax !== null) {
             where.calories = {};
             if (calorieMin !== null) {
@@ -48,20 +45,17 @@ exports.getMeals = async (req, res) => {
             }
         }
         
-        // Filter by status (AC3: exclude deleted meals by default)
         if (status) {
             where.status = status;
         } else {
-            // By default, don't show deleted meals
             where.status = { [Op.ne]: 'deleted' };
         }
 
         const offset = (page - 1) * limit;
 
-        // Sử dụng alias "Meal" thay vì "food" vì Sequelize tạo alias này trong query
-        const orderClause = [[sequelize.col(`Meal.${sort}`), order]];
+        const orderClause = [[sequelize.col(`Food.${sort}`), order]];
 
-        const { count, rows } = await Meal.findAndCountAll({
+        const { count, rows } = await Food.findAndCountAll({
             where,
             order: orderClause,
             limit,
@@ -83,10 +77,10 @@ exports.getMeals = async (req, res) => {
     }
 };
 
-// Get Meal by ID - Updated to include ingredients (PB_52)
-exports.getMealById = async (req, res) => {
+// Get Food by ID
+exports.getFoodById = async (req, res) => {
     try {
-        const meal = await Meal.findByPk(req.params.id, {
+        const food = await Food.findByPk(req.params.id, {
             include: [{
                 model: RawFood,
                 as: 'ingredients',
@@ -95,22 +89,21 @@ exports.getMealById = async (req, res) => {
                 }
             }]
         });
-        if (!meal) {
-            return res.status(404).json({ message: 'Meal not found' });
+        if (!food) {
+            return res.status(404).json({ message: 'Food not found' });
         }
-        res.json(meal);
+        res.json(food);
     } catch (error) {
-        res.status(500).json({ message: 'Error fetching meal', error: error.message });
+        res.status(500).json({ message: 'Error fetching food', error: error.message });
     }
 };
 
-// PB_51 + PB_54: Create Meal with Ingredients (Transaction)
-exports.createMeal = async (req, res) => {
+// Create Food
+exports.createFood = async (req, res) => {
     const transaction = await sequelize.transaction();
     try {
         const { name, description, meal_categories, total_calories, total_protein, total_carb, total_fat, diet_tags, status, ingredients, micronutrients } = req.body;
         
-        // Parse meal_categories
         let parsedCategories = meal_categories;
         if (typeof meal_categories === 'string') {
             try {
@@ -120,7 +113,6 @@ exports.createMeal = async (req, res) => {
             }
         }
         
-        // Parse diet_tags
         let parsedDietTags = diet_tags || [];
         if (typeof diet_tags === 'string') {
             try {
@@ -130,7 +122,6 @@ exports.createMeal = async (req, res) => {
             }
         }
         
-        // Parse ingredients
         let parsedIngredients = [];
         if (ingredients && typeof ingredients === 'string') {
             try {
@@ -142,14 +133,12 @@ exports.createMeal = async (req, res) => {
             parsedIngredients = ingredients;
         }
 
-        // Validate meal_categories
         const validCategories = ['breakfast', 'lunch', 'dinner', 'snack'];
         if (!Array.isArray(parsedCategories)) {
             parsedCategories = [];
         }
         parsedCategories = parsedCategories.filter(cat => validCategories.includes(cat));
 
-        // Parse micronutrients
         let parsedMicronutrients = {};
         if (micronutrients) {
             if (typeof micronutrients === 'string') {
@@ -163,10 +152,9 @@ exports.createMeal = async (req, res) => {
             }
         }
 
-        // PB_54 AC2: Create meal in FOOD table
-        const newMeal = await Meal.create({
+        const newFood = await Food.create({
             name,
-            cooking: description || '', // Map description to cooking field
+            cooking: description || '',
             meal_categories: parsedCategories,
             calories: total_calories ? parseFloat(total_calories) : 0,
             protein: total_protein ? parseFloat(total_protein) : 0,
@@ -176,14 +164,13 @@ exports.createMeal = async (req, res) => {
             diet_tags: Array.isArray(parsedDietTags) ? parsedDietTags : [],
             micronutrients: parsedMicronutrients,
             image: req.file ? `/uploads/${req.file.filename}` : null,
-            created_by_user_id: req.user?.id || null // From auth middleware if available
+            created_by_user_id: req.user?.id || null 
         }, { transaction });
 
-        // PB_54 AC2: Save ingredients to food_ingredients table
         if (parsedIngredients.length > 0) {
             const ingredientsToCreate = parsedIngredients.map(ing => ({
-                dish_id: newMeal.id,
-                ingredient_id: ing.ingredient_id || ing.raw_food_id, // Support both old and new field names
+                food_id: newFood.id,
+                raw_food_id: ing.ingredient_id || ing.raw_food_id,
                 amount_in_grams: parseFloat(ing.amount_in_grams || ing.quantity_g || 0),
                 original_unit_name: ing.original_unit_name || null,
                 original_amount: ing.original_amount ? parseFloat(ing.original_amount) : null
@@ -193,8 +180,7 @@ exports.createMeal = async (req, res) => {
 
         await transaction.commit();
         
-        // Return meal with ingredients
-        const mealWithIngredients = await Meal.findByPk(newMeal.id, {
+        const foodWithIngredients = await Food.findByPk(newFood.id, {
             include: [{
                 model: RawFood,
                 as: 'ingredients',
@@ -204,15 +190,15 @@ exports.createMeal = async (req, res) => {
             }]
         });
         
-        res.status(201).json(mealWithIngredients);
+        res.status(201).json(foodWithIngredients);
     } catch (error) {
         await transaction.rollback();
-        res.status(500).json({ message: 'Error creating meal', error: error.message });
+        res.status(500).json({ message: 'Error creating food', error: error.message });
     }
 };
 
-// PB_51 + PB_54: Update Meal with Ingredients (Transaction)
-exports.updateMeal = async (req, res) => {
+// Update Food
+exports.updateFood = async (req, res) => {
     const transaction = await sequelize.transaction();
     try {
         const { id } = req.params;
@@ -220,14 +206,13 @@ exports.updateMeal = async (req, res) => {
         
         const updateData = {};
         if (name) updateData.name = name;
-        if (description !== undefined) updateData.cooking = description; // Map description to cooking
+        if (description !== undefined) updateData.cooking = description;
         if (status) updateData.status = status;
         
         if (req.file) {
             updateData.image = `/uploads/${req.file.filename}`;
         }
 
-        // Parse meal_categories
         if (meal_categories) {
             let parsedCategories = meal_categories;
             if (typeof meal_categories === 'string') {
@@ -243,7 +228,6 @@ exports.updateMeal = async (req, res) => {
             }
         }
         
-        // Parse diet_tags
         if (diet_tags !== undefined) {
             let parsedDietTags = diet_tags;
             if (typeof diet_tags === 'string') {
@@ -256,7 +240,6 @@ exports.updateMeal = async (req, res) => {
             updateData.diet_tags = Array.isArray(parsedDietTags) ? parsedDietTags : [];
         }
         
-        // Parse nutrition values
         if (total_calories !== undefined) {
             updateData.calories = parseFloat(total_calories) || 0;
         }
@@ -270,7 +253,6 @@ exports.updateMeal = async (req, res) => {
             updateData.fat = parseFloat(total_fat) || 0;
         }
 
-        // Parse micronutrients
         if (micronutrients !== undefined) {
             let parsedMicronutrients = {};
             if (typeof micronutrients === 'string') {
@@ -285,20 +267,16 @@ exports.updateMeal = async (req, res) => {
             updateData.micronutrients = parsedMicronutrients;
         }
 
-        // PB_54 AC2: Update meal in FOOD table
-        const [updatedRows] = await Meal.update(updateData, { where: { id }, transaction });
+        const [updatedRows] = await Food.update(updateData, { where: { id }, transaction });
         
         if (updatedRows === 0) {
             await transaction.rollback();
-            return res.status(404).json({ message: 'Meal not found or no changes made' });
+            return res.status(404).json({ message: 'Food not found or no changes made' });
         }
 
-        // PB_54 AC2: Update ingredients in food_ingredients table
         if (ingredients !== undefined) {
-            // Delete all existing ingredients
-            await FoodIngredient.destroy({ where: { dish_id: id }, transaction });
+            await FoodIngredient.destroy({ where: { food_id: id }, transaction });
             
-            // Add new ingredients
             let parsedIngredients = [];
             if (typeof ingredients === 'string') {
                 try {
@@ -312,8 +290,8 @@ exports.updateMeal = async (req, res) => {
             
             if (parsedIngredients.length > 0) {
                 const ingredientsToCreate = parsedIngredients.map(ing => ({
-                    dish_id: id,
-                    ingredient_id: ing.ingredient_id || ing.raw_food_id,
+                    food_id: id,
+                    raw_food_id: ing.ingredient_id || ing.raw_food_id,
                     amount_in_grams: parseFloat(ing.amount_in_grams || ing.quantity_g || 0),
                     original_unit_name: ing.original_unit_name || null,
                     original_amount: ing.original_amount ? parseFloat(ing.original_amount) : null
@@ -324,8 +302,7 @@ exports.updateMeal = async (req, res) => {
 
         await transaction.commit();
         
-        // Return updated meal with ingredients
-        const updatedMeal = await Meal.findByPk(id, {
+        const updatedFood = await Food.findByPk(id, {
             include: [{
                 model: RawFood,
                 as: 'ingredients',
@@ -335,29 +312,24 @@ exports.updateMeal = async (req, res) => {
             }]
         });
         
-        res.json(updatedMeal);
+        res.json(updatedFood);
     } catch (error) {
         await transaction.rollback();
-        res.status(500).json({ message: 'Error updating meal', error: error.message });
+        res.status(500).json({ message: 'Error updating food', error: error.message });
     }
 };
 
-// Delete Meal (Soft Delete - AC2)
-exports.deleteMeal = async (req, res) => {
+// Delete Food
+exports.deleteFood = async (req, res) => {
     try {
         const { id } = req.params;
-        
-        // Check if meal exists
-        const meal = await Meal.findByPk(id);
-        if (!meal) {
-            return res.status(404).json({ message: 'Meal not found' });
+        const food = await Food.findByPk(id);
+        if (!food) {
+            return res.status(404).json({ message: 'Food not found' });
         }
-        
-        // Soft delete: Update status to 'deleted' instead of destroying
-        await Meal.update({ status: 'deleted' }, { where: { id } });
-        
+        await Food.update({ status: 'deleted' }, { where: { id } });
         res.json({ message: 'Món ăn đã được xóa thành công' });
     } catch (error) {
-        res.status(500).json({ message: 'Error deleting meal', error: error.message });
+        res.status(500).json({ message: 'Error deleting food', error: error.message });
     }
 };

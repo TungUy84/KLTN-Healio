@@ -1,23 +1,23 @@
 // PB_52: View Detail Meal
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { mealService, type Meal } from '../../services/mealService';
+import { foodService, type Food } from '../../services/foodService';
 import { FaArrowLeft, FaEdit } from 'react-icons/fa';
 
-const MealDetail: React.FC = () => {
+const FoodDetail: React.FC = () => {
     const { id } = useParams<{ id: string }>();
-    const [meal, setMeal] = useState<Meal | null>(null);
+    const [food, setFood] = useState<Food | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         if (id) fetchDetail(id);
     }, [id]);
 
-    const fetchDetail = async (mealId: string) => {
+    const fetchDetail = async (foodId: string) => {
         try {
             setLoading(true);
-            const data = await mealService.getById(mealId);
-            setMeal(data);
+            const data = await foodService.getById(foodId);
+            setFood(data);
         } catch (error) {
             console.error('Failed to fetch detail', error);
         } finally {
@@ -47,20 +47,20 @@ const MealDetail: React.FC = () => {
     };
 
     if (loading) return <div className="p-10 text-center text-gray-500">Loading...</div>;
-    if (!meal) return <div className="p-10 text-center text-gray-500">Không tìm thấy dữ liệu</div>;
+    if (!food) return <div className="p-10 text-center text-gray-500">Không tìm thấy dữ liệu</div>;
 
     return (
         <div className="w-full max-w-7xl mx-auto">
             <div className="flex justify-between items-center mb-6">
                 <div className="flex items-center gap-4">
-                    <Link to="/meals" className="flex items-center justify-center w-9 h-9 rounded-full bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 transition-colors">
+                    <Link to="/foods" className="flex items-center justify-center w-9 h-9 rounded-full bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 transition-colors">
                         <FaArrowLeft />
                     </Link>
                     <h1 className="text-2xl font-bold text-gray-900 m-0">
-                        {meal.name}
+                        {food.name}
                     </h1>
                 </div>
-                <Link to={`/meals/edit/${meal.id}`} className="flex items-center bg-white text-gray-700 border border-gray-300 px-4 py-2 rounded-lg font-medium text-sm hover:bg-gray-50 transition-colors">
+                <Link to={`/foods/edit/${food.id}`} className="flex items-center bg-white text-gray-700 border border-gray-300 px-4 py-2 rounded-lg font-medium text-sm hover:bg-gray-50 transition-colors">
                     <FaEdit className="mr-2" /> Chỉnh sửa
                 </Link>
             </div>
@@ -70,8 +70,8 @@ const MealDetail: React.FC = () => {
                 <div className="flex flex-col">
                     <div className="bg-white rounded-xl p-6 shadow-sm h-fit">
                         <div className="w-full aspect-square rounded-lg overflow-hidden border border-gray-200 mb-5">
-                            {meal.image ? (
-                                <img src={`http://localhost:3000${meal.image}`} alt={meal.name} className="w-full h-full object-cover" />
+                            {food.image ? (
+                                <img src={`http://localhost:3000${food.image}`} alt={food.name} className="w-full h-full object-cover" />
                             ) : (
                                 <div className="w-full h-full flex items-center justify-center bg-gray-100 text-gray-400">No Image</div>
                             )}
@@ -80,9 +80,9 @@ const MealDetail: React.FC = () => {
                             {/* Meal Categories */}
                             <div className="flex flex-col gap-2">
                                 <label className="text-gray-500 font-medium text-sm">Nhóm bữa ăn:</label>
-                                {meal.meal_categories && meal.meal_categories.length > 0 ? (
+                                {food.meal_categories && food.meal_categories.length > 0 ? (
                                     <div className="flex flex-wrap gap-2">
-                                        {meal.meal_categories.map((cat, idx) => (
+                                        {food.meal_categories.map((cat, idx) => (
                                             <span key={idx} className="px-2 py-1 bg-indigo-100 text-indigo-700 rounded text-xs font-medium">
                                                 {getCategoryLabel(cat)}
                                             </span>
@@ -96,9 +96,9 @@ const MealDetail: React.FC = () => {
                             {/* Diet Tags */}
                             <div className="flex flex-col gap-2">
                                 <label className="text-gray-500 font-medium text-sm">Tag Chế độ:</label>
-                                {meal.diet_tags && meal.diet_tags.length > 0 ? (
+                                {food.diet_tags && food.diet_tags.length > 0 ? (
                                     <div className="flex flex-wrap gap-2">
-                                        {meal.diet_tags.map((tag, idx) => (
+                                        {food.diet_tags.map((tag, idx) => (
                                             <span key={idx} className="px-2 py-1 bg-emerald-100 text-emerald-700 rounded text-xs font-medium">
                                                 {getDietTagLabel(tag)}
                                             </span>
@@ -113,11 +113,11 @@ const MealDetail: React.FC = () => {
                             <div className="flex justify-between text-sm">
                                 <label className="text-gray-500 font-medium">Trạng thái:</label>
                                 <span className={`px-2 py-1 rounded text-xs font-medium ${
-                                    meal.status === 'active' 
+                                    food.status === 'active' 
                                         ? 'bg-green-100 text-green-700' 
                                         : 'bg-red-100 text-red-700'
                                 }`}>
-                                    {meal.status === 'active' ? 'Active' : 'Inactive'}
+                                    {food.status === 'active' ? 'Active' : 'Inactive'}
                                 </span>
                             </div>
                         </div>
@@ -126,7 +126,7 @@ const MealDetail: React.FC = () => {
                         <div className="mt-5 border-t border-gray-200 pt-4">
                             <h4 className="m-0 mb-2 text-sm font-semibold text-gray-900">Mô tả</h4>
                             <p className="text-sm text-gray-600 leading-relaxed m-0">
-                                {meal.description || meal.cooking || 'Chưa có mô tả'}
+                                {food.description || food.cooking || 'Chưa có mô tả'}
                             </p>
                         </div>
                     </div>
@@ -140,19 +140,19 @@ const MealDetail: React.FC = () => {
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                             <div className="p-3 rounded-lg flex flex-col items-center bg-red-50">
                                 <span className="text-xs font-semibold mb-1 text-red-500">Calo</span>
-                                <strong className="text-sm text-gray-800">{Math.round(meal.calories || 0)} Kcal</strong>
+                                <strong className="text-sm text-gray-800">{Math.round(food.calories || 0)} Kcal</strong>
                             </div>
                             <div className="p-3 rounded-lg flex flex-col items-center bg-blue-50">
                                 <span className="text-xs font-semibold mb-1 text-blue-500">Protein</span>
-                                <strong className="text-sm text-gray-800">{Math.round(meal.protein || 0)}g</strong>
+                                <strong className="text-sm text-gray-800">{Math.round(food.protein || 0)}g</strong>
                             </div>
                             <div className="p-3 rounded-lg flex flex-col items-center bg-orange-50">
                                 <span className="text-xs font-semibold mb-1 text-orange-500">Fat</span>
-                                <strong className="text-sm text-gray-800">{Math.round(meal.fat || 0)}g</strong>
+                                <strong className="text-sm text-gray-800">{Math.round(food.fat || 0)}g</strong>
                             </div>
                             <div className="p-3 rounded-lg flex flex-col items-center bg-green-50">
                                 <span className="text-xs font-semibold mb-1 text-green-500">Carb</span>
-                                <strong className="text-sm text-gray-800">{Math.round(meal.carb || 0)}g</strong>
+                                <strong className="text-sm text-gray-800">{Math.round(food.carb || 0)}g</strong>
                             </div>
                         </div>
                     </div>
@@ -161,8 +161,8 @@ const MealDetail: React.FC = () => {
                     <div className="bg-white rounded-xl p-6 shadow-sm mt-6 h-fit">
                         <h3 className="text-base font-bold text-gray-900 mb-4 m-0">Vi chất (Micronutrients)</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2">
-                            {meal.micronutrients && Object.entries(meal.micronutrients).length > 0 ? (
-                                Object.entries(meal.micronutrients).map(([key, value]) => (
+                            {food.micronutrients && Object.entries(food.micronutrients).length > 0 ? (
+                                Object.entries(food.micronutrients).map(([key, value]) => (
                                     <div key={key} className="flex justify-start items-baseline py-2.5 border-b border-gray-100 last:border-0">
                                         <span className="text-gray-600 text-sm min-w-[100px]">{key}</span>
                                         <span className="mx-1 text-gray-400">-</span>
@@ -178,9 +178,9 @@ const MealDetail: React.FC = () => {
                     {/* Ingredients */}
                     <div className="bg-white rounded-xl p-6 shadow-sm mt-6 h-fit">
                         <h3 className="text-base font-bold text-gray-900 mb-4 m-0">Nguyên liệu</h3>
-                        {meal.ingredients && meal.ingredients.length > 0 ? (
+                        {food.ingredients && food.ingredients.length > 0 ? (
                             <div className="space-y-3">
-                                {meal.ingredients.map((ingredient, idx) => {
+                                {food.ingredients.map((ingredient, idx) => {
                                     const amount = ingredient.FoodIngredient?.amount_in_grams || 0;
                                     const originalUnit = ingredient.FoodIngredient?.original_unit_name;
                                     const originalAmount = ingredient.FoodIngredient?.original_amount;
@@ -217,4 +217,4 @@ const MealDetail: React.FC = () => {
     );
 };
 
-export default MealDetail;
+export default FoodDetail;

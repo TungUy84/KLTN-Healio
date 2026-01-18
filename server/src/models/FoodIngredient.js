@@ -1,6 +1,6 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
-const Meal = require('./Meal');
+const Food = require('./Food');
 const RawFood = require('./RawFood');
 
 const FoodIngredient = sequelize.define('FoodIngredient', {
@@ -9,17 +9,18 @@ const FoodIngredient = sequelize.define('FoodIngredient', {
         primaryKey: true,
         autoIncrement: true
     },
-    dish_id: {
+    // food_id là món ăn (đổi từ dish_id)
+    food_id: {
         type: DataTypes.INTEGER,
         allowNull: false,
         references: {
-            model: Meal,
+            model: Food,
             key: 'id'
         },
         onDelete: 'CASCADE',
         comment: 'FK to FOOD.id'
     },
-    ingredient_id: {
+    raw_food_id: {
         type: DataTypes.INTEGER,
         allowNull: false,
         references: {
@@ -51,33 +52,33 @@ const FoodIngredient = sequelize.define('FoodIngredient', {
     indexes: [
         {
             unique: true,
-            fields: ['dish_id', 'ingredient_id']
+            fields: ['food_id', 'raw_food_id']
         }
     ]
 });
 
 // Define relationships
-Meal.belongsToMany(RawFood, {
+Food.belongsToMany(RawFood, {
     through: FoodIngredient,
-    foreignKey: 'dish_id',
-    otherKey: 'ingredient_id',
+    foreignKey: 'food_id',
+    otherKey: 'raw_food_id',
     as: 'ingredients'
 });
 
-RawFood.belongsToMany(Meal, {
+RawFood.belongsToMany(Food, {
     through: FoodIngredient,
-    foreignKey: 'ingredient_id',
-    otherKey: 'dish_id',
-    as: 'meals'
+    foreignKey: 'raw_food_id',
+    otherKey: 'food_id',
+    as: 'foods'
 });
 
-FoodIngredient.belongsTo(Meal, {
-    foreignKey: 'dish_id',
+FoodIngredient.belongsTo(Food, {
+    foreignKey: 'food_id',
     as: 'food'
 });
 
 FoodIngredient.belongsTo(RawFood, {
-    foreignKey: 'ingredient_id',
+    foreignKey: 'raw_food_id',
     as: 'rawFood'
 });
 

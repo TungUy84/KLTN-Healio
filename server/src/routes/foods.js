@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const mealController = require('../controllers/mealController');
+const foodController = require('../controllers/foodController');
 const multer = require('multer');
 const path = require('path');
 
@@ -16,10 +16,10 @@ const storage = multer.diskStorage({
 const upload = multer({ storage: storage });
 
 // Routes
-router.get('/', mealController.getMeals);
-router.get('/:id', mealController.getMealById);
-router.post('/', upload.single('image'), mealController.createMeal);
-router.put('/:id', upload.single('image'), mealController.updateMeal);
-router.delete('/:id', mealController.deleteMeal);
+router.get('/', foodController.getFoods);
+router.get('/:id', foodController.getFoodById);
+router.post('/', upload.single('image'), foodController.createFood);
+router.put('/:id', upload.single('image'), foodController.updateFood);
+router.delete('/:id', foodController.deleteFood);
 
 module.exports = router;

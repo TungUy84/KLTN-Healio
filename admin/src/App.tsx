@@ -6,9 +6,9 @@ import RawFoodList from './pages/raw-food/RawFoodList';
 import RawFoodForm from './pages/raw-food/RawFoodForm';
 import RawFoodImport from './pages/raw-food/RawFoodImport';
 import RawFoodDetail from './pages/raw-food/RawFoodDetail';
-import MealList from './pages/meal/MealList';
-import MealForm from './pages/meal/MealForm';
-import MealDetail from './pages/meal/MealDetail';
+import FoodList from './pages/food/FoodList';
+import FoodForm from './pages/food/FoodForm';
+import FoodDetail from './pages/food/FoodDetail';
 import AdminLayout from './layouts/AdminLayout';
 import { authService } from './services/authService';
 import './App.css';
@@ -88,50 +88,49 @@ function App() {
             } 
         />
         
-        {/* Meal Routes */}
+        {/* Food Management */}
         <Route 
-            path="/meals" 
+            path="/foods" 
             element={
                 <PrivateRoute>
                     <AdminLayout>
-                        <MealList />
+                        <FoodList />
                     </AdminLayout>
                 </PrivateRoute>
             } 
         />
         <Route 
-            path="/meals/new" 
+            path="/foods/new" 
             element={
                 <PrivateRoute>
                     <AdminLayout>
-                        <MealForm />
+                        <FoodForm />
                     </AdminLayout>
                 </PrivateRoute>
             } 
         />
         <Route 
-            path="/meals/edit/:id" 
+            path="/foods/edit/:id" 
             element={
                 <PrivateRoute>
                     <AdminLayout>
-                        <MealForm />
+                        <FoodForm />
                     </AdminLayout>
                 </PrivateRoute>
             } 
         />
         <Route 
-            path="/meals/:id" 
+            path="/foods/:id" 
             element={
                 <PrivateRoute>
                     <AdminLayout>
-                        <MealDetail />
+                        <FoodDetail />
                     </AdminLayout>
                 </PrivateRoute>
             } 
         />
         
         {/* Placeholder Routes for Sidebar Links */}
-        <Route path="/foods" element={<PrivateRoute><AdminLayout><Navigate to="/meals" replace /></AdminLayout></PrivateRoute>} />
         <Route path="/users" element={<PrivateRoute><AdminLayout><h1>Quản lý Account (Coming Soon)</h1></AdminLayout></PrivateRoute>} />
         <Route path="/statistics" element={<PrivateRoute><AdminLayout><h1>Thống kê Apps (Coming Soon)</h1></AdminLayout></PrivateRoute>} />
 

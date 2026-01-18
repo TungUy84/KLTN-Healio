@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
-import { mealService } from '../../services/mealService';
+import { foodService } from '../../services/foodService';
 import { rawFoodService, type RawFood } from '../../services/rawFoodService';
 import { FaArrowLeft, FaSave } from 'react-icons/fa';
 import BasicInfoSection from './components/BasicInfoSection';
@@ -46,7 +46,7 @@ const calculateDietTags = (totalCalories: number, totalProtein: number, totalCar
     return tags;
 };
 
-const MealForm: React.FC = () => {
+const FoodForm: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const isEditMode = !!id;
     const navigate = useNavigate();
@@ -196,7 +196,7 @@ const MealForm: React.FC = () => {
     const fetchDetail = async (foodId: string) => {
         try {
             setLoading(true);
-            const data = await mealService.getById(foodId);
+            const data = await foodService.getById(foodId);
             setFormData({
                 name: data.name,
                 description: data.cooking || data.description || '' // Map cooking -> description
@@ -375,13 +375,13 @@ const MealForm: React.FC = () => {
             ));
 
             if (isEditMode && id) {
-                await mealService.update(id, submitData);
+                await foodService.update(id, submitData);
                 alert('Cập nhật thành công!');
             } else {
-                await mealService.create(submitData);
+                await foodService.create(submitData);
                 alert('Thêm mới thành công!');
             }
-            navigate('/meals');
+            navigate('/foods');
         } catch (error: any) {
             console.error('Submit error', error);
             alert(error.response?.data?.message || 'Có lỗi xảy ra.');
@@ -393,7 +393,7 @@ const MealForm: React.FC = () => {
     return (
         <div className="w-full max-w-5xl mx-auto">
             <div className="flex items-center gap-4 mb-6">
-                <Link to="/meals" className="flex items-center justify-center w-9 h-9 rounded-full bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 transition-colors">
+                <Link to="/foods" className="flex items-center justify-center w-9 h-9 rounded-full bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 transition-colors">
                     <FaArrowLeft />
                 </Link>
                 <h1 className="text-2xl font-bold text-gray-900 m-0">{isEditMode ? 'Chỉnh sửa Món ăn' : 'Thêm mới Món ăn'}</h1>
@@ -454,4 +454,4 @@ const MealForm: React.FC = () => {
     );
 };
 
-export default MealForm;
+export default FoodForm;

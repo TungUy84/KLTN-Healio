@@ -1,7 +1,7 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
-const Meal = sequelize.define('Meal', {
+const Food = sequelize.define('Food', {
     id: {
         type: DataTypes.INTEGER,
         primaryKey: true,
@@ -70,7 +70,7 @@ const Meal = sequelize.define('Meal', {
     timestamps: true,
     createdAt: 'created_at',
     updatedAt: 'updated_at',
-    tableName: 'food'
+    tableName: 'foods'
 });
 
-module.exports = Meal;
+module.exports = Food;

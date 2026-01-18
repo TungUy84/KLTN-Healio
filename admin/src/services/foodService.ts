@@ -1,7 +1,7 @@
 import api from './api';
 import { type RawFood } from './rawFoodService';
 
-export interface Meal {
+export interface Food {
     id: number;
     name: string;
     image: string | null;
@@ -28,8 +28,8 @@ export interface Meal {
     }>;
 }
 
-export interface MealListResponse {
-    data: Meal[];
+export interface FoodListResponse {
+    data: Food[];
     pagination: {
         total: number;
         page: number;
@@ -38,7 +38,7 @@ export interface MealListResponse {
     };
 }
 
-export const mealService = {
+export const foodService = {
     getAll: async (
         page = 1, 
         limit = 10, 
@@ -61,17 +61,17 @@ export const mealService = {
             if (filters.calorie_max !== undefined) params.calorie_max = filters.calorie_max;
             if (filters.status) params.status = filters.status;
         }
-        const response = await api.get<MealListResponse>('/meals', { params });
+        const response = await api.get<FoodListResponse>('/foods', { params });
         return response.data;
     },
 
     getById: async (id: number | string) => {
-        const response = await api.get<Meal>(`/meals/${id}`);
+        const response = await api.get<Food>(`/foods/${id}`);
         return response.data;
     },
 
     create: async (formData: FormData) => {
-        const response = await api.post<Meal>('/meals', formData, {
+        const response = await api.post<Food>('/foods', formData, {
             headers: {
                 'Content-Type': 'multipart/form-data',
             },
@@ -80,7 +80,7 @@ export const mealService = {
     },
 
     update: async (id: number | string, formData: FormData) => {
-        const response = await api.put<Meal>(`/meals/${id}`, formData, {
+        const response = await api.put<Food>(`/foods/${id}`, formData, {
             headers: {
                 'Content-Type': 'multipart/form-data',
             },
@@ -89,7 +89,7 @@ export const mealService = {
     },
 
     delete: async (id: number | string) => {
-        const response = await api.delete(`/meals/${id}`);
+        const response = await api.delete(`/foods/${id}`);
         return response.data;
     }
 };
