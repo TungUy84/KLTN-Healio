@@ -1,8 +1,10 @@
 const Food = require('../models/Food');
 const RawFood = require('../models/RawFood');
 const FoodIngredient = require('../models/FoodIngredient');
+const UserFavoriteFood = require('../models/UserFavoriteFood');
 const sequelize = require('../config/database');
 const { Op } = require('sequelize');
+const jwt = require('jsonwebtoken');
 
 // PB_51: Get List Foods with Pagination, Search and Filters
 exports.getFoods = async (req, res) => {
@@ -80,7 +82,10 @@ exports.getFoods = async (req, res) => {
 // Get Food by ID
 exports.getFoodById = async (req, res) => {
     try {
-        const food = await Food.findByPk(req.params.id, {
+        const foodId = req.params.id;
+        const userId = req.user ? req.user.id : null;
+
+        const food = await Food.findByPk(foodId, {
             include: [{
                 model: RawFood,
                 as: 'ingredients',
@@ -92,7 +97,19 @@ exports.getFoodById = async (req, res) => {
         if (!food) {
             return res.status(404).json({ message: 'Food not found' });
         }
-        res.json(food);
+
+        let isFavorite = false;
+        if (userId) {
+            const fav = await UserFavoriteFood.findOne({
+                where: { user_id: userId, food_id: foodId }
+            });
+            isFavorite = !!fav;
+        }
+
+        const foodData = food.toJSON();
+        foodData.is_favorite = isFavorite;
+
+        res.json(foodData);
     } catch (error) {
         res.status(500).json({ message: 'Error fetching food', error: error.message });
     }

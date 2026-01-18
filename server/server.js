@@ -12,6 +12,8 @@ const foodRoutes = require('./src/routes/foods');
 require('./src/models/RawFood');
 require('./src/models/Food');
 require('./src/models/FoodIngredient'); // Junction table for Meal <-> RawFood relationship
+require('./src/models/UserFavoriteFood'); // PB_19: Favorites
+require('./src/models/UserDailyLog'); // PB_23: Diary
 
 const app = express();
 

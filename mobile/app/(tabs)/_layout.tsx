@@ -8,7 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 // CẤU HÌNH MENU
 const TABS = [
   { name: 'index', title: 'Nhật ký', icon: 'book' },
-  { name: 'plans', title: 'Thực đơn', icon: 'restaurant' },
+  { name: 'foods', title: 'Thực đơn', icon: 'restaurant' },
   { name: 'progress', title: 'Thống kê', icon: 'stats-chart' },
   { name: 'profile', title: 'Tài khoản', icon: 'person' },
 ];
@@ -123,11 +123,9 @@ export default function TabLayout() {
       screenOptions={{ headerShown: false }}
     >
       <Tabs.Screen name="index" options={{ title: 'Nhật ký' }} />
-      <Tabs.Screen name="plans" options={{ title: 'Thực đơn' }} />
+      <Tabs.Screen name="foods" options={{ title: 'Thực đơn' }} />
       <Tabs.Screen name="progress" options={{ title: 'Thống kê' }} />
       <Tabs.Screen name="profile" options={{ title: 'Tài khoản' }} />
-
-      <Tabs.Screen name="add-meal" options={{ href: null }} />
     </Tabs>
   );
 }

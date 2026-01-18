@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const foodController = require('../controllers/foodController');
+const { verifyToken } = require('../middlewares/authMiddleware');
 const multer = require('multer');
 const path = require('path');
 
@@ -14,6 +15,9 @@ const storage = multer.diskStorage({
     }
 });
 const upload = multer({ storage: storage });
+
+// Apply Auth Middleware to all food routes (or specifics if needed)
+router.use(verifyToken);
 
 // Routes
 router.get('/', foodController.getFoods);

@@ -368,7 +368,7 @@ export default function DiaryScreen() {
                 icon="sunny"
                 color="#f97316"
                 bgColor="bg-orange-100" 
-                onAdd={() => console.log("Add Breakfast")}
+                onAdd={() => router.push({ pathname: '/food/search-food', params: { meal: 'breakfast' } })}
             />
 
             <MealCard 
@@ -377,7 +377,7 @@ export default function DiaryScreen() {
                 icon="restaurant"
                 color="#10b981"
                 bgColor="bg-emerald-100"
-                onAdd={() => console.log("Add Lunch")}
+                onAdd={() => router.push({ pathname: '/food/search-food', params: { meal: 'lunch' } })}
             />
 
             <MealCard 
@@ -386,7 +386,7 @@ export default function DiaryScreen() {
                 icon="moon"
                 color="#6366f1"
                 bgColor="bg-indigo-100"
-                onAdd={() => console.log("Add Dinner")}
+                onAdd={() => router.push({ pathname: '/food/search-food', params: { meal: 'dinner' } })}
             />
 
             <MealCard 
@@ -395,7 +395,7 @@ export default function DiaryScreen() {
                 icon="cafe"
                 color="#db2777"
                 bgColor="bg-pink-100"
-                onAdd={() => console.log("Add Snack")}
+                onAdd={() => router.push({ pathname: '/food/search-food', params: { meal: 'snack' } })}
             />
         </View>
 
