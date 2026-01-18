@@ -1,12 +1,12 @@
 import React from 'react';
-import { View, Text, ScrollView, StatusBar, Pressable } from 'react-native';
+import { View, Text, ScrollView, StatusBar, Pressable, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useOnboarding } from '../../context/OnboardingContext';
 import { Ionicons } from '@expo/vector-icons';
 
 const ACTIVITY_LEVELS = [
-  { key: 'sedentary', label: 'Ít vận động', desc: 'Làm việc văn phòng, ít tập luyện' },
+  { key: 'sedentary', label: 'Ít vận động', desc: 'Làm việc văn phòng, ít đi lại' },
   { key: 'light', label: 'Nhẹ', desc: 'Tập 1-3 ngày/tuần' },
   { key: 'moderate', label: 'Trung bình', desc: 'Tập 3-5 ngày/tuần' },
   { key: 'active', label: 'Năng động', desc: 'Tập 6-7 ngày/tuần' },
@@ -25,8 +25,8 @@ export default function Step3Activity() {
   return (
     <View className="flex-1 bg-white">
         <StatusBar barStyle="light-content" backgroundColor="#10b981" />
-    
-        {/* Header */}
+        
+        {/* Header - Emerald Style (Đồng bộ Step 1 & 2) */}
         <View className="bg-emerald-500 pb-8 rounded-b-[40px] shadow-sm relative z-10 overflow-hidden">
             <SafeAreaView edges={['top']} className="px-6 pb-4">
                 {/* Navbar */}
@@ -35,7 +35,7 @@ export default function Step3Activity() {
                         <Ionicons name="arrow-back" size={24} color="white" />
                     </Pressable>
                     
-                    {/* Pagination Dots */}
+                    {/* Pagination Dots (Step 3/5) */}
                     <View className="flex-row gap-2">
                         <View className="w-2 h-2 bg-white/30 rounded-full" />
                         <View className="w-2 h-2 bg-white/30 rounded-full" />
@@ -45,18 +45,18 @@ export default function Step3Activity() {
                     </View>
 
                     <Pressable onPress={() => router.replace('/(tabs)')}>
-                         <Text className="text-white font-semibold text-base">Bỏ qua</Text>
+                        <Text className="text-white font-semibold text-base">Bỏ qua</Text>
                     </Pressable>
                 </View>
 
                 {/* Header Content */}
-                <View className="items-center mt-4">
-                     <View className="w-20 h-20 bg-white/20 rounded-full justify-center items-center mb-4 border border-white/30 backdrop-blur-md">
+                <View className="items-center mt-2">
+                    <View className="w-20 h-20 bg-white/20 rounded-full justify-center items-center mb-4 border border-white/30 backdrop-blur-md">
                         <Ionicons name="fitness-outline" size={40} color="white" />
                     </View>
                     <Text className="text-3xl font-bold text-white text-center mb-2">Mức độ vận động</Text>
-                    <Text className="text-white/90 text-center text-base">
-                        Chọn mức độ phù hợp nhất với thói quen của bạn
+                    <Text className="text-white/90 text-center text-base px-4">
+                        Chọn mức độ phù hợp với thói quen của bạn
                     </Text>
                 </View>
             </SafeAreaView>
@@ -68,8 +68,8 @@ export default function Step3Activity() {
 
         {/* Content Area */}
         <View className="flex-1 px-6 pt-6 pb-8 justify-between">
-            <ScrollView showsVerticalScrollIndicator={false} className="flex-1 mb-4">
-                <View className="gap-4 py-2">
+            <ScrollView showsVerticalScrollIndicator={false} className="flex-1 -mx-2 px-2">
+                <View className="gap-4 pb-4">
                     {ACTIVITY_LEVELS.map((level) => {
                         const isSelected = data.activityLevel === level.key;
                         
@@ -77,13 +77,22 @@ export default function Step3Activity() {
                             <Pressable 
                                 key={level.key}
                                 onPress={() => updateData({ activityLevel: level.key as any })}
-                                // Sử dụng template literal để đổi style khi chọn
-                                className={`flex-row items-center p-5 rounded-2xl border shadow-sm transition-all active:opacity-80 ${
+                                className={`flex-row items-center p-5 rounded-2xl border transition-all active:scale-[0.99] ${
                                     isSelected 
                                     ? 'bg-emerald-50 border-emerald-500' 
-                                    : 'bg-gray-50 border-gray-200'
+                                    : 'bg-white border-gray-200'
                                 }`}
                             >
+                                {/* Check Circle */}
+                                <View className={`w-6 h-6 rounded-full border-2 items-center justify-center mr-4 ${
+                                    isSelected 
+                                    ? 'border-emerald-500 bg-emerald-500' 
+                                    : 'border-gray-300 bg-transparent'
+                                }`}>
+                                    {isSelected && <Ionicons name="checkmark" size={14} color="white" />}
+                                </View>
+
+                                {/* Text Content */}
                                 <View className="flex-1">
                                     <Text className={`text-lg font-bold mb-1 ${isSelected ? 'text-emerald-700' : 'text-gray-800'}`}>
                                         {level.label}
@@ -91,13 +100,6 @@ export default function Step3Activity() {
                                     <Text className={`text-sm ${isSelected ? 'text-emerald-600' : 'text-gray-500'}`}>
                                         {level.desc}
                                     </Text>
-                                </View>
-                                <View className={`w-6 h-6 rounded-full border-2 items-center justify-center ${
-                                    isSelected 
-                                    ? 'border-emerald-500 bg-emerald-500' 
-                                    : 'border-gray-300 bg-transparent'
-                                }`}>
-                                    {isSelected && <Ionicons name="checkmark" size={16} color="white" />}
                                 </View>
                             </Pressable>
                         );
@@ -109,10 +111,10 @@ export default function Step3Activity() {
             <Pressable 
                 onPress={handleNext}
                 disabled={!data.activityLevel}
-                className={`w-full p-5 rounded-full flex-row items-center justify-center shadow-lg active:opacity-90 ${
+                className={`w-full p-5 rounded-full flex-row items-center justify-center shadow-lg transition-all active:scale-[0.98] mt-4 ${
                     data.activityLevel 
                     ? 'bg-orange-500 shadow-orange-500/30' 
-                    : 'bg-gray-300 opacity-50'
+                    : 'bg-gray-300 opacity-70'
                 }`}
             >
                 <Text className="text-white text-xl font-bold mr-2">Tiếp tục</Text>

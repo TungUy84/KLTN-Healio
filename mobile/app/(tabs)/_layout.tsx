@@ -1,117 +1,133 @@
-// mobile/app/(tabs)/_layout.tsx
 import { Tabs } from 'expo-router';
 import React from 'react';
-import { View, Platform } from 'react-native';
-import { Colors } from '../../constants/Colors';
-import { 
-  HomeIcon, 
-  CalendarDaysIcon, 
-  PlusIcon, 
-  ChartBarIcon, 
-  UserIcon 
-} from "react-native-heroicons/outline";
-import { 
-  HomeIcon as HomeSolid,
-  CalendarDaysIcon as CalendarSolid,
-  ChartBarIcon as ChartSolid,
-  UserIcon as UserSolid
-} from "react-native-heroicons/solid";
+import { View, TouchableOpacity, Text, Platform } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import Animated, { useAnimatedStyle, withTiming, useSharedValue, interpolateColor, interpolate } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+// CẤU HÌNH MENU
+const TABS = [
+  { name: 'index', title: 'Nhật ký', icon: 'book' },
+  { name: 'plans', title: 'Thực đơn', icon: 'restaurant' },
+  { name: 'progress', title: 'Thống kê', icon: 'stats-chart' },
+  { name: 'profile', title: 'Tài khoản', icon: 'person' },
+];
+
+const TabButton = ({ item, isFocused, onPress }: { item: any, isFocused: boolean, onPress: () => void }) => {
+  const focusedSV = useSharedValue(isFocused ? 1 : 0);
+
+  React.useEffect(() => {
+    focusedSV.value = withTiming(isFocused ? 1 : 0, { duration: 200 });
+  }, [isFocused]);
+
+  // Animation Style
+  const animatedContainerStyle = useAnimatedStyle(() => {
+    return {
+      transform: [
+        { translateY: interpolate(focusedSV.value, [0, 1], [0, -10]) },
+      ],
+      backgroundColor: interpolateColor(focusedSV.value, [0, 1], ['rgba(255, 255, 255, 0)', '#10b981']),
+      // Shadow động
+      shadowOpacity: interpolate(focusedSV.value, [0, 1], [0, 0.3]),
+      elevation: interpolate(focusedSV.value, [0, 1], [0, 8]),
+    };
+  });
+
+  const animatedTextStyle = useAnimatedStyle(() => {
+    return {
+      opacity: interpolate(focusedSV.value, [0, 1], [0.7, 1]),
+      color: interpolateColor(focusedSV.value, [0, 1], ['#9ca3af', '#10b981'])
+    }
+  });
+
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      className="flex-1 items-center justify-center h-full z-10"
+      activeOpacity={0.8}
+    >
+      <View className="items-center h-[60px] justify-center">
+        {/* Circle Icon Container */}
+        <Animated.View
+          style={[
+            { width: 50, height: 50, borderRadius: 28, justifyContent: 'center', alignItems: 'center', shadowColor: '#10b981', shadowOffset: { width: 0, height: 8 } },
+            animatedContainerStyle
+          ]}
+        >
+          <Ionicons
+            name={isFocused ? item.icon : `${item.icon}-outline`}
+            size={isFocused ? 28 : 24}
+            color={isFocused ? 'white' : '#9ca3af'}
+          />
+        </Animated.View>
+
+        {/* Text Label */}
+        <Animated.Text
+          style={[{ marginTop: 4, fontSize: 10, fontWeight: isFocused ? '600' : '400' }, animatedTextStyle]}
+        >
+          {item.title}
+        </Animated.Text>
+      </View>
+    </TouchableOpacity>
+  );
+};
+
+const CustomTabBar = ({ state, descriptors, navigation }: { state: any, descriptors: any, navigation: any }) => {
+  const insets = useSafeAreaInsets();
+
+  return (
+    <View
+      className="bg-white absolute bottom-0 w-full shadow-lg rounded-t-[24px]"
+      style={{
+        paddingBottom: insets.bottom,
+        shadowColor: '#000', shadowOffset: { width: 0, height: -2 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 20
+      }}
+    >
+      <View className="flex-row h-[70px] items-center justify-around">
+        {state.routes.map((route: any, index: number) => {
+          const item = TABS.find(t => t.name === route.name);
+          if (!item) return null;
+
+          const isFocused = state.index === index;
+
+          const onPress = () => {
+            const event = navigation.emit({
+              type: 'tabPress',
+              target: route.key,
+              canPreventDefault: true,
+            });
+
+            if (!isFocused && !event.defaultPrevented) {
+              navigation.navigate(route.name);
+            }
+          };
+
+          return (
+            <TabButton
+              key={route.key}
+              item={item}
+              isFocused={isFocused}
+              onPress={onPress}
+            />
+          );
+        })}
+      </View>
+    </View>
+  );
+};
 
 export default function TabLayout() {
   return (
     <Tabs
-      screenOptions={{
-        headerShown: false,
-        tabBarActiveTintColor: Colors.primary,
-        tabBarInactiveTintColor: Colors.gray,
-        tabBarStyle: {
-          height: Platform.OS === 'ios' ? 88 : 68,
-          paddingTop: 10,
-          paddingBottom: Platform.OS === 'ios' ? 28 : 10,
-          backgroundColor: '#FFFFFF',
-          borderTopWidth: 1,
-          borderTopColor: '#F0F0F0',
-          elevation: 10, // Shadow cho Android
-        },
-        tabBarLabelStyle: {
-          fontSize: 12,
-          fontWeight: '500',
-          marginTop: 4,
-        }
-      }}>
+      tabBar={props => <CustomTabBar {...props} />}
+      screenOptions={{ headerShown: false }}
+    >
+      <Tabs.Screen name="index" options={{ title: 'Nhật ký' }} />
+      <Tabs.Screen name="plans" options={{ title: 'Thực đơn' }} />
+      <Tabs.Screen name="progress" options={{ title: 'Thống kê' }} />
+      <Tabs.Screen name="profile" options={{ title: 'Tài khoản' }} />
 
-      {/* 1. TRANG CHỦ */}
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Trang chủ',
-          tabBarIcon: ({ color, focused }) => 
-            focused ? <HomeSolid size={26} color={color} /> : <HomeIcon size={26} color={color} />,
-        }}
-      />
-
-      {/* 2. KẾ HOẠCH */}
-      <Tabs.Screen
-        name="plans"
-        options={{
-          title: 'Kế hoạch',
-          tabBarIcon: ({ color, focused }) => 
-            focused ? <CalendarSolid size={26} color={color} /> : <CalendarDaysIcon size={26} color={color} />,
-        }}
-      />
-
-      {/* 3. NÚT THÊM (+) - ĐẶC BIỆT */}
-      <Tabs.Screen
-        name="add-meal" 
-        options={{
-          title: '',
-          tabBarIcon: ({ focused }) => (
-            <View style={{
-              width: 56,
-              height: 56,
-              backgroundColor: Colors.primary,
-              borderRadius: 28,
-              justifyContent: 'center',
-              alignItems: 'center',
-              marginBottom: 30, // Đẩy nút lên cao
-              elevation: 5,
-              shadowColor: Colors.primary,
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.3,
-              shadowRadius: 4,
-            }}>
-              <PlusIcon size={32} color="#FFFFFF" strokeWidth={3} />
-            </View>
-          ),
-        }}
-        listeners={({ navigation }) => ({
-          tabPress: (e) => {
-            e.preventDefault(); // Ngăn chặn mở tab bình thường
-            // Mở Modal Tìm kiếm/Thêm món ăn
-            navigation.navigate('search-food'); 
-          },
-        })}
-      />
-
-      {/* 4. TIẾN TRÌNH */}
-      <Tabs.Screen
-        name="progress"
-        options={{
-          title: 'Tiến độ',
-          tabBarIcon: ({ color, focused }) => 
-            focused ? <ChartSolid size={26} color={color} /> : <ChartBarIcon size={26} color={color} />,
-        }}
-      />
-
-      {/* 5. CÁ NHÂN */}
-      <Tabs.Screen
-        name="profile"
-        options={{
-          title: 'Cá nhân',
-          tabBarIcon: ({ color, focused }) => 
-            focused ? <UserSolid size={26} color={color} /> : <UserIcon size={26} color={color} />,
-        }}
-      />
+      <Tabs.Screen name="add-meal" options={{ href: null }} />
     </Tabs>
   );
 }

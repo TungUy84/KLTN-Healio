@@ -3,6 +3,27 @@ const UserProfile = require('../models/UserProfile');
 const UserNutritionTarget = require('../models/UserNutritionTarget');
 const DietPreset = require('../models/DietPreset');
 
+// API: Seed một số Diet Preset mặc định nếu chưa có
+const DEFAULT_PRESETS = [
+    { code: 'balanced', name: 'Cân bằng', carb_ratio: 45, protein_ratio: 30, fat_ratio: 25, description: 'Phù hợp đa số người Việt. Đầy đủ nhóm chất.' },
+    { code: 'high_protein', name: 'High Protein', carb_ratio: 40, protein_ratio: 35, fat_ratio: 25, description: 'Ăn nhiều đạm, giúp no lâu.' },
+    { code: 'low_carb', name: 'Low Carb', carb_ratio: 25, protein_ratio: 35, fat_ratio: 40, description: 'Hạn chế tinh bột tối đa.' },
+    { code: 'high_carb', name: 'High Carb', carb_ratio: 50, protein_ratio: 30, fat_ratio: 20, description: 'Nhiều năng lượng cho tập luyện.' },
+    { code: 'keto', name: 'Keto', carb_ratio: 5, protein_ratio: 25, fat_ratio: 70, description: 'Rất ít Carb, nhiều chất béo.' }
+];
+
+// Helper: Đảm bảo Diet Preset tồn tại, nếu không thì tạo mới từ default
+const ensureDietPreset = async (code) => {
+    let preset = await DietPreset.findOne({ where: { code } });
+    if (!preset) {
+        const defaultData = DEFAULT_PRESETS.find(p => p.code === code);
+        if (defaultData) {
+            preset = await DietPreset.create(defaultData);
+        }
+    }
+    return preset;
+};
+
 // API: Lấy thông tin User Profile
 exports.getProfile = async (req, res) => {
     try {
@@ -46,7 +67,7 @@ exports.completeOnboarding = async (req, res) => {
         // 2. Tìm Diet Preset ID từ code
         let dietPreset = null;
         if (diet_preset_code) {
-            dietPreset = await DietPreset.findOne({ where: { code: diet_preset_code } });
+            dietPreset = await ensureDietPreset(diet_preset_code);
         }
 
         // 3. Lưu Nutrition Target
@@ -78,10 +99,11 @@ exports.completeOnboarding = async (req, res) => {
 // API: Helper để lấy danh sách Diet Inputs cho Frontend chọn
 exports.getDietPresets = async (req, res) => {
     try {
-        const presets = await DietPreset.findAll();
-        // Nếu chưa có DB thì trả về hardcode để mobile dev test trước
+        let presets = await DietPreset.findAll();
+        // Nếu chưa có DB thì seed data
         if (presets.length === 0) {
-            // Seed data tạm thời (Optional Logic)
+            await DietPreset.bulkCreate(DEFAULT_PRESETS);
+            presets = await DietPreset.findAll();
         }
         res.json(presets);
     } catch (err) {
