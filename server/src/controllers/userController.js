@@ -166,6 +166,63 @@ exports.getDailyLog = async (req, res) => {
         res.status(500).json({ message: 'Lỗi khi lấy nhật ký' });
     }
 };
+
+// PB_16: Update Daily Log (Edit)
+exports.updateDailyLog = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const logId = req.params.id;
+        const { quantity } = req.body; // New quantity
+
+        if (!quantity) return res.status(400).json({ message: 'Quantity is required' });
+
+        const log = await UserDailyLog.findOne({ where: { id: logId, user_id: userId } });
+        if (!log) return res.status(404).json({ message: 'Log not found' });
+
+        // Recalculate macros based on new quantity
+        // Assuming we store snapshot, or simpler: lookup food again (better for data consistency if food changed, but typically we want the original food stats)
+        // Here, let's look up the food again to be safe and simple
+        const food = await Food.findByPk(log.food_id);
+         if (!food) {
+            return res.status(404).json({ message: 'Món ăn gốc không còn tồn tại' });
+        }
+
+        const amount = parseFloat(quantity);
+        
+        await log.update({
+            amount: amount,
+            calories: (food.calories || 0) * amount,
+            protein: (food.protein || 0) * amount,
+            carb: (food.carb || 0) * amount,
+            fat: (food.fat || 0) * amount,
+            fiber: (food.fiber || 0) * amount
+        });
+
+        res.json({ success: true, data: log });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Lỗi khi cập nhật nhật ký' });
+    }
+};
+
+// PB_17: Delete Daily Log
+exports.deleteDailyLog = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const logId = req.params.id;
+
+        const log = await UserDailyLog.findOne({ where: { id: logId, user_id: userId } });
+        if (!log) return res.status(404).json({ message: 'Log not found' });
+
+        await log.destroy();
+
+        res.json({ success: true, message: 'Đã xóa nhật ký' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Lỗi khi xóa nhật ký' });
+    }
+};
+
 // API: Hoàn thành Onboarding
 // Nhận: gender, dob, height, weight, activity_level, goal_type, target_weight, diet_preset_code, tdee, target_calories
 exports.completeOnboarding = async (req, res) => {

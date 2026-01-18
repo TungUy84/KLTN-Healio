@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StatusBar, RefreshControl, Dimensions, Image, Platform, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StatusBar, RefreshControl, Dimensions, Image, Platform, StyleSheet, ActivityIndicator, Modal, TextInput, Alert, KeyboardAvoidingView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import Svg, { Circle, G } from 'react-native-svg';
 import { userService, CalculatedMetrics } from '../../services/userService';
+import { foodService } from '../../services/foodService';
 import { Colors } from '../../constants/Colors';
 
 // --- MOCK DATA ---
@@ -142,8 +143,11 @@ const MacroBar = ({ label, current, max, color }: any) => {
 
 // --- Component: MealCard --- (from origin/uy)
 const MealCard = ({ 
-  title, calories, icon, color, bgColor, onAdd 
-}: { title: string, calories: number, icon: any, color: string, bgColor: string, onAdd: () => void }) => {
+  title, calories, icon, color, bgColor, onAdd, items = [], onItemPress 
+}: { 
+  title: string, calories: number, icon: any, color: string, bgColor: string, 
+  onAdd: () => void, items?: any[], onItemPress?: (item: any) => void 
+}) => {
   return (
     <View className="bg-white rounded-[24px] p-5 mb-4 shadow-sm border border-gray-100">
       <View className="flex-row items-center justify-between mb-3">
@@ -154,7 +158,7 @@ const MealCard = ({
           <View>
             <Text className="text-gray-900 font-bold text-lg">{title}</Text>
             <Text className="text-gray-500 text-sm font-medium">
-              {calories > 0 ? `${calories} Kcal` : 'Chưa nhập'}
+              {calories > 0 ? `${Math.round(calories)} Kcal` : 'Chưa nhập'}
             </Text>
           </View>
         </View>
@@ -167,8 +171,42 @@ const MealCard = ({
         </TouchableOpacity>
       </View>
 
-      {/* Empty State placeholder / List Items would go here */}
-      {calories === 0 && (
+      {/* Render Items */}
+      {items.length > 0 && (
+        <View style={{ marginTop: 8 }}>
+          {items.map((item, index) => (
+            <TouchableOpacity 
+              key={item.id || index} 
+              onPress={() => onItemPress && onItemPress(item)}
+              style={{
+                flexDirection: 'row', 
+                justifyContent: 'space-between', 
+                paddingVertical: 12, 
+                borderTopWidth: index === 0 ? 0 : 1, 
+                borderTopColor: '#f3f4f6'
+              }}
+            >
+              <View style={{flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1}}>
+                 {item.food?.image ? (
+                     <Image source={{ uri: item.food.image }} style={{width: 40, height: 40, borderRadius: 8, backgroundColor: '#f0f0f0'}} />
+                 ) : (
+                     <View style={{width: 40, height: 40, borderRadius: 8, backgroundColor: '#f3f4f6', alignItems: 'center', justifyContent: 'center'}}>
+                        <Ionicons name="fast-food" size={20} color="#ccc" />
+                     </View>
+                 )}
+                 <View style={{flex: 1}}>
+                     <Text style={{fontWeight: '600', color: Colors.text}} numberOfLines={1}>{item.food?.name || 'Món ăn'}</Text>
+                     <Text style={{fontSize: 12, color: Colors.gray}}>{item.amount} {item.food?.serving_unit}</Text>
+                 </View>
+              </View>
+              <Text style={{fontWeight: '600', color: Colors.primary}}>{Math.round(item.calories)}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
+
+      {/* Empty State placeholder */}
+      {items.length === 0 && (
         <View className="bg-gray-50 rounded-xl p-3 items-center justify-center border border-dashed border-gray-200 mt-1">
           <Text className="text-gray-400 text-xs">Chưa có món ăn nào</Text>
         </View>
@@ -187,11 +225,49 @@ export default function DiaryScreen() {
   const [metrics, setMetrics] = useState<CalculatedMetrics | null>(null);
   const [dailyLog, setDailyLog] = useState(DAILY_LOG_MOCK);
 
+  // Edit State
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [selectedLog, setSelectedLog] = useState<any>(null);
+  const [quantityInput, setQuantityInput] = useState('');
+
   // Load Data
   const fetchMetrics = async () => {
     try {
-      const data = await userService.getCalculatedMetrics();
-      setMetrics(data);
+      const dateStr = selectedDate.toISOString().split('T')[0];
+      
+      const [metricsData, logsData] = await Promise.all([
+         userService.getCalculatedMetrics(),
+         foodService.getDailyLog(dateStr)
+      ]);
+      
+      setMetrics(metricsData);
+
+      // Process Logs
+      const newLogState = {
+        eaten: 0, carbs: 0, protein: 0, fat: 0,
+        meals: {
+            breakfast: { calories: 0, items: [] as any[] },
+            lunch: { calories: 0, items: [] as any[] },
+            dinner: { calories: 0, items: [] as any[] },
+            snack: { calories: 0, items: [] as any[] }
+        }
+      };
+
+      if (Array.isArray(logsData)) {
+         logsData.forEach((log: any) => {
+             const type = log.meal_type as keyof typeof newLogState.meals;
+             if (newLogState.meals[type]) {
+                 newLogState.meals[type].items.push(log);
+                 newLogState.meals[type].calories += (log.calories || 0);
+             }
+             newLogState.eaten += (log.calories || 0);
+             newLogState.carbs += (log.carb || 0);
+             newLogState.protein += (log.protein || 0);
+             newLogState.fat += (log.fat || 0);
+         });
+      }
+
+      setDailyLog(newLogState);
     } catch (error) {
       console.error("Failed to fetch metrics", error);
     }
@@ -200,7 +276,6 @@ export default function DiaryScreen() {
   useFocusEffect(
     useCallback(() => {
       fetchMetrics();
-      setDailyLog(DAILY_LOG_MOCK); 
     }, [selectedDate])
   );
 
@@ -208,7 +283,7 @@ export default function DiaryScreen() {
     setRefreshing(true);
     await fetchMetrics();
     setRefreshing(false);
-  }, []);
+  }, [selectedDate]); // Add selectedDate dependency
 
   // Date Logic
   const changeDate = (days: number) => {
@@ -230,6 +305,40 @@ export default function DiaryScreen() {
     if (date.toDateString() === yesterday.toDateString()) return 'Hôm qua';
     if (date.toDateString() === tomorrow.toDateString()) return 'Ngày mai';
     return `${date.getDate()} thg ${date.getMonth() + 1}, ${date.getFullYear()}`;
+  };
+
+  // Interaction Logic
+  const handleItemPress = (item: any) => {
+      setSelectedLog(item);
+      setQuantityInput(item.amount.toString());
+      setEditModalVisible(true);
+  };
+
+  const handleDelete = () => {
+    if(!selectedLog) return;
+    Alert.alert("Xác nhận", "Bạn có chắc muốn xóa món này?", [
+        { text: "Hủy", style: "cancel"},
+        { text: "Xóa", style: "destructive", onPress: async () => {
+            try {
+                await foodService.deleteDailyLog(selectedLog.id);
+                setEditModalVisible(false);
+                fetchMetrics(); // simpler than full refresh
+            } catch (e) { Alert.alert("Lỗi", "Không thể xóa nhật ký."); }
+        }}
+    ]);
+  };
+
+  const handleUpdate = async () => {
+      if (!selectedLog) return;
+      if (!quantityInput || isNaN(parseFloat(quantityInput))) {
+          Alert.alert("Lỗi", "Vui lòng nhập số lượng hợp lệ");
+          return;
+      }
+      try {
+          await foodService.updateDailyLog(selectedLog.id, parseFloat(quantityInput));
+          setEditModalVisible(false);
+          fetchMetrics();
+      } catch (e) { Alert.alert("Lỗi", "Không thể cập nhật."); }
   };
 
   // Calculations
@@ -277,7 +386,7 @@ export default function DiaryScreen() {
              <View>
                  <Text className="text-emerald-100 text-sm mb-1">Cần nạp / ngày</Text>
                  <View className="flex-row items-baseline">
-                    <Text className="text-white text-5xl font-extrabold mr-2">{remainingCalories}</Text>
+                    <Text className="text-white text-5xl font-extrabold mr-2">{Math.round(remainingCalories)}</Text>
                     <Text className="text-emerald-100 text-lg font-medium">Kcal</Text>
                  </View>
                  <View className="bg-black/20 self-start px-3 py-1 rounded-full mt-2">
@@ -317,7 +426,7 @@ export default function DiaryScreen() {
                     <Ionicons name="leaf" size={16} color="#3b82f6" />
                 </View>
                 <View>
-                    <Text className="text-gray-900 font-bold text-xl">{dailyLog.carbs}g</Text>
+                    <Text className="text-gray-900 font-bold text-xl">{Math.round(dailyLog.carbs)}g</Text>
                     <Text className="text-gray-400 text-xs mt-0.5">/{targetCarb}g</Text>
                     <View className="mt-3 bg-gray-100 h-1.5 rounded-full overflow-hidden">
                         <View style={{ width: `${Math.min((dailyLog.carbs / targetCarb) * 100, 100)}%` as any }} className="h-full bg-blue-500 rounded-full" />
@@ -332,7 +441,7 @@ export default function DiaryScreen() {
                     <Ionicons name="fitness" size={16} color="#f97316" />
                 </View>
                 <View>
-                    <Text className="text-gray-900 font-bold text-xl">{dailyLog.protein}g</Text>
+                    <Text className="text-gray-900 font-bold text-xl">{Math.round(dailyLog.protein)}g</Text>
                     <Text className="text-gray-400 text-xs mt-0.5">/{targetProtein}g</Text>
                     <View className="mt-3 bg-gray-100 h-1.5 rounded-full overflow-hidden">
                         <View style={{ width: `${Math.min((dailyLog.protein / targetProtein) * 100, 100)}%` as any }} className="h-full bg-orange-500 rounded-full" />
@@ -347,7 +456,7 @@ export default function DiaryScreen() {
                     <Ionicons name="water" size={16} color="#eab308" />
                 </View>
                 <View>
-                    <Text className="text-gray-900 font-bold text-xl">{dailyLog.fat}g</Text>
+                    <Text className="text-gray-900 font-bold text-xl">{Math.round(dailyLog.fat)}g</Text>
                     <Text className="text-gray-400 text-xs mt-0.5">/{targetFat}g</Text>
                     <View className="mt-3 bg-gray-100 h-1.5 rounded-full overflow-hidden">
                         <View style={{ width: `${Math.min((dailyLog.fat / targetFat) * 100, 100)}%` as any }} className="h-full bg-yellow-500 rounded-full" />
@@ -368,7 +477,9 @@ export default function DiaryScreen() {
                 icon="sunny"
                 color="#f97316"
                 bgColor="bg-orange-100" 
-                onAdd={() => router.push({ pathname: '/food/search-food', params: { meal: 'breakfast' } })}
+                items={dailyLog.meals.breakfast.items}
+                onItemPress={handleItemPress}
+                onAdd={() => router.push({ pathname: '/(tabs)/foods', params: { meal: 'breakfast' } })}
             />
 
             <MealCard 
@@ -377,7 +488,9 @@ export default function DiaryScreen() {
                 icon="restaurant"
                 color="#10b981"
                 bgColor="bg-emerald-100"
-                onAdd={() => router.push({ pathname: '/food/search-food', params: { meal: 'lunch' } })}
+                items={dailyLog.meals.lunch.items}
+                onItemPress={handleItemPress}
+                onAdd={() => router.push({ pathname: '/(tabs)/foods', params: { meal: 'lunch' } })}
             />
 
             <MealCard 
@@ -386,7 +499,9 @@ export default function DiaryScreen() {
                 icon="moon"
                 color="#6366f1"
                 bgColor="bg-indigo-100"
-                onAdd={() => router.push({ pathname: '/food/search-food', params: { meal: 'dinner' } })}
+                items={dailyLog.meals.dinner.items}
+                onItemPress={handleItemPress}
+                onAdd={() => router.push({ pathname: '/(tabs)/foods', params: { meal: 'dinner' } })}
             />
 
             <MealCard 
@@ -395,11 +510,84 @@ export default function DiaryScreen() {
                 icon="cafe"
                 color="#db2777"
                 bgColor="bg-pink-100"
-                onAdd={() => router.push({ pathname: '/food/search-food', params: { meal: 'snack' } })}
+                items={dailyLog.meals.snack.items}
+                onItemPress={handleItemPress}
+                onAdd={() => router.push({ pathname: '/(tabs)/foods', params: { meal: 'snack' } })}
             />
         </View>
 
       </ScrollView>
+
+      {/* EDIT MODAL */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={editModalVisible}
+        onRequestClose={() => setEditModalVisible(false)}
+      >
+        <KeyboardAvoidingView 
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            style={{flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0,0,0,0.5)"}}
+        >
+            <View style={{backgroundColor: "white", borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24}}>
+                <View style={{flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 20}}>
+                    <Text style={{fontSize: 20, fontWeight: "bold", color: Colors.text}}>Chỉnh sửa món ăn</Text>
+                    <TouchableOpacity onPress={() => setEditModalVisible(false)}>
+                        <Ionicons name="close" size={24} color={Colors.gray} />
+                    </TouchableOpacity>
+                </View>
+
+                {selectedLog && (
+                    <View style={{flexDirection: 'row', gap: 16, marginBottom: 24}}>
+                         {selectedLog.food?.image && (
+                             <Image source={{ uri: selectedLog.food.image }} style={{width: 60, height: 60, borderRadius: 12, backgroundColor: '#f0f0f0'}} />
+                         )}
+                         <View style={{flex: 1}}>
+                             <Text style={{fontSize: 18, fontWeight: '600', color: Colors.text}}>{selectedLog.food?.name}</Text>
+                             <Text style={{fontSize: 14, color: Colors.primary, fontWeight: '500', marginTop: 4}}>
+                                {Math.round(Platform.OS === 'ios' ? selectedLog.food?.calories : (selectedLog.food?.calories || 0) * (parseFloat(quantityInput) || 0))} Kcal 
+                                <Text style={{color: Colors.gray, fontWeight: '400'}}> (Ước tính)</Text>
+                             </Text>
+                         </View>
+                    </View>
+                )}
+
+                <Text style={{fontSize: 14, fontWeight: "600", color: Colors.text, marginBottom: 8}}>Số lượng / Khối lượng</Text>
+                <View style={{flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 32}}>
+                    <TextInput 
+                        style={{
+                            flex: 1, height: 50, borderWidth: 1, borderColor: '#e5e7eb', 
+                            borderRadius: 12, paddingHorizontal: 16, fontSize: 16, fontWeight: '600'
+                        }}
+                        keyboardType="numeric"
+                        value={quantityInput}
+                        onChangeText={setQuantityInput}
+                        placeholder="Nhập số lượng..."
+                    />
+                    <View style={{height: 50, justifyContent: 'center', paddingHorizontal: 16, backgroundColor: '#f3f4f6', borderRadius: 12}}>
+                        <Text style={{fontWeight: '600', color: Colors.gray}}>{selectedLog?.food?.serving_unit || 'đơn vị'}</Text>
+                    </View>
+                </View>
+                
+                <View style={{flexDirection: 'row', gap: 12}}>
+                    <TouchableOpacity 
+                        onPress={handleDelete}
+                        style={{flex: 1, height: 50, borderRadius: 25, borderWidth: 1, borderColor: '#ef4444', justifyContent: 'center', alignItems: 'center'}}
+                    >
+                        <Text style={{color: '#ef4444', fontWeight: 'bold', fontSize: 16}}>Xóa</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity 
+                        onPress={handleUpdate}
+                        style={{flex: 2, height: 50, borderRadius: 25, backgroundColor: Colors.primary, justifyContent: 'center', alignItems: 'center'}}
+                    >
+                        <Text style={{color: 'white', fontWeight: 'bold', fontSize: 16}}>Cập nhật</Text>
+                    </TouchableOpacity>
+                </View>
+                <View style={{height: 20}} /> 
+            </View>
+        </KeyboardAvoidingView>
+      </Modal>
 
       {showDatePicker && (
         <DateTimePicker

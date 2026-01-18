@@ -88,5 +88,23 @@ export const foodService = {
     addToDiary: async (data: AddToDiaryRequest): Promise<any> => {
         const response = await api.post('/users/daily-log', data);
         return response.data;
+    },
+
+    // PB_12: Get Daily Log
+    getDailyLog: async (date: string): Promise<any[]> => {
+        const response = await api.get('/users/daily-log', { params: { date } });
+        return response.data;
+    },
+
+    // PB_16: Update Daily Log
+    updateDailyLog: async (id: number | string, quantity: number): Promise<any> => {
+        const response = await api.put(`/users/daily-log/${id}`, { quantity });
+        return response.data;
+    },
+
+    // PB_17: Delete Daily Log
+    deleteDailyLog: async (id: number | string): Promise<any> => {
+        const response = await api.delete(`/users/daily-log/${id}`);
+        return response.data;
     }
 };
