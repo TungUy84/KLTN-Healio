@@ -3,6 +3,7 @@ import React from 'react';
 interface BasicInfoSectionProps {
     formData: {
         name: string;
+        serving_unit: string;
         description: string;
     };
     previewImage: string | null;
@@ -40,17 +41,30 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({
             {/* PB_51: Basic Info */}
             <h3 className="text-base font-semibold text-gray-900 border-b border-gray-200 pb-2 mb-4 mt-0">Thông tin cơ bản</h3>
             
-            <div className="flex flex-col mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Tên món *</label>
-                <input
-                    type="text"
-                    name="name"
-                    required
-                    value={formData.name}
-                    onChange={onFormDataChange}
-                    className="w-full p-2.5 rounded-lg border border-gray-300 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
-                    placeholder="VD: Cơm tấm sườn bì"
-                />
+            <div className="flex flex-col md:flex-row gap-4 mb-4">
+                <div className="flex-1 flex flex-col">
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Tên món *</label>
+                    <input
+                        type="text"
+                        name="name"
+                        required
+                        value={formData.name}
+                        onChange={onFormDataChange}
+                        className="w-full p-2.5 rounded-lg border border-gray-300 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
+                        placeholder="VD: Cơm tấm sườn bì"
+                    />
+                </div>
+                <div className="w-full md:w-1/3 flex flex-col">
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Đơn vị (VD: Tô, dĩa)</label>
+                    <input
+                        type="text"
+                        name="serving_unit"
+                        value={formData.serving_unit}
+                        onChange={onFormDataChange}
+                        className="w-full p-2.5 rounded-lg border border-gray-300 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
+                        placeholder="VD: Dĩa"
+                    />
+                </div>
             </div>
 
             <div className="flex flex-col md:flex-row gap-6 mb-4">

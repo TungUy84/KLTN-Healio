@@ -6,8 +6,6 @@ export interface Ingredient {
     ingredient_id: number;
     raw_food_name: string;
     amount_in_grams: number;
-    original_unit_name?: string;
-    original_amount?: number;
 }
 
 interface IngredientSectionProps {

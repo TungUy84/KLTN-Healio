@@ -11,6 +11,12 @@ const Food = sequelize.define('Food', {
         type: DataTypes.STRING,
         allowNull: false
     },
+    // Serving unit (e.g., "1 tô", "1 dĩa")
+    serving_unit: {
+        type: DataTypes.STRING,
+        allowNull: true,
+        defaultValue: 'suất'
+    },
     cooking: {
         type: DataTypes.TEXT,
         defaultValue: '',

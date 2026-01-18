@@ -4,6 +4,7 @@ import { type RawFood } from './rawFoodService';
 export interface Food {
     id: number;
     name: string;
+    serving_unit?: string; // e.g. "tô", "dĩa"
     image: string | null;
     description?: string; // Optional, may come from cooking field
     cooking?: string; // Database field name
@@ -22,8 +23,6 @@ export interface Food {
     ingredients?: Array<RawFood & {
         FoodIngredient?: {
             amount_in_grams: number;
-            original_unit_name?: string | null;
-            original_amount?: number | null;
         };
     }>;
 }

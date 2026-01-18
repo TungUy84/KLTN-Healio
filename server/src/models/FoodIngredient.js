@@ -35,16 +35,6 @@ const FoodIngredient = sequelize.define('FoodIngredient', {
         allowNull: false,
         defaultValue: 0,
         comment: 'Khối lượng nguyên liệu (gram)'
-    },
-    original_unit_name: {
-        type: DataTypes.STRING,
-        allowNull: true,
-        comment: 'Tên đơn vị gốc (VD: "cup", "piece")'
-    },
-    original_amount: {
-        type: DataTypes.DECIMAL(10, 2),
-        allowNull: true,
-        comment: 'Số lượng theo đơn vị gốc'
     }
 }, {
     timestamps: true,

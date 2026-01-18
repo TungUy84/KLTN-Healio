@@ -77,6 +77,13 @@ const FoodDetail: React.FC = () => {
                             )}
                         </div>
                         <div className="flex flex-col gap-3">
+                            <div className="flex justify-between items-center bg-gray-50 p-2 rounded-lg">
+                                <span className="text-sm font-medium text-gray-700">Đơn vị:</span>
+                                <span className="text-sm font-bold text-indigo-600 bg-white px-2 py-0.5 rounded border border-gray-200 shadow-sm">
+                                    1 {food.serving_unit || 'suất'}
+                                </span>
+                            </div>
+
                             {/* Meal Categories */}
                             <div className="flex flex-col gap-2">
                                 <label className="text-gray-500 font-medium text-sm">Nhóm bữa ăn:</label>
@@ -182,8 +189,6 @@ const FoodDetail: React.FC = () => {
                             <div className="space-y-3">
                                 {food.ingredients.map((ingredient, idx) => {
                                     const amount = ingredient.FoodIngredient?.amount_in_grams || 0;
-                                    const originalUnit = ingredient.FoodIngredient?.original_unit_name;
-                                    const originalAmount = ingredient.FoodIngredient?.original_amount;
                                     
                                     return (
                                         <div key={idx} className="flex justify-between items-center py-2.5 border-b border-gray-100 last:border-0">
@@ -194,11 +199,6 @@ const FoodDetail: React.FC = () => {
                                                 )}
                                             </div>
                                             <div className="flex items-center gap-2">
-                                                {originalAmount && originalUnit ? (
-                                                    <span className="text-gray-600 text-sm">
-                                                        {originalAmount} {originalUnit}
-                                                    </span>
-                                                ) : null}
                                                 <span className="text-gray-900 font-semibold text-sm">
                                                     {Math.round(amount)}g
                                                 </span>

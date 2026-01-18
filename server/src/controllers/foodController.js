@@ -85,7 +85,7 @@ exports.getFoodById = async (req, res) => {
                 model: RawFood,
                 as: 'ingredients',
                 through: {
-                    attributes: ['amount_in_grams', 'original_unit_name', 'original_amount']
+                    attributes: ['amount_in_grams']
                 }
             }]
         });
@@ -102,7 +102,7 @@ exports.getFoodById = async (req, res) => {
 exports.createFood = async (req, res) => {
     const transaction = await sequelize.transaction();
     try {
-        const { name, description, meal_categories, total_calories, total_protein, total_carb, total_fat, diet_tags, status, ingredients, micronutrients } = req.body;
+        const { name, serving_unit, description, meal_categories, total_calories, total_protein, total_carb, total_fat, diet_tags, status, ingredients, micronutrients } = req.body;
         
         let parsedCategories = meal_categories;
         if (typeof meal_categories === 'string') {
@@ -154,6 +154,7 @@ exports.createFood = async (req, res) => {
 
         const newFood = await Food.create({
             name,
+            serving_unit: serving_unit || 'suất',
             cooking: description || '',
             meal_categories: parsedCategories,
             calories: total_calories ? parseFloat(total_calories) : 0,
@@ -171,9 +172,7 @@ exports.createFood = async (req, res) => {
             const ingredientsToCreate = parsedIngredients.map(ing => ({
                 food_id: newFood.id,
                 raw_food_id: ing.ingredient_id || ing.raw_food_id,
-                amount_in_grams: parseFloat(ing.amount_in_grams || ing.quantity_g || 0),
-                original_unit_name: ing.original_unit_name || null,
-                original_amount: ing.original_amount ? parseFloat(ing.original_amount) : null
+                amount_in_grams: parseFloat(ing.amount_in_grams || ing.quantity_g || 0)
             }));
             await FoodIngredient.bulkCreate(ingredientsToCreate, { transaction });
         }
@@ -185,7 +184,7 @@ exports.createFood = async (req, res) => {
                 model: RawFood,
                 as: 'ingredients',
                 through: {
-                    attributes: ['amount_in_grams', 'original_unit_name', 'original_amount']
+                    attributes: ['amount_in_grams']
                 }
             }]
         });
@@ -202,10 +201,11 @@ exports.updateFood = async (req, res) => {
     const transaction = await sequelize.transaction();
     try {
         const { id } = req.params;
-        const { name, description, meal_categories, total_calories, total_protein, total_carb, total_fat, diet_tags, status, ingredients, micronutrients } = req.body;
+        const { name, serving_unit, description, meal_categories, total_calories, total_protein, total_carb, total_fat, diet_tags, status, ingredients, micronutrients } = req.body;
         
         const updateData = {};
         if (name) updateData.name = name;
+        if (serving_unit) updateData.serving_unit = serving_unit;
         if (description !== undefined) updateData.cooking = description;
         if (status) updateData.status = status;
         
@@ -292,9 +292,7 @@ exports.updateFood = async (req, res) => {
                 const ingredientsToCreate = parsedIngredients.map(ing => ({
                     food_id: id,
                     raw_food_id: ing.ingredient_id || ing.raw_food_id,
-                    amount_in_grams: parseFloat(ing.amount_in_grams || ing.quantity_g || 0),
-                    original_unit_name: ing.original_unit_name || null,
-                    original_amount: ing.original_amount ? parseFloat(ing.original_amount) : null
+                    amount_in_grams: parseFloat(ing.amount_in_grams || ing.quantity_g || 0)
                 }));
                 await FoodIngredient.bulkCreate(ingredientsToCreate, { transaction });
             }
@@ -307,7 +305,7 @@ exports.updateFood = async (req, res) => {
                 model: RawFood,
                 as: 'ingredients',
                 through: {
-                    attributes: ['amount_in_grams', 'original_unit_name', 'original_amount']
+                    attributes: ['amount_in_grams']
                 }
             }]
         });

@@ -54,6 +54,7 @@ const FoodForm: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
         name: '',
+        serving_unit: '',
         description: ''
     });
     const [imageFile, setImageFile] = useState<File | null>(null);
@@ -199,6 +200,7 @@ const FoodForm: React.FC = () => {
             const data = await foodService.getById(foodId);
             setFormData({
                 name: data.name,
+                serving_unit: data.serving_unit || '',
                 description: data.cooking || data.description || '' // Map cooking -> description
             });
             if (data.image) {
@@ -212,9 +214,7 @@ const FoodForm: React.FC = () => {
                 const loadedIngredients: Ingredient[] = data.ingredients.map((ing: any) => ({
                     ingredient_id: ing.id,
                     raw_food_name: ing.name,
-                    amount_in_grams: ing.FoodIngredient?.amount_in_grams || 0,
-                    original_unit_name: ing.FoodIngredient?.original_unit_name,
-                    original_amount: ing.FoodIngredient?.original_amount
+                    amount_in_grams: ing.FoodIngredient?.amount_in_grams || 0
                 }));
                 setIngredients(loadedIngredients);
                 
@@ -286,9 +286,7 @@ const FoodForm: React.FC = () => {
         setIngredients(prev => [...prev, {
             ingredient_id: rawFood.id,
             raw_food_name: rawFood.name,
-            amount_in_grams: 100, // Default 100g
-            original_unit_name: undefined,
-            original_amount: undefined
+            amount_in_grams: 100 // Default 100g
         }]);
         
         setRawFoodCache(prev => new Map(prev).set(rawFood.id, rawFood));
@@ -346,6 +344,7 @@ const FoodForm: React.FC = () => {
             
             // PB_51: Basic info
             submitData.append('name', formData.name);
+            submitData.append('serving_unit', formData.serving_unit);
             submitData.append('description', formData.description || '');
             submitData.append('meal_categories', JSON.stringify(mealCategories));
             submitData.append('status', status);
@@ -368,9 +367,7 @@ const FoodForm: React.FC = () => {
             submitData.append('ingredients', JSON.stringify(
                 ingredients.map(ing => ({
                     ingredient_id: ing.ingredient_id,
-                    amount_in_grams: ing.amount_in_grams,
-                    original_unit_name: ing.original_unit_name || null,
-                    original_amount: ing.original_amount || null
+                    amount_in_grams: ing.amount_in_grams
                 }))
             ));
 
