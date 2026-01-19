@@ -6,6 +6,9 @@ import RawFoodList from './pages/raw-food/RawFoodList';
 import RawFoodForm from './pages/raw-food/RawFoodForm';
 import RawFoodImport from './pages/raw-food/RawFoodImport';
 import RawFoodDetail from './pages/raw-food/RawFoodDetail';
+import FoodList from './pages/food/FoodList';
+import FoodForm from './pages/food/FoodForm';
+import FoodDetail from './pages/food/FoodDetail';
 import AdminLayout from './layouts/AdminLayout';
 import { authService } from './services/authService';
 import './App.css';
@@ -85,8 +88,49 @@ function App() {
             } 
         />
         
+        {/* Food Management */}
+        <Route 
+            path="/foods" 
+            element={
+                <PrivateRoute>
+                    <AdminLayout>
+                        <FoodList />
+                    </AdminLayout>
+                </PrivateRoute>
+            } 
+        />
+        <Route 
+            path="/foods/new" 
+            element={
+                <PrivateRoute>
+                    <AdminLayout>
+                        <FoodForm />
+                    </AdminLayout>
+                </PrivateRoute>
+            } 
+        />
+        <Route 
+            path="/foods/edit/:id" 
+            element={
+                <PrivateRoute>
+                    <AdminLayout>
+                        <FoodForm />
+                    </AdminLayout>
+                </PrivateRoute>
+            } 
+        />
+        <Route 
+            path="/foods/:id" 
+            element={
+                <PrivateRoute>
+                    <AdminLayout>
+                        <FoodDetail />
+                    </AdminLayout>
+                </PrivateRoute>
+            } 
+        />
+        
         {/* Placeholder Routes for Sidebar Links */}
-        <Route path="/foods" element={<PrivateRoute><AdminLayout><h1>Quản lý Món ăn (Coming Soon)</h1></AdminLayout></PrivateRoute>} />
         <Route path="/users" element={<PrivateRoute><AdminLayout><h1>Quản lý Account (Coming Soon)</h1></AdminLayout></PrivateRoute>} />
         <Route path="/statistics" element={<PrivateRoute><AdminLayout><h1>Thống kê Apps (Coming Soon)</h1></AdminLayout></PrivateRoute>} />
 

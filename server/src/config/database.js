@@ -7,8 +7,9 @@ const sequelize = new Sequelize(
   process.env.DB_PASSWORD,
   {
     host: process.env.DB_HOST,
+    port: parseInt(process.env.DB_PORT) || 5432, // Đảm bảo là số
     dialect: 'postgres',
-    logging: false, // Tắt log query để console sạch hơn
+    logging: false,
     pool: {
       max: 5,
       min: 0,
