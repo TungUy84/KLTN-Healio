@@ -9,6 +9,8 @@ import RawFoodDetail from './pages/raw-food/RawFoodDetail';
 import FoodList from './pages/food/FoodList';
 import FoodForm from './pages/food/FoodForm';
 import FoodDetail from './pages/food/FoodDetail';
+import UserList from './pages/users/UserList';
+import UserDetail from './pages/users/UserDetail';
 import AdminLayout from './layouts/AdminLayout';
 import { authService } from './services/authService';
 import './App.css';
@@ -130,8 +132,9 @@ function App() {
             } 
         />
         
-        {/* Placeholder Routes for Sidebar Links */}
-        <Route path="/users" element={<PrivateRoute><AdminLayout><h1>Quản lý Account (Coming Soon)</h1></AdminLayout></PrivateRoute>} />
+        {/* User Management (PB_57–PB_60) */}
+        <Route path="/users" element={<PrivateRoute><AdminLayout><UserList /></AdminLayout></PrivateRoute>} />
+        <Route path="/users/:id" element={<PrivateRoute><AdminLayout><UserDetail /></AdminLayout></PrivateRoute>} />
         <Route path="/statistics" element={<PrivateRoute><AdminLayout><h1>Thống kê Apps (Coming Soon)</h1></AdminLayout></PrivateRoute>} />
 
         {/* Default redirect */}

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { dashboardService } from '../services/dashboardService';
 import { 
     FaUsers, 
@@ -41,6 +42,7 @@ interface DishStat {
 }
 
 const Dashboard: React.FC = () => {
+    const navigate = useNavigate();
     const [stats, setStats] = useState<Stats | null>(null);
     const [activities, setActivities] = useState<Activity[]>([]);
     const [topDishes, setTopDishes] = useState<DishStat[]>([]);
@@ -87,6 +89,7 @@ const Dashboard: React.FC = () => {
                     icon={<FaUsers />} 
                     color="text-indigo-600" 
                     bg="bg-indigo-50"
+                    onClick={() => navigate('/users')}
                 />
                 <StatsCard 
                     title="Tổng Admin" 
@@ -94,6 +97,7 @@ const Dashboard: React.FC = () => {
                     icon={<FaUserShield />} 
                     color="text-violet-600" 
                     bg="bg-violet-50"
+                    onClick={() => navigate('/users')}
                 />
                 <StatsCard 
                     title="Tổng Nguyên liệu" 
@@ -101,6 +105,7 @@ const Dashboard: React.FC = () => {
                     icon={<FaLeaf />} 
                     color="text-emerald-500" 
                     bg="bg-emerald-50"
+                    onClick={() => navigate('/raw-foods')}
                 />
                 <StatsCard 
                     title="Tổng Món ăn" 
@@ -108,6 +113,7 @@ const Dashboard: React.FC = () => {
                     icon={<FaUtensils />} 
                     color="text-amber-500" 
                     bg="bg-amber-50"
+                    onClick={() => navigate('/foods')}
                 />
             </div>
 
@@ -143,7 +149,10 @@ const Dashboard: React.FC = () => {
 
                     {/* PB_42: Shortcuts */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                        <div className="bg-white rounded-2xl p-5 flex items-center cursor-pointer shadow-sm hover:shadow-md transition-all">
+                        <div 
+                            className="bg-white rounded-2xl p-5 flex items-center cursor-pointer shadow-sm hover:shadow-md transition-all"
+                            onClick={() => navigate('/raw-foods/new')}
+                        >
                             <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg mr-4 bg-green-100 text-green-600">
                                 <FaPlus />
                             </div>
@@ -154,7 +163,10 @@ const Dashboard: React.FC = () => {
                             <span className="text-gray-400 text-sm"><FaArrowRight /></span>
                         </div>
 
-                        <div className="bg-white rounded-2xl p-5 flex items-center cursor-pointer shadow-sm hover:shadow-md transition-all">
+                        <div 
+                            className="bg-white rounded-2xl p-5 flex items-center cursor-pointer shadow-sm hover:shadow-md transition-all"
+                            onClick={() => navigate('/foods/new')}
+                        >
                             <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg mr-4 bg-orange-100 text-orange-600">
                                 <FaUtensils />
                             </div>
@@ -174,17 +186,19 @@ const Dashboard: React.FC = () => {
                     <div className="bg-white rounded-2xl p-6 shadow-sm h-full">
                         <h3 className="text-lg font-bold text-gray-900 mb-4">Hoạt động gần nhất</h3>
                         <div className="flex flex-col gap-5">
-                            {activities.map((activity) => (
-                                <div key={activity.id} className="flex items-start">
-                                    <div className="w-9 h-9 mr-3 flex-shrink-0">
-                                        {activity.avatar ? (
-                                            <img src={activity.avatar} alt="avatar" className="w-full h-full rounded-full object-cover" />
-                                        ) : (
-                                            <div className="w-full h-full bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center text-sm font-bold">
-                                                H
-                                            </div>
-                                        )}
-                                    </div>
+                            {activities.map((activity) => {
+                                const firstLetter = activity.user?.charAt(0)?.toUpperCase() || 'A';
+                                return (
+                                    <div key={activity.id} className="flex items-start">
+                                        <div className="w-9 h-9 mr-3 flex-shrink-0">
+                                            {activity.avatar ? (
+                                                <img src={activity.avatar} alt="avatar" className="w-full h-full rounded-full object-cover" />
+                                            ) : (
+                                                <div className="w-full h-full bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center text-sm font-bold">
+                                                    {firstLetter}
+                                                </div>
+                                            )}
+                                        </div>
                                     <div className="flex-1">
                                         <p className="text-sm text-gray-600 m-0 mb-1">
                                             <span className="font-semibold text-gray-900">{activity.user}</span> {activity.action}
@@ -192,7 +206,8 @@ const Dashboard: React.FC = () => {
                                         <span className="text-xs text-gray-400 block">{activity.time}</span>
                                     </div>
                                 </div>
-                            ))}
+                                );
+                            })}
                         </div>
                         <button className="w-full mt-6 py-2 text-sm text-indigo-600 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors font-medium border-none cursor-pointer">
                             Xem tất cả hoạt động
@@ -205,8 +220,11 @@ const Dashboard: React.FC = () => {
 };
 
 // Sub-Component for Stats Card
-const StatsCard = ({ title, value, icon, color, bg }: any) => (
-    <div className="bg-white rounded-2xl p-6 flex items-center shadow-sm">
+const StatsCard = ({ title, value, icon, color, bg, onClick }: any) => (
+    <div 
+        className={`bg-white rounded-2xl p-6 flex items-center shadow-sm ${onClick ? 'cursor-pointer hover:shadow-md transition-all' : ''}`}
+        onClick={onClick}
+    >
         <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl mr-4 ${bg} ${color}`}>
             {icon}
         </div>
