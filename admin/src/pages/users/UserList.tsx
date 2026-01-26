@@ -157,7 +157,11 @@ const UserList: React.FC = () => {
                                     <td className="px-4 py-4 text-sm text-gray-700">{u.id}</td>
                                     <td className="px-4 py-4">
                                         {u.avatar ? (
-                                            <img src={u.avatar} alt="" className="w-10 h-10 rounded-full object-cover" />
+                                            <img
+                                                src={u.avatar.startsWith('http') ? u.avatar : `http://localhost:3000${u.avatar}`}
+                                                alt=""
+                                                className="w-10 h-10 rounded-full object-cover"
+                                            />
                                         ) : (
                                             <div className="w-10 h-10 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-sm">
                                                 {(u.full_name || 'U').charAt(0).toUpperCase()}

@@ -38,6 +38,10 @@ const UserProfile = sequelize.define('UserProfile', {
   goal_weight: {
     type: DataTypes.FLOAT,
     allowNull: true
+  },
+  allergies: {
+    type: DataTypes.ARRAY(DataTypes.STRING),
+    defaultValue: []
   }
 }, {
   tableName: 'user_profiles',

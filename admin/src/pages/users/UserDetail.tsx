@@ -27,7 +27,7 @@ const UserDetail: React.FC = () => {
 
     const handleBan = async () => {
         if (!user) return;
-        
+
         // PB_60: Popup cảnh báo đỏ cho Admin
         if (user.role === 'admin') {
             const confirmed = window.confirm(
@@ -167,7 +167,11 @@ const UserDetail: React.FC = () => {
                         <FaArrowLeft />
                     </Link>
                     {user.avatar ? (
-                        <img src={user.avatar} alt="" className="w-14 h-14 rounded-full object-cover border-2 border-gray-200" />
+                        <img
+                            src={user.avatar.startsWith('http') ? user.avatar : `http://localhost:3000${user.avatar}`}
+                            alt=""
+                            className="w-14 h-14 rounded-full object-cover border-2 border-gray-200"
+                        />
                     ) : (
                         <div className="w-14 h-14 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-xl border-2 border-indigo-200">
                             {(user.full_name || 'U').charAt(0).toUpperCase()}

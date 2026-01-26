@@ -41,8 +41,8 @@ exports.list = async (req, res) => {
             where,
             attributes: ['id', 'email', 'full_name', 'role', 'status', 'auth_provider', 'avatar'],
             include: [
-                { 
-                    model: UserProfile, 
+                {
+                    model: UserProfile,
                     required: false,
                     attributes: ['goal_type']
                 }
@@ -129,7 +129,7 @@ exports.getById = async (req, res) => {
                     description: dietPreset.description
                 } : null
             } : null,
-            allergies: null // PB_59: Chưa có dữ liệu dị ứng từ Onboarding
+            allergies: profile && profile.allergies ? profile.allergies.join(', ') : null
         });
     } catch (err) {
         console.error('Admin get user:', err);

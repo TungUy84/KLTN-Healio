@@ -1,165 +1,92 @@
 import api from './api';
-import { calculateMetrics } from '../utils/calculations';
 
-// --- Types ---
-
-export interface DietPreset {
-  id?: number;
-  code: string;
-  name: string;
-  description: string;
-  carb_ratio: number;
-  protein_ratio: number;
-  fat_ratio: number;
-}
-
-export interface UserNutritionTarget {
-  id?: number;
-  tdee: number;
-  target_calories: number;
-  DietPreset?: DietPreset;
-}
-
-export interface UserProfile {
-  gender: string;
-  dob: string;
-  height: number;
-  current_weight: number;
-  activity_level: string;
-  goal_type: string;
-  goal_weight: number;
-}
-
-export interface User {
-  id: number;
-  email: string;
-  full_name: string;
-  role: string;
-  photo_url?: string;
-  UserProfile?: UserProfile;
-  UserNutritionTarget?: UserNutritionTarget;
+export interface UserProfileUpdate {
+  full_name?: string;
+  avatar?: string;
+  dob?: string;
+  gender?: 'male' | 'female';
+  height?: number;
+  current_weight?: number;
+  activity_level?: string;
+  goal_type?: string;
+  goal_weight?: number;
+  allergies?: string[];
 }
 
 export interface CalculatedMetrics {
-  bmi: number;
-  bmr: number;
   tdee: number;
   target_calories: number;
-  target_protein_g: number;
   target_carb_g: number;
+  target_protein_g: number;
   target_fat_g: number;
-  current_goal: string;
-  current_activity_level: string;
 }
 
-// --- API Calls ---
-
-export const getProfile = async (): Promise<User> => {
-  const response = await api.get('/users/profile');
-  return response.data;
-};
-
-export const getDietPresets = async (): Promise<DietPreset[]> => {
-  const response = await api.get('/users/diet-presets');
-  return response.data;
-};
-
-export const completeOnboarding = async (data: any) => {
-  const response = await api.post('/users/onboarding', data);
-  return response.data;
-};
-
-const getAge = (dobString: string) => {
-  if (!dobString) return 25; // Default age if missing
-  const today = new Date();
-  const dob = new Date(dobString);
-  let age = today.getFullYear() - dob.getFullYear();
-  const m = today.getMonth() - dob.getMonth();
-  if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
-    age--;
-  }
-  return age;
-};
-
-/**
- * Calculates metrics based on user profile.
- * Returns flattened structure for Dashboard.
- */
-export const getCalculatedMetrics = async (): Promise<CalculatedMetrics> => {
-  try {
-    const user = await getProfile();
-    const profile = user.UserProfile;
-    const nutrition = user.UserNutritionTarget;
-    const diet = nutrition?.DietPreset;
-
-    // Defaults
-    const weight = profile?.current_weight || 70;
-    const height = profile?.height || 170;
-    const gender = (profile?.gender === 'female') ? 'female' : 'male';
-    
-    const activityMap: any = {
-      'sedentary': 'sedentary',
-      'light': 'light',
-      'moderate': 'moderate',
-      'active': 'active',
-      'very_active': 'very_active'
-    };
-    const activity = activityMap[profile?.activity_level || 'moderate'] || 'moderate';
-    
-    // Goal map
-    const goalMap: any = {
-      'lose_weight': 'lose_weight',
-      'maintain': 'maintain',
-      'gain_weight': 'gain_weight'
-    };
-    const goal = goalMap[profile?.goal_type || 'maintain'] || 'maintain';
-
-    const age = getAge(profile?.dob || '2000-01-01');
-
-    // Recalculate using utility 
-    const calculated = calculateMetrics(age, gender, weight, height, activity, goal);
-    const targetCals = nutrition?.target_calories || calculated.targetCalories;
-
-    // Macro splits
-    const carbsPct = diet ? diet.carb_ratio : 40;
-    const proteinPct = diet ? diet.protein_ratio : 30;
-    const fatPct = diet ? diet.fat_ratio : 30;
-
-    const targetCarbs = Math.round((targetCals * (carbsPct / 100)) / 4);
-    const targetProtein = Math.round((targetCals * (proteinPct / 100)) / 4);
-    const targetFat = Math.round((targetCals * (fatPct / 100)) / 9);
-
-    return {
-      bmi: calculated.bmi,
-      bmr: calculated.bmr,
-      tdee: calculated.tdee,
-      target_calories: targetCals,
-      target_protein_g: targetProtein,
-      target_carb_g: targetCarbs,
-      target_fat_g: targetFat,
-      current_goal: goal,
-      current_activity_level: activity
-    };
-  } catch (error) {
-    console.error("Error calculating metrics", error);
-    // Return safe defaults
-    return {
-      bmi: 0,
-      bmr: 0,
-      tdee: 0,
-      target_calories: 2000,
-      target_protein_g: 150,
-      target_carb_g: 200,
-      target_fat_g: 65,
-      current_goal: 'maintain',
-      current_activity_level: 'moderate'
-    };
-  }
-};
-
 export const userService = {
-  getProfile,
-  getDietPresets,
-  completeOnboarding,
-  getCalculatedMetrics
+  getProfile: async () => {
+    const response = await api.get('/users/profile');
+    return response.data;
+  },
+
+  updateProfile: async (data: UserProfileUpdate) => {
+    const response = await api.put('/users/profile', data);
+    return response.data;
+  },
+
+  // Avatar Upload
+  uploadAvatar: async (formData: FormData) => {
+    const response = await api.post('/users/upload-avatar', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
+  // PB_28
+  logWeight: async (weight: number, date?: string) => {
+    const response = await api.post('/users/weight-log', { weight, date });
+    return response.data;
+  },
+
+  // PB_27
+  getWeightHistory: async () => {
+    const response = await api.get('/users/weight-log');
+    return response.data;
+  },
+
+  // PB_38
+  changePassword: async (oldPassword: string, newPassword: string) => {
+    const response = await api.put('/users/change-password', { oldPassword, newPassword });
+    return response.data;
+  },
+
+  getDietPresets: async () => {
+    const response = await api.get('/users/diet-presets');
+    return response.data;
+  },
+
+  // Helper to calculate metrics based on Profile/Nutrition Target
+  getCalculatedMetrics: async (): Promise<CalculatedMetrics> => {
+    const response = await api.get('/users/profile');
+    const user = response.data;
+    const nutrition = user.UserNutritionTarget || {};
+    const preset = nutrition.DietPreset || { carb_ratio: 50, protein_ratio: 30, fat_ratio: 20 }; // Default: Balanced
+
+    const targetCalories = nutrition.target_calories || 2000;
+    const tdee = nutrition.tdee || 2000;
+
+    // Calculate Macros (grams)
+    // 1g Carb = 4 kcal, 1g Protein = 4 kcal, 1g Fat = 9 kcal
+    const target_carb_g = Math.round((targetCalories * (preset.carb_ratio / 100)) / 4);
+    const target_protein_g = Math.round((targetCalories * (preset.protein_ratio / 100)) / 4);
+    const target_fat_g = Math.round((targetCalories * (preset.fat_ratio / 100)) / 9);
+
+    return {
+      tdee,
+      target_calories: targetCalories,
+      target_carb_g,
+      target_protein_g,
+      target_fat_g
+    };
+  }
 };

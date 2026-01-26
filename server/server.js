@@ -16,6 +16,7 @@ require('./src/models/Food');
 require('./src/models/FoodIngredient'); // Junction table for Meal <-> RawFood relationship
 require('./src/models/UserFavoriteFood'); // PB_19: Favorites
 require('./src/models/UserDailyLog'); // PB_23: Diary
+require('./src/models/UserWeightLog'); // PB_27: Weight History
 
 const app = express();
 

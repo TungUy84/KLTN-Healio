@@ -5,8 +5,268 @@ const DietPreset = require('../models/DietPreset');
 const UserFavoriteFood = require('../models/UserFavoriteFood');
 const UserDailyLog = require('../models/UserDailyLog');
 const Food = require('../models/Food');
+const UserWeightLog = require('../models/UserWeightLog');
+const bcrypt = require('bcryptjs');
 
-// API: Seed một số Diet Preset mặc định nếu chưa có
+// --- Helper: Calculate Age ---
+const calculateAge = (dob) => {
+    if (!dob) return 0;
+    const birthDate = new Date(dob);
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+    }
+    return age;
+};
+
+// --- Helper: Calculate BMR (Mifflin-St Jeor) ---
+const calculateBMR = (gender, weight, height, age) => {
+    if (!weight || !height || !age) return 0;
+    let bmr = 10 * weight + 6.25 * height - 5 * age;
+    bmr += gender === 'male' ? 5 : -161;
+    return Math.round(bmr);
+};
+
+// --- Helper: Get Activity Multiplier ---
+const getActivityMultiplier = (level) => {
+    switch (level) {
+        case 'sedentary': return 1.2;
+        case 'light': return 1.375;
+        case 'moderate': return 1.55;
+        case 'active': return 1.725;
+        case 'very_active': return 1.9;
+        default: return 1.2;
+    }
+};
+
+// API: Cập nhật Profile (PB_30, PB_31, PB_33, PB_34, PB_35, PB_37)
+exports.updateProfile = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const {
+            full_name, avatar, // PB_30, PB_31
+            dob, height, current_weight, activity_level, gender, // PB_30, PB_33
+            goal_type, goal_weight, // PB_34
+            diet_preset_code, // PB_35
+            allergies // PB_37
+        } = req.body;
+
+        const user = await User.findByPk(userId);
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        // 1. Update User basic info
+        if (full_name !== undefined) user.full_name = full_name;
+        if (avatar !== undefined) user.avatar = avatar;
+        await user.save();
+
+        // 2. Update UserProfile
+        let profile = await UserProfile.findOne({ where: { user_id: userId } });
+        if (!profile) {
+            profile = await UserProfile.create({ user_id: userId });
+        }
+
+        const updateData = {};
+        if (dob !== undefined) updateData.dob = dob;
+        if (height !== undefined) updateData.height = height;
+        if (current_weight !== undefined) updateData.current_weight = current_weight;
+        if (activity_level !== undefined) updateData.activity_level = activity_level;
+        if (gender !== undefined) updateData.gender = gender;
+        if (goal_type !== undefined) updateData.goal_type = goal_type;
+        if (goal_weight !== undefined) updateData.goal_weight = goal_weight;
+        if (allergies !== undefined) updateData.allergies = allergies;
+
+        await profile.update(updateData);
+
+        // 3. PB_30 AC4: Recalculate BMR/TDEE & Nutrition Target
+        // Check if any factor affecting TDEE has changed
+        if (dob || height || current_weight || activity_level || gender) {
+            let nutrition = await UserNutritionTarget.findOne({ where: { user_id: userId } });
+
+            // Need current values (fallback to profile if not in body)
+            const pGender = gender || profile.gender;
+            const pDob = dob || profile.dob;
+            const pHeight = height || profile.height;
+            const pWeight = current_weight || profile.current_weight;
+            const pActivity = activity_level || profile.activity_level;
+
+            if (pGender && pDob && pHeight && pWeight && pActivity) {
+                const age = calculateAge(pDob);
+                const bmr = calculateBMR(pGender, pWeight, pHeight, age);
+                const multiplier = getActivityMultiplier(pActivity);
+                const tdee = Math.round(bmr * multiplier);
+
+                // Nutrition logic (simplified): 
+                // Lose weight: -500, Gain weight: +500
+                const pGoal = goal_type || profile.goal_type;
+                let targetCalories = tdee;
+                if (pGoal === 'lose_weight') targetCalories -= 500;
+                else if (pGoal === 'gain_weight') targetCalories += 500;
+
+                // Ensure min calories (safety)
+                if (targetCalories < 1200) targetCalories = 1200;
+
+                if (nutrition) {
+                    await nutrition.update({ tdee, target_calories: targetCalories });
+                } else {
+                    // Create if not exists (should rarely happen if onboarded)
+                    await UserNutritionTarget.create({
+                        user_id: userId,
+                        tdee,
+                        target_calories: targetCalories,
+                        diet_preset_id: null // Or default
+                    });
+                }
+            }
+        }
+
+        // PB_35: Update Diet Preset
+        if (diet_preset_code) {
+            const preset = await ensureDietPreset(diet_preset_code);
+            let nutrition = await UserNutritionTarget.findOne({ where: { user_id: userId } });
+            if (nutrition) {
+                await nutrition.update({ diet_preset_id: preset.id });
+            }
+        }
+
+        // Return updated full profile
+        const updatedUser = await User.findByPk(userId, {
+            attributes: ['id', 'email', 'full_name', 'role', 'avatar'],
+            include: [
+                { model: UserProfile },
+                { model: UserNutritionTarget, include: [DietPreset] }
+            ]
+        });
+
+        res.json(updatedUser);
+
+    } catch (err) {
+        console.error('Update Profile Error:', err);
+        res.status(500).json({ message: err.message });
+    }
+};
+
+// PB_31: Upload Avatar
+exports.uploadAvatar = async (req, res) => {
+    try {
+        const userId = req.user.id;
+
+        if (!req.file) {
+            return res.status(400).json({ message: 'No file uploaded' });
+        }
+
+        const avatarPath = `/uploads/${req.file.filename}`;
+
+        const user = await User.findByPk(userId);
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        user.avatar = avatarPath;
+        await user.save();
+
+        res.json({ message: 'Avatar uploaded successfully', avatar: avatarPath });
+    } catch (err) {
+        console.error('Upload Avatar Error:', err);
+        res.status(500).json({ message: err.message });
+    }
+};
+
+// PB_28: Cập nhật cân nặng (Log History)
+exports.logWeight = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { weight, date } = req.body;
+
+        if (!weight) return res.status(400).json({ message: 'Weight is required' });
+
+        const logDate = date || new Date();
+
+        // 1. Create Log
+        await UserWeightLog.create({
+            user_id: userId,
+            weight: parseFloat(weight),
+            date: logDate
+        });
+
+        // 2. Update Current Weight in Profile
+        // This will trigger 'updateProfile' logic if we called it, but here we do it manually or call updateProfile?
+        // Let's do manual update for efficiency, but we SHOULD recalculate TDEE too.
+        // For simplicity reusing updateProfile logic is best, but separate function is faster.
+        // Let's just update and Recalculate here to be consistent.
+
+        const profile = await UserProfile.findOne({ where: { user_id: userId } });
+        if (profile) {
+            await profile.update({ current_weight: parseFloat(weight) });
+
+            // Recalculate TDEE Logic
+            const age = calculateAge(profile.dob);
+            const bmr = calculateBMR(profile.gender, parseFloat(weight), profile.height, age);
+            const multiplier = getActivityMultiplier(profile.activity_level);
+            const tdee = Math.round(bmr * multiplier);
+
+            const pGoal = profile.goal_type;
+            let targetCalories = tdee;
+            if (pGoal === 'lose_weight') targetCalories -= 500;
+            else if (pGoal === 'gain_weight') targetCalories += 500;
+            if (targetCalories < 1200) targetCalories = 1200;
+
+            const nutrition = await UserNutritionTarget.findOne({ where: { user_id: userId } });
+            if (nutrition) {
+                await nutrition.update({ tdee, target_calories: targetCalories });
+            }
+        }
+
+        res.json({ success: true, message: 'Đã cập nhật cân nặng' });
+
+    } catch (err) {
+        console.error('Log Weight Error:', err);
+        res.status(500).json({ message: err.message });
+    }
+};
+
+// PB_27: Xem lịch sử cân nặng
+exports.getWeightHistory = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const logs = await UserWeightLog.findAll({
+            where: { user_id: userId },
+            order: [['date', 'ASC']]
+        });
+        res.json(logs);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
+
+// PB_38: Đổi mật khẩu
+exports.changePassword = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { oldPassword, newPassword } = req.body;
+
+        const user = await User.findByPk(userId);
+        if (!user.password_hash) {
+            return res.status(400).json({ message: 'Tài khoản này đăng nhập bằng Google, không thể đổi mật khẩu.' });
+        }
+
+        const validPass = await bcrypt.compare(oldPassword, user.password_hash);
+        if (!validPass) {
+            return res.status(400).json({ message: 'Mật khẩu cũ không đúng' });
+        }
+
+        const salt = await bcrypt.genSalt(10);
+        const hash = await bcrypt.hash(newPassword, salt);
+
+        await user.update({ password_hash: hash });
+
+        res.json({ success: true, message: 'Đổi mật khẩu thành công' });
+
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
+
+// API: Seed Diet Preset mặc định
 const DEFAULT_PRESETS = [
     { code: 'balanced', name: 'Cân bằng', carb_ratio: 45, protein_ratio: 30, fat_ratio: 25, description: 'Phù hợp đa số người Việt. Đầy đủ nhóm chất.' },
     { code: 'high_protein', name: 'High Protein', carb_ratio: 40, protein_ratio: 35, fat_ratio: 25, description: 'Ăn nhiều đạm, giúp no lâu.' },
@@ -32,7 +292,7 @@ exports.getProfile = async (req, res) => {
     try {
         const userId = req.user.id;
         const user = await User.findByPk(userId, {
-            attributes: ['id', 'email', 'full_name', 'role'],
+            attributes: ['id', 'email', 'full_name', 'role', 'avatar'],
             include: [
                 { model: UserProfile },
                 { model: UserNutritionTarget, include: [DietPreset] }
@@ -58,18 +318,18 @@ exports.getFavorites = async (req, res) => {
         });
         // Flatten structure for easier frontend consumption
         const result = favorites.map(f => {
-             const food = f.Food;
-             if (!food) return null;
-             return {
-                 id: food.id,
-                 name: food.name,
-                 image: food.image,
-                 calories: food.calories,
-                 serving_unit: food.serving_unit,
-                 favorite_at: f.createdAt
-             }
+            const food = f.Food;
+            if (!food) return null;
+            return {
+                id: food.id,
+                name: food.name,
+                image: food.image,
+                calories: food.calories,
+                serving_unit: food.serving_unit,
+                favorite_at: f.createdAt
+            }
         }).filter(item => item !== null);
-        
+
         res.json(result);
     } catch (err) {
         console.error(err);
@@ -82,7 +342,7 @@ exports.toggleFavorite = async (req, res) => {
     try {
         const userId = req.user.id;
         const { food_id } = req.body;
-        
+
         if (!food_id) return res.status(400).json({ message: 'food_id is required' });
 
         const foodId = parseInt(food_id);
@@ -118,7 +378,7 @@ exports.addToDiary = async (req, res) => {
         if (!food_id || !meal_type || !quantity || !date) {
             return res.status(400).json({ message: 'Thiếu thông tin bắt buộc' });
         }
-        
+
         // Lookup food for snapshot
         const food = await Food.findByPk(food_id);
         if (!food) {
@@ -132,14 +392,14 @@ exports.addToDiary = async (req, res) => {
             food_id,
             meal_type,
             date,
-            amount: amount, 
+            amount: amount,
             calories: (food.calories || 0) * amount,
             protein: (food.protein || 0) * amount,
             carb: (food.carb || 0) * amount,
             fat: (food.fat || 0) * amount,
             fiber: (food.fiber || 0) * amount
         });
-        
+
         res.json({ success: true, data: log });
     } catch (err) {
         console.error(err);
@@ -152,14 +412,14 @@ exports.getDailyLog = async (req, res) => {
     try {
         const userId = req.user.id;
         const date = req.query.date; // YYYY-MM-DD
-        
+
         if (!date) return res.status(400).json({ message: 'Date is required' });
 
         const logs = await UserDailyLog.findAll({
             where: { user_id: userId, date: date },
             include: [{ model: Food, as: 'food', attributes: ['name', 'image', 'serving_unit'] }]
         });
-        
+
         res.json(logs);
     } catch (err) {
         console.error(err);
@@ -183,12 +443,12 @@ exports.updateDailyLog = async (req, res) => {
         // Assuming we store snapshot, or simpler: lookup food again (better for data consistency if food changed, but typically we want the original food stats)
         // Here, let's look up the food again to be safe and simple
         const food = await Food.findByPk(log.food_id);
-         if (!food) {
+        if (!food) {
             return res.status(404).json({ message: 'Món ăn gốc không còn tồn tại' });
         }
 
         const amount = parseFloat(quantity);
-        
+
         await log.update({
             amount: amount,
             calories: (food.calories || 0) * amount,
