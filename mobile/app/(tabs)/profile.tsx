@@ -136,9 +136,10 @@ export default function ProfileScreen() {
 
   const updateDietMode = async (dietCode: string) => {
     try {
-      Alert.alert('Thông báo', `Đang chuyển sang chế độ: ${dietCode}. (API integration pending)`);
-      // await userService.updateDiet(dietCode); 
-      // loadData();
+      // PB_35: Update Diet Mode
+      await userService.updateProfile({ diet_preset_code: dietCode });
+      await loadData();
+      Alert.alert('Thành công', `Đã chuyển sang chế độ: ${dietCode}`);
     } catch (e) {
       Alert.alert('Lỗi', 'Không thể đổi chế độ ăn');
     }

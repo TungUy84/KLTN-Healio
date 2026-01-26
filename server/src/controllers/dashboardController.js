@@ -129,43 +129,44 @@ exports.getRecentActivities = async (req, res) => {
     }
 };
 
-// PB_43: Get Top Dishes (most logged in last 30 days)
-exports.getTopDishes = async (req, res) => {
+// PB_43: Get Top Foods (most logged in last 30 days)
+exports.getTopFoods = async (req, res) => {
     try {
         const limit = parseInt(req.query.limit) || 5;
         const days = parseInt(req.query.days) || 30;
 
-        const thirtyDaysAgo = new Date();
-        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - days);
+        const date = new Date();
+        date.setDate(date.getDate() - days);
+        const dateStr = date.toISOString().split('T')[0];
 
-        // Count logs by food_id in last 30 days using raw query for better performance
-        const dateStr = thirtyDaysAgo.toISOString().split('T')[0];
-
-        const results = await sequelize.query(`
-            SELECT 
-                f.id as food_id,
-                f.name,
-                COUNT(udl.id) as count
-            FROM user_daily_logs udl
-            INNER JOIN foods f ON udl.food_id = f.id
-            WHERE udl.date >= :dateStr
-            GROUP BY f.id, f.name
-            ORDER BY count DESC
-            LIMIT :limit
-        `, {
-            replacements: { dateStr, limit },
-            type: Sequelize.QueryTypes.SELECT
+        // PB_43: Top Foods using Sequelize
+        const logs = await UserDailyLog.findAll({
+            attributes: [
+                'food_id',
+                [sequelize.fn('COUNT', sequelize.col('UserDailyLog.id')), 'count']
+            ],
+            where: {
+                date: { [Op.gte]: dateStr }
+            },
+            include: [{
+                model: Food,
+                as: 'food', // Alias must match association
+                attributes: ['name']
+            }],
+            group: ['food_id', 'food.id', 'food.name'], // Group by included columns too
+            order: [[sequelize.literal('count'), 'DESC']],
+            limit: limit
         });
 
-        // Format response
-        const result = results.map(row => ({
-            name: row.name,
-            count: parseInt(row.count)
+        // Format result
+        const result = logs.map(log => ({
+            name: log.food ? log.food.name : 'Unknown',
+            count: parseInt(log.get('count'))
         }));
 
         res.json(result);
     } catch (err) {
-        console.error('Error fetching top dishes:', err);
+        console.error('Error fetching top foods:', err);
         res.status(500).json({ message: 'Lỗi khi lấy thống kê món ăn phổ biến' });
     }
 };

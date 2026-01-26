@@ -15,10 +15,10 @@ export const dashboardService = {
     return response.data;
   },
 
-  // PB_43: Get Top Dishes
-  getTopDishes: async (limit?: number, days?: number) => {
-    const response = await api.get('/dashboard/top-dishes', {
-      params: { 
+  // PB_43: Get Top Foods
+  getTopFoods: async (limit?: number, days?: number) => {
+    const response = await api.get('/dashboard/top-foods', {
+      params: {
         limit: limit || 5,
         days: days || 30
       }

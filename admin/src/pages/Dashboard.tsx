@@ -1,21 +1,21 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { dashboardService } from '../services/dashboardService';
-import { 
-    FaUsers, 
-    FaUserShield, 
-    FaLeaf, 
-    FaUtensils, 
-    FaPlus, 
-    FaArrowRight 
+import {
+    FaUsers,
+    FaUserShield,
+    FaLeaf,
+    FaUtensils,
+    FaPlus,
+    FaArrowRight
 } from 'react-icons/fa';
-import { 
-    BarChart, 
-    Bar, 
-    XAxis, 
-    YAxis, 
-    CartesianGrid, 
-    Tooltip, 
+import {
+    BarChart,
+    Bar,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip,
     ResponsiveContainer,
     Cell
 } from 'recharts';
@@ -36,7 +36,7 @@ interface Activity {
     avatar: string | null;
 }
 
-interface DishStat {
+interface FoodStat {
     name: string;
     count: number;
 }
@@ -45,20 +45,20 @@ const Dashboard: React.FC = () => {
     const navigate = useNavigate();
     const [stats, setStats] = useState<Stats | null>(null);
     const [activities, setActivities] = useState<Activity[]>([]);
-    const [topDishes, setTopDishes] = useState<DishStat[]>([]);
+    const [topFoods, setTopFoods] = useState<FoodStat[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [statsData, activitiesData, dishesData] = await Promise.all([
+                const [statsData, activitiesData, foodsData] = await Promise.all([
                     dashboardService.getStats(),
                     dashboardService.getRecentActivities(),
-                    dashboardService.getTopDishes()
+                    dashboardService.getTopFoods()
                 ]);
                 setStats(statsData);
                 setActivities(activitiesData);
-                setTopDishes(dishesData);
+                setTopFoods(foodsData);
             } catch (error) {
                 console.error("Failed to fetch dashboard data", error);
             } finally {
@@ -83,35 +83,35 @@ const Dashboard: React.FC = () => {
 
             {/* PB_40: Overview Stats Cards */}
             <div className="grid grid-cols-[repeat(auto-fit,minmax(240px,1fr))] gap-6 mb-8">
-                <StatsCard 
-                    title="Tổng Users" 
-                    value={stats?.users || 0} 
-                    icon={<FaUsers />} 
-                    color="text-indigo-600" 
+                <StatsCard
+                    title="Tổng Users"
+                    value={stats?.users || 0}
+                    icon={<FaUsers />}
+                    color="text-indigo-600"
                     bg="bg-indigo-50"
                     onClick={() => navigate('/users')}
                 />
-                <StatsCard 
-                    title="Tổng Admin" 
-                    value={stats?.admins || 0} 
-                    icon={<FaUserShield />} 
-                    color="text-violet-600" 
+                <StatsCard
+                    title="Tổng Admin"
+                    value={stats?.admins || 0}
+                    icon={<FaUserShield />}
+                    color="text-violet-600"
                     bg="bg-violet-50"
                     onClick={() => navigate('/users')}
                 />
-                <StatsCard 
-                    title="Tổng Nguyên liệu" 
-                    value={stats?.ingredients || 0} 
-                    icon={<FaLeaf />} 
-                    color="text-emerald-500" 
+                <StatsCard
+                    title="Tổng Nguyên liệu"
+                    value={stats?.ingredients || 0}
+                    icon={<FaLeaf />}
+                    color="text-emerald-500"
                     bg="bg-emerald-50"
                     onClick={() => navigate('/raw-foods')}
                 />
-                <StatsCard 
-                    title="Tổng Món ăn" 
-                    value={stats?.foods || 0} 
-                    icon={<FaUtensils />} 
-                    color="text-amber-500" 
+                <StatsCard
+                    title="Tổng Món ăn"
+                    value={stats?.foods || 0}
+                    icon={<FaUtensils />}
+                    color="text-amber-500"
                     bg="bg-amber-50"
                     onClick={() => navigate('/foods')}
                 />
@@ -120,8 +120,8 @@ const Dashboard: React.FC = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Left Column: Charts & Shortcuts */}
                 <div className="lg:col-span-2 flex flex-col gap-6">
-                    
-                    {/* PB_43: Popular Dishes Chart */}
+
+                    {/* PB_43: Popular Foods Chart */}
                     <div className="bg-white rounded-2xl p-6 shadow-sm">
                         <div className="flex justify-between items-center mb-6">
                             <h3 className="text-lg font-bold text-gray-900">Món ăn phổ biến (Top 5)</h3>
@@ -129,16 +129,16 @@ const Dashboard: React.FC = () => {
                         </div>
                         <div className="h-[300px] w-full">
                             <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={topDishes} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
+                                <BarChart data={topFoods} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
-                                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#6B7280', fontSize: 12}} dy={10} />
-                                    <YAxis axisLine={false} tickLine={false} tick={{fill: '#6B7280', fontSize: 12}} />
-                                    <Tooltip 
-                                        cursor={{fill: '#F3F4F6'}}
-                                        contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)'}}
+                                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#6B7280', fontSize: 12 }} dy={10} />
+                                    <YAxis axisLine={false} tickLine={false} tick={{ fill: '#6B7280', fontSize: 12 }} />
+                                    <Tooltip
+                                        cursor={{ fill: '#F3F4F6' }}
+                                        contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}
                                     />
                                     <Bar dataKey="count" radius={[4, 4, 0, 0]} barSize={40}>
-                                        {topDishes.map((_entry, index) => (
+                                        {topFoods.map((_entry, index) => (
                                             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                         ))}
                                     </Bar>
@@ -149,7 +149,7 @@ const Dashboard: React.FC = () => {
 
                     {/* PB_42: Shortcuts */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                        <div 
+                        <div
                             className="bg-white rounded-2xl p-5 flex items-center cursor-pointer shadow-sm hover:shadow-md transition-all"
                             onClick={() => navigate('/raw-foods/new')}
                         >
@@ -163,7 +163,7 @@ const Dashboard: React.FC = () => {
                             <span className="text-gray-400 text-sm"><FaArrowRight /></span>
                         </div>
 
-                        <div 
+                        <div
                             className="bg-white rounded-2xl p-5 flex items-center cursor-pointer shadow-sm hover:shadow-md transition-all"
                             onClick={() => navigate('/foods/new')}
                         >
@@ -199,13 +199,13 @@ const Dashboard: React.FC = () => {
                                                 </div>
                                             )}
                                         </div>
-                                    <div className="flex-1">
-                                        <p className="text-sm text-gray-600 m-0 mb-1">
-                                            <span className="font-semibold text-gray-900">{activity.user}</span> {activity.action}
-                                        </p>
-                                        <span className="text-xs text-gray-400 block">{activity.time}</span>
+                                        <div className="flex-1">
+                                            <p className="text-sm text-gray-600 m-0 mb-1">
+                                                <span className="font-semibold text-gray-900">{activity.user}</span> {activity.action}
+                                            </p>
+                                            <span className="text-xs text-gray-400 block">{activity.time}</span>
+                                        </div>
                                     </div>
-                                </div>
                                 );
                             })}
                         </div>
@@ -221,7 +221,7 @@ const Dashboard: React.FC = () => {
 
 // Sub-Component for Stats Card
 const StatsCard = ({ title, value, icon, color, bg, onClick }: any) => (
-    <div 
+    <div
         className={`bg-white rounded-2xl p-6 flex items-center shadow-sm ${onClick ? 'cursor-pointer hover:shadow-md transition-all' : ''}`}
         onClick={onClick}
     >

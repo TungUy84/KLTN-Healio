@@ -11,7 +11,7 @@ router.get('/stats', dashboardController.getStats);
 // PB_41: Get Recent Activities
 router.get('/activities', dashboardController.getRecentActivities);
 
-// PB_43: Get Top Dishes
-router.get('/top-dishes', dashboardController.getTopDishes);
+// PB_43: Get Top Foods
+router.get('/top-foods', dashboardController.getTopFoods);
 
 module.exports = router;
