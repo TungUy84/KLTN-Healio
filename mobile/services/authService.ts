@@ -12,6 +12,23 @@ export const authService = {
     return response.data;
   },
 
+  // PB_02: Google Login
+  loginGoogle: async (userInfo: any) => {
+    // userInfo: { email, id, name, picture, ... }
+    const response = await api.post('/auth/google', {
+      email: userInfo.email,
+      google_id: userInfo.id,
+      full_name: userInfo.name,
+      avatar: userInfo.picture,
+    });
+
+    if (response.data.token) {
+      await AsyncStorage.setItem('userToken', response.data.token);
+      await AsyncStorage.setItem('userInfo', JSON.stringify(response.data.user));
+    }
+    return response.data;
+  },
+
   // PB_03: Register Step 1 (Get OTP)
   register: async (email: string, password: string, full_name: string) => {
     const response = await api.post('/auth/register', { email, password, full_name });
