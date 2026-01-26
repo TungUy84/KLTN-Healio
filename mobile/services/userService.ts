@@ -88,5 +88,11 @@ export const userService = {
       target_protein_g,
       target_fat_g
     };
+  },
+
+  // PB_26: Weekly Chart Stats
+  getWeeklyStats: async (): Promise<any[]> => {
+    const response = await api.get('/users/stats/calories');
+    return response.data;
   }
 };

@@ -7,6 +7,8 @@ const UserDailyLog = require('../models/UserDailyLog');
 const Food = require('../models/Food');
 const UserWeightLog = require('../models/UserWeightLog');
 const bcrypt = require('bcryptjs');
+const { Op } = require('sequelize');
+const sequelize = require('../config/database');
 
 // --- Helper: Calculate Age ---
 const calculateAge = (dob) => {
@@ -224,16 +226,151 @@ exports.logWeight = async (req, res) => {
     }
 };
 
+// Helper: Predict and Sync Weight based on Calories
+const predictAndSyncWeight = async (userId) => {
+    try {
+        // 1. Get the very last weight log
+        const lastWeightLog = await UserWeightLog.findOne({
+            where: { user_id: userId },
+            order: [['date', 'DESC']]
+        });
+
+        if (!lastWeightLog) return; // No baseline to predict from
+
+        const lastDate = new Date(lastWeightLog.date);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        // If last log is today or future, nothing to do
+        if (lastDate >= today) return;
+
+        // 2. Get User TDEE
+        const nutrition = await UserNutritionTarget.findOne({ where: { user_id: userId } });
+        const tdee = nutrition ? nutrition.tdee : 2000;
+
+        // 3. Loop from day after last log until yesterday
+        let currentDate = new Date(lastDate);
+        currentDate.setDate(currentDate.getDate() + 1);
+
+        let currentWeight = parseFloat(lastWeightLog.weight);
+        const newLogs = [];
+
+        while (currentDate < today) {
+            const dateStr = currentDate.toISOString().split('T')[0];
+
+            // Check if there are food logs for this day
+            // We use SUM to get total calories
+            const totalCals = await UserDailyLog.sum('calories', {
+                where: { user_id: userId, date: dateStr }
+            });
+
+            // Logic: Only update if user tracked food (e.g., > 500 calories to imply usage)
+            // If they didn't use the app, we hold the weight constant (or could apply BMR burn, but risky)
+            if (totalCals && totalCals > 500) {
+                const diff = totalCals - tdee;
+                // 7700 kcal = 1kg
+                const weightChange = diff / 7700;
+                currentWeight += weightChange;
+
+                newLogs.push({
+                    user_id: userId,
+                    weight: parseFloat(currentWeight.toFixed(2)),
+                    date: dateStr,
+                    is_predicted: true // If we had this field
+                });
+            } else {
+                // If no data, keep weight same as previous day?
+                // Or just skip logging?
+                // Let's Skip logging to keep chart clean -> No, user wants continuous line. 
+                // Let's NOT log if no data (assume constant) - Chart will connect lines.
+            }
+
+            currentDate.setDate(currentDate.getDate() + 1);
+        }
+
+        // 4. Bulk Create predicted logs
+        if (newLogs.length > 0) {
+            await UserWeightLog.bulkCreate(newLogs);
+
+            // Update Profile current_weight to the latest predicted value
+            const latestPred = newLogs[newLogs.length - 1];
+            await UserProfile.update(
+                { current_weight: latestPred.weight },
+                { where: { user_id: userId } }
+            );
+        }
+
+    } catch (e) {
+        console.error("Auto Sync Weight Error", e);
+    }
+};
+
 // PB_27: Xem lịch sử cân nặng
 exports.getWeightHistory = async (req, res) => {
     try {
         const userId = req.user.id;
+
+        // Trigger Auto-Sync before fetching
+        await predictAndSyncWeight(userId);
+
         const logs = await UserWeightLog.findAll({
             where: { user_id: userId },
             order: [['date', 'ASC']]
         });
         res.json(logs);
     } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
+
+// PB_26: Biểu đồ Calo tuần
+exports.getWeeklyStats = async (req, res) => {
+    try {
+        const userId = req.user.id;
+
+        // 7 days range
+        const endDate = new Date();
+        const startDate = new Date();
+        startDate.setDate(endDate.getDate() - 6);
+
+        const logs = await UserDailyLog.findAll({
+            where: {
+                user_id: userId,
+                date: {
+                    [Op.between]: [startDate.toISOString().split('T')[0], endDate.toISOString().split('T')[0]]
+                }
+            },
+            attributes: [
+                'date',
+                [sequelize.fn('SUM', sequelize.col('calories')), 'totalCalories']
+            ],
+            group: ['date'],
+            order: [['date', 'ASC']],
+            raw: true
+        });
+
+        // Get TDEE
+        let tdee = 2000; // Default
+        const nutrition = await UserNutritionTarget.findOne({ where: { user_id: userId } });
+        if (nutrition) {
+            tdee = nutrition.tdee; // Or target_calories if comparing against goal
+        }
+
+        // Fill missing dates
+        const stats = [];
+        for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+            const dateStr = d.toISOString().split('T')[0];
+            const log = logs.find(l => l.date === dateStr);
+            stats.push({
+                date: dateStr,
+                calories: log ? parseFloat(log.totalCalories) : 0,
+                tdee: tdee
+            });
+        }
+
+        res.json(stats);
+    } catch (err) {
+        console.error('Stats Error:', err);
         res.status(500).json({ message: err.message });
     }
 };

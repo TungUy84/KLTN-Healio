@@ -38,6 +38,7 @@ import {
 } from "react-native-heroicons/outline";
 
 import { userService, UserProfileUpdate } from '../../services/userService';
+import { rawFoodService } from '../../services/rawFoodService';
 import { Colors } from '../../constants/Colors';
 
 // --- CONSTANTS ---
@@ -80,9 +81,16 @@ export default function ProfileScreen() {
 
   // Modal State
   const [modalVisible, setModalVisible] = useState(false);
-  const [editMode, setEditMode] = useState<'info' | 'allergies' | null>(null);
+  const [editMode, setEditMode] = useState<'info' | 'allergies' | 'password' | null>(null);
   const [formData, setFormData] = useState<UserProfileUpdate>({});
+  const [passwordData, setPasswordData] = useState({ oldPassword: '', newPassword: '', confirmPassword: '' });
   const [saving, setSaving] = useState(false);
+
+  // Search State for Allergies
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [selectedAllergies, setSelectedAllergies] = useState<string[]>([]);
 
   // Diet Presets from API
   const [dietPresets, setDietPresets] = useState<any[]>([]);
@@ -184,6 +192,82 @@ export default function ProfileScreen() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const saveAllergies = async () => {
+    try {
+      setSaving(true);
+      await userService.updateProfile({ allergies: selectedAllergies });
+      await loadData();
+      setModalVisible(false);
+      setEditMode(null);
+      Alert.alert('Thành công', 'Danh sách dị ứng đã được cập nhật');
+    } catch (e) {
+      Alert.alert('Lỗi', 'Không lưu được thay đổi');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleChangePassword = async () => {
+    if (!passwordData.oldPassword || !passwordData.newPassword || !passwordData.confirmPassword) {
+      Alert.alert('Lỗi', 'Vui lòng điền đầy đủ thông tin');
+      return;
+    }
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      Alert.alert('Lỗi', 'Mật khẩu mới không khớp');
+      return;
+    }
+    if (passwordData.newPassword.length < 6) {
+      Alert.alert('Lỗi', 'Mật khẩu mới phải có ít nhất 6 ký tự');
+      return;
+    }
+
+    try {
+      setSaving(true);
+      await userService.changePassword(passwordData.oldPassword, passwordData.newPassword);
+      setPasswordData({ oldPassword: '', newPassword: '', confirmPassword: '' });
+      setModalVisible(false);
+      setEditMode(null);
+      Alert.alert('Thành công', 'Đổi mật khẩu thành công');
+    } catch (e: any) {
+      Alert.alert('Lỗi', e.response?.data?.message || 'Không thể đổi mật khẩu');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Search Logic
+  useEffect(() => {
+    if (editMode !== 'allergies') return;
+
+    const delayDebounceFn = setTimeout(async () => {
+      if (searchQuery.length > 1) {
+        setSearching(true);
+        try {
+          const res = await rawFoodService.search(searchQuery);
+          setSearchResults(res.data || []);
+        } catch (error) {
+          console.error(error);
+        } finally {
+          setSearching(false);
+        }
+      } else {
+        setSearchResults([]);
+      }
+    }, 500);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchQuery, editMode]);
+
+  const toggleAllergy = (name: string) => {
+    if (selectedAllergies.includes(name)) {
+      setSelectedAllergies(selectedAllergies.filter(item => item !== name));
+    } else {
+      setSelectedAllergies([...selectedAllergies, name]);
+    }
+    setSearchQuery(''); // Clear search after selecting
+    setSearchResults([]);
   };
 
   const handleAvatarEdit = async () => {
@@ -439,6 +523,7 @@ export default function ProfileScreen() {
               sub={p.allergies?.length ? `${p.allergies.length} món` : 'Không có'}
               onPress={() => {
                 setEditMode('allergies');
+                setSelectedAllergies(p.allergies || []);
                 setModalVisible(true);
               }}
             />
@@ -450,7 +535,11 @@ export default function ProfileScreen() {
             <MenuItem
               icon={LockClosedIcon}
               title="Đổi mật khẩu"
-              onPress={() => Alert.alert('Thông báo', 'Tính năng đang phát triển')}
+              onPress={() => {
+                setEditMode('password');
+                setPasswordData({ oldPassword: '', newPassword: '', confirmPassword: '' });
+                setModalVisible(true);
+              }}
             />
             <MenuItem
               icon={ArrowRightOnRectangleIcon}
@@ -544,10 +633,112 @@ export default function ProfileScreen() {
           )}
 
           {editMode === 'allergies' && (
-            <View className="p-5 flex-1 items-center justify-center">
-              <Text className="text-gray-500">Tính năng chọn Dị ứng đang được phát triển...</Text>
-              {/* Placeholder for tag selection */}
+            <View className="flex-1">
+              <View className="px-5 pt-2 pb-4 bg-white border-b border-gray-100 z-10">
+                <Text className="text-sm text-gray-500 mb-2">Tìm kiếm nguyên liệu & thêm vào danh sách:</Text>
+                <TextInput
+                  className="bg-gray-100 px-4 py-3 rounded-xl text-gray-800"
+                  placeholder="Ví dụ: Tôm, Sữa, Đậu phộng..."
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                  autoFocus
+                />
+              </View>
+
+              {searchQuery.length > 0 && (
+                <ScrollView className="max-h-60 bg-white border-b border-gray-100 absolute top-[110px] w-full z-20 shadow-lg">
+                  {searching ? (
+                    <ActivityIndicator className="py-4" color={Colors.primary} />
+                  ) : searchResults.length > 0 ? (
+                    searchResults.map((item: any) => (
+                      <TouchableOpacity
+                        key={item.id}
+                        className="p-4 border-b border-gray-50 flex-row items-center justify-between"
+                        onPress={() => toggleAllergy(item.name)}
+                      >
+                        <Text className="text-gray-800 font-medium">{item.name}</Text>
+                        {selectedAllergies.includes(item.name) && (
+                          <View className="w-2 h-2 rounded-full bg-green-500" />
+                        )}
+                      </TouchableOpacity>
+                    ))
+                  ) : (
+                    <Text className="p-4 text-center text-gray-400">Không tìm thấy kết quả</Text>
+                  )}
+                </ScrollView>
+              )}
+
+              <ScrollView className="flex-1 p-5" keyboardShouldPersistTaps="handled">
+                <Text className="text-sm font-bold text-gray-500 mb-3 uppercase">Đã chọn ({selectedAllergies.length})</Text>
+                <View className="flex-row flex-wrap gap-2">
+                  {selectedAllergies.map((allergy, index) => (
+                    <TouchableOpacity
+                      key={index}
+                      onPress={() => toggleAllergy(allergy)}
+                      className="bg-orange-100 px-3 py-1.5 rounded-full flex-row items-center mr-1 mb-1"
+                    >
+                      <Text className="text-orange-700 font-medium mr-1">{allergy}</Text>
+                      <XMarkIcon size={14} color="#C2410C" />
+                    </TouchableOpacity>
+                  ))}
+                  {selectedAllergies.length === 0 && (
+                    <Text className="text-gray-400 italic">Chưa có món nào.</Text>
+                  )}
+                </View>
+              </ScrollView>
+
+              <View className="p-5 border-t border-gray-100 bg-white">
+                <TouchableOpacity
+                  className="bg-orange-500 py-4 rounded-xl items-center shadow-md shadow-orange-200"
+                  onPress={saveAllergies}
+                  disabled={saving}
+                >
+                  {saving ? <ActivityIndicator color="white" /> : (
+                    <Text className="text-white font-bold text-base">Lưu danh sách</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
             </View>
+          )}
+
+          {editMode === 'password' && (
+            <ScrollView className="p-5">
+              <View className="bg-white p-4 rounded-xl mb-6">
+                <Text className="text-xs text-gray-400 mb-1">Mật khẩu hiện tại</Text>
+                <TextInput
+                  className="text-base font-medium text-gray-800 border-b border-gray-100 py-2"
+                  secureTextEntry
+                  value={passwordData.oldPassword}
+                  onChangeText={t => setPasswordData({ ...passwordData, oldPassword: t })}
+                />
+
+                <Text className="text-xs text-gray-400 mb-1 mt-4">Mật khẩu mới</Text>
+                <TextInput
+                  className="text-base font-medium text-gray-800 border-b border-gray-100 py-2"
+                  secureTextEntry
+                  value={passwordData.newPassword}
+                  onChangeText={t => setPasswordData({ ...passwordData, newPassword: t })}
+                />
+
+                <Text className="text-xs text-gray-400 mb-1 mt-4">Nhập lại mật khẩu mới</Text>
+                <TextInput
+                  className="text-base font-medium text-gray-800 border-b border-gray-100 py-2"
+                  secureTextEntry
+                  value={passwordData.confirmPassword}
+                  onChangeText={t => setPasswordData({ ...passwordData, confirmPassword: t })}
+                />
+              </View>
+
+              <TouchableOpacity
+                className="bg-orange-500 py-4 rounded-xl items-center shadow-md shadow-orange-200"
+                onPress={handleChangePassword}
+                disabled={saving}
+              >
+                {saving ? <ActivityIndicator color="white" /> : (
+                  <Text className="text-white font-bold text-base">Đổi mật khẩu</Text>
+                )}
+              </TouchableOpacity>
+            </ScrollView>
           )}
         </View>
       </Modal>

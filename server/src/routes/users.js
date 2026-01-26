@@ -47,4 +47,7 @@ router.get('/daily-log', userController.getDailyLog);
 router.put('/daily-log/:id', userController.updateDailyLog);
 router.delete('/daily-log/:id', userController.deleteDailyLog);
 
+// Stats
+router.get('/stats/calories', userController.getWeeklyStats);
+
 module.exports = router;
