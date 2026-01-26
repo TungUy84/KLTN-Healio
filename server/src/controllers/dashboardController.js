@@ -49,22 +49,22 @@ exports.getRecentActivities = async (req, res) => {
         const recentUsers = await User.findAll({
             where: {
                 role: 'user',
-                [Op.and]: [
-                    sequelize.where(sequelize.literal('"User"."created_at"'), Op.gte, sevenDaysAgo)
-                ]
+                created_at: {
+                    [Op.gte]: sevenDaysAgo
+                }
             },
-            order: [[sequelize.literal('"User"."created_at"'), 'DESC']],
+            order: [[sequelize.col('created_at'), 'DESC']],
             limit: 5,
             attributes: [
                 'id',
                 'full_name',
                 'avatar',
-                [sequelize.literal('"User"."created_at"'), 'created_at']
+                [sequelize.col('created_at'), 'created_at']
             ]
         });
 
         recentUsers.forEach(user => {
-            const createdAt = user.get('created_at');
+            const createdAt = user.created_at;
             activities.push({
                 id: `user_${user.id}`,
                 user: user.full_name,
@@ -78,17 +78,17 @@ exports.getRecentActivities = async (req, res) => {
         // 2. Recent meals created by admins (last 7 days)
         const recentMeals = await Food.findAll({
             where: {
-                [Op.and]: [
-                    sequelize.where(sequelize.literal('"Food"."created_at"'), Op.gte, sevenDaysAgo)
-                ]
+                created_at: {
+                    [Op.gte]: sevenDaysAgo
+                }
             },
-            order: [[sequelize.literal('"Food"."created_at"'), 'DESC']],
+            order: [[sequelize.col('created_at'), 'DESC']],
             limit: 5,
             attributes: [
                 'id',
                 'name',
                 'created_by_user_id',
-                [sequelize.literal('"Food"."created_at"'), 'created_at']
+                [sequelize.col('created_at'), 'created_at']
             ]
         });
 
@@ -107,7 +107,7 @@ exports.getRecentActivities = async (req, res) => {
                 }
             }
 
-            const mealCreatedAt = meal.get('created_at');
+            const mealCreatedAt = meal.created_at;
             activities.push({
                 id: `meal_${meal.id}`,
                 user: creatorName,
