@@ -32,6 +32,11 @@ export const userService = {
     return response.data;
   },
 
+  completeOnboarding: async (data: any) => {
+    const response = await api.post('/users/onboarding', data);
+    return response.data;
+  },
+
   // Avatar Upload
   uploadAvatar: async (formData: FormData) => {
     const response = await api.post('/users/upload-avatar', formData, {

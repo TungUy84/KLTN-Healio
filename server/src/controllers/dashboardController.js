@@ -96,7 +96,7 @@ exports.getRecentActivities = async (req, res) => {
         for (const meal of recentMeals) {
             let creatorName = 'Admin';
             let creatorAvatar = null;
-            
+
             if (meal.created_by_user_id) {
                 const creator = await User.findByPk(meal.created_by_user_id, {
                     attributes: ['full_name', 'avatar']
@@ -106,7 +106,7 @@ exports.getRecentActivities = async (req, res) => {
                     creatorAvatar = creator.avatar;
                 }
             }
-            
+
             const mealCreatedAt = meal.get('created_at');
             activities.push({
                 id: `meal_${meal.id}`,
