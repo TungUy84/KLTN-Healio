@@ -12,18 +12,18 @@ const verifyToken = (req, res, next) => {
     req.user = verified; // Lưu payload (id, role) vào req để dùng ở controller
     next();
   } catch (err) {
-    res.status(400).json({ message: 'Invalid Token' });
+    res.status(401).json({ message: 'Invalid or Expired Token' });
   }
 };
 
 const verifyAdmin = (req, res, next) => {
-    verifyToken(req, res, () => {
-        if (req.user.role === 'admin') {
-            next();
-        } else {
-            res.status(403).json({ message: 'Access Denied. Admin only.' });
-        }
-    });
+  verifyToken(req, res, () => {
+    if (req.user.role === 'admin') {
+      next();
+    } else {
+      res.status(403).json({ message: 'Access Denied. Admin only.' });
+    }
+  });
 };
 
 module.exports = { verifyToken, verifyAdmin };

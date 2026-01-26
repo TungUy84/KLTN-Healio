@@ -16,10 +16,10 @@ const DAILY_LOG_MOCK = {
   protein: 0,
   fat: 0,
   meals: {
-    breakfast: { calories: 0, items: [] },
-    lunch: { calories: 0, items: [] },
-    dinner: { calories: 0, items: [] },
-    snack: { calories: 0, items: [] }
+    breakfast: { calories: 0, items: [] as any[] },
+    lunch: { calories: 0, items: [] as any[] },
+    dinner: { calories: 0, items: [] as any[] },
+    snack: { calories: 0, items: [] as any[] }
   }
 };
 
