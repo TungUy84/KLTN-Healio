@@ -1,83 +1,48 @@
 import React, { useEffect, useState } from 'react';
 import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  Image,
-  Modal,
-  TextInput,
-  Alert,
-  ActivityIndicator,
-  Linking
+  View, Text, ScrollView, TouchableOpacity, Image, Modal, TextInput, Alert, ActivityIndicator, Linking
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {
-  PencilSquareIcon,
-  Cog6ToothIcon,
-  ChevronRightIcon,
-  ArrowRightOnRectangleIcon,
-  XMarkIcon,
-  SparklesIcon,
-  FireIcon,
-  BoltIcon,
-  ScaleIcon,
-  NoSymbolIcon, // For allergies/restrictions
-  EnvelopeIcon,
-  LockClosedIcon,
-  QuestionMarkCircleIcon, // For support
-  UserIcon,
-  HomeIcon, // Sedentary
-  PlayIcon, // Active
-} from "react-native-heroicons/solid";
+import { Feather } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import {
-  TvIcon, // Sedentary alternative?
-} from "react-native-heroicons/outline";
-
 import { userService, UserProfileUpdate } from '../../services/userService';
 import { rawFoodService } from '../../services/rawFoodService';
-import { Colors } from '../../constants/Colors';
+import { LinearGradient } from 'expo-linear-gradient';
 
 // --- CONSTANTS ---
 
 const ACTIVITY_LEVELS = [
-  { id: 'sedentary', label: 'Ít vận động', sub: 'Văn phòng, ít tập thể dục', icon: TvIcon }, // Using TV icon for sedentary as sofa metaphor
-  { id: 'light', label: 'Nhẹ nhàng', sub: '1-3 ngày tập luyện / tuần', icon: UserIcon }, // Walking/Standing
-  { id: 'moderate', label: 'Vừa phải', sub: '3-5 ngày tập luyện / tuần', icon: PlayIcon }, // Jogging
-  { id: 'active', label: 'Năng động', sub: '6-7 ngày tập luyện / tuần', icon: BoltIcon }, // Gym/Running
-  { id: 'very_active', label: 'Rất năng động', sub: 'Vận động cường độ cao', icon: FireIcon }, // Athlete
+  { id: 'sedentary', label: 'Ít vận động', sub: 'Văn phòng, ít tập thể dục', icon: 'tv' },
+  { id: 'light', label: 'Nhẹ nhàng', sub: '1-3 ngày tập luyện / tuần', icon: 'user' },
+  { id: 'moderate', label: 'Vừa phải', sub: '3-5 ngày tập luyện / tuần', icon: 'play-circle' },
+  { id: 'active', label: 'Năng động', sub: '6-7 ngày tập luyện / tuần', icon: 'zap' },
+  { id: 'very_active', label: 'Rất năng động', sub: 'Vận động cường độ cao', icon: 'activity' },
 ];
 
-// Fallback Diet Modes until API connects, or mapping API codes to UI info
-const DIET_MODES_UI: Record<string, { name: string, icon: any, color: string, colorBg: string }> = {
-  'weight_loss': { name: 'Giảm cân', icon: ScaleIcon, color: '#10B981', colorBg: 'bg-emerald-50' }, // Green
-  'balanced': { name: 'Cân bằng', icon: SparklesIcon, color: '#3B82F6', colorBg: 'bg-blue-50' },   // Blue
-  'muscle_gain': { name: 'Tăng cơ', icon: BoltIcon, color: '#F59E0B', colorBg: 'bg-amber-50' },    // Orange/Yellow
-  'keto': { name: 'Keto', icon: FireIcon, color: '#EF4444', colorBg: 'bg-red-50' },             // Red
-  'low_carb': { name: 'Low Carb', icon: NoSymbolIcon, color: '#8B5CF6', colorBg: 'bg-violet-50' }, // Purple
+const DIET_MODES_UI: Record<string, { name: string, icon: any, color: string, colorBg: string, borderColor: string }> = {
+  'weight_loss': { name: 'Giảm cân', icon: 'trending-down', color: '#10B981', colorBg: 'bg-emerald-50', borderColor: 'border-emerald-200' },
+  'balanced': { name: 'Cân bằng', icon: 'layers', color: '#3B82F6', colorBg: 'bg-blue-50', borderColor: 'border-blue-200' },
+  'muscle_gain': { name: 'Tăng cơ', icon: 'zap', color: '#F59E0B', colorBg: 'bg-amber-50', borderColor: 'border-amber-200' },
+  'keto': { name: 'Keto', icon: 'battery-charging', color: '#EF4444', colorBg: 'bg-red-50', borderColor: 'border-red-200' },
+  'low_carb': { name: 'Low Carb', icon: 'slash', color: '#8B5CF6', colorBg: 'bg-violet-50', borderColor: 'border-violet-200' },
 };
 
-// --- HELPER FUNCTIONS ---
-
 const getBMI = (height: number, weight: number) => {
-  if (!height || !weight) return { value: 0, label: '—', color: 'text-gray-400', bg: 'bg-gray-100' };
+  if (!height || !weight) return { value: 0, label: '—', color: 'text-slate-400', bg: 'bg-slate-100' };
   const h = height / 100;
   const bmi = parseFloat((weight / (h * h)).toFixed(1));
-
-  if (bmi < 18.5) return { value: bmi, label: 'Thiếu cân', color: 'text-blue-500', bg: 'bg-blue-100' };
-  if (bmi < 23) return { value: bmi, label: 'Bình thường', color: 'text-green-500', bg: 'bg-green-100' };
-  if (bmi < 25) return { value: bmi, label: 'Thừa cân', color: 'text-orange-500', bg: 'bg-orange-100' };
-  return { value: bmi, label: 'Béo phì', color: 'text-red-500', bg: 'bg-red-100' };
+  if (bmi < 18.5) return { value: bmi, label: 'Thiếu cân', color: 'text-blue-600', bg: 'bg-blue-100' };
+  if (bmi < 23) return { value: bmi, label: 'Bình thường', color: 'text-emerald-600', bg: 'bg-emerald-100' };
+  if (bmi < 25) return { value: bmi, label: 'Thừa cân', color: 'text-orange-600', bg: 'bg-orange-100' };
+  return { value: bmi, label: 'Béo phì', color: 'text-red-600', bg: 'bg-red-100' };
 };
 
 export default function ProfileScreen() {
   const router = useRouter();
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false); // Can add pull-to-refresh later
 
   // Modal State
   const [modalVisible, setModalVisible] = useState(false);
@@ -86,660 +51,262 @@ export default function ProfileScreen() {
   const [passwordData, setPasswordData] = useState({ oldPassword: '', newPassword: '', confirmPassword: '' });
   const [saving, setSaving] = useState(false);
 
-  // Search State for Allergies
+  // Search State
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searching, setSearching] = useState(false);
   const [selectedAllergies, setSelectedAllergies] = useState<string[]>([]);
-
-  // Diet Presets from API
   const [dietPresets, setDietPresets] = useState<any[]>([]);
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  useEffect(() => { loadData(); }, []);
 
   const loadData = async () => {
     try {
       setLoading(true);
-      const [profileData, dietData] = await Promise.all([
-        userService.getProfile(),
-        userService.getDietPresets()
-      ]);
+      const [profileData, dietData] = await Promise.all([userService.getProfile(), userService.getDietPresets()]);
       setProfile(profileData);
       setDietPresets(dietData);
-    } catch (error) {
-      console.error('Load profile error:', error);
-      Alert.alert('Lỗi', 'Không thể tải dữ liệu hồ sơ');
-    } finally {
-      setLoading(false);
-    }
+    } catch (error) { Alert.alert('Lỗi', 'Không thể tải dữ liệu'); } finally { setLoading(false); }
   };
 
   const handleLogout = async () => {
     Alert.alert('Đăng xuất', 'Bạn có chắc chắn muốn đăng xuất?', [
       { text: 'Hủy', style: 'cancel' },
       {
-        text: 'Đăng xuất',
-        style: 'destructive',
-        onPress: async () => {
+        text: 'Đăng xuất', style: 'destructive', onPress: async () => {
           await AsyncStorage.removeItem('token');
-          await AsyncStorage.removeItem('userToken');
-          await AsyncStorage.removeItem('userInfo');
           router.replace('/auth/sign-in');
         }
       }
     ]);
   };
 
-  // --- UPDATES ---
-
   const updateDietMode = async (dietCode: string) => {
-    try {
-      // PB_35: Update Diet Mode
-      await userService.updateProfile({ diet_preset_code: dietCode });
-      await loadData();
-      Alert.alert('Thành công', `Đã chuyển sang chế độ: ${dietCode}`);
-    } catch (e) {
-      Alert.alert('Lỗi', 'Không thể đổi chế độ ăn');
-    }
+    try { await userService.updateProfile({ diet_preset_code: dietCode }); await loadData(); }
+    catch (e) { Alert.alert('Lỗi', 'Không thể đổi chế độ ăn'); }
   };
 
   const updateActivityLevel = async (level: string) => {
-    if (!profile) return;
     try {
-      // Optimistic update for UI feel?
-      const oldLevel = profile.UserProfile.activity_level;
       const newProfile = { ...profile, UserProfile: { ...profile.UserProfile, activity_level: level } };
-      setProfile(newProfile);
-
+      setProfile(newProfile); // Optimistic
       await userService.updateProfile({ activity_level: level });
-      // Should fetch again to get recalculated TDEE from backend (PB_33 AC2)
       const updated = await userService.getProfile();
       setProfile(updated);
-    } catch (e) {
-      console.error(e);
-      Alert.alert('Lỗi', 'Cập nhật thất bại');
-      loadData(); // Revert
-    }
+    } catch (e) { loadData(); }
   };
 
   const openEditInfo = () => {
     if (!profile) return;
     const p = profile.UserProfile || {};
-    const n = profile.UserNutritionTarget || {};
-    setFormData({
-      full_name: profile.full_name,
-      dob: p.dob,
-      height: p.height,
-      current_weight: p.current_weight,
-      goal_weight: p.goal_weight, // Using goal_weight from profile
-      gender: p.gender,
-    });
-    setEditMode('info');
-    setModalVisible(true);
+    setFormData({ full_name: profile.full_name, dob: p.dob, height: p.height, current_weight: p.current_weight, goal_weight: p.goal_weight, gender: p.gender });
+    setEditMode('info'); setModalVisible(true);
   };
 
-  const saveInfo = async () => {
-    try {
-      setSaving(true);
-      await userService.updateProfile(formData);
-      await loadData();
-      setModalVisible(false);
-      setEditMode(null);
-      Alert.alert('Thành công', 'Thông tin đã được cập nhật');
-    } catch (e) {
-      Alert.alert('Lỗi', 'Không lưu được thay đổi');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const saveAllergies = async () => {
-    try {
-      setSaving(true);
-      await userService.updateProfile({ allergies: selectedAllergies });
-      await loadData();
-      setModalVisible(false);
-      setEditMode(null);
-      Alert.alert('Thành công', 'Danh sách dị ứng đã được cập nhật');
-    } catch (e) {
-      Alert.alert('Lỗi', 'Không lưu được thay đổi');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleChangePassword = async () => {
-    if (!passwordData.oldPassword || !passwordData.newPassword || !passwordData.confirmPassword) {
-      Alert.alert('Lỗi', 'Vui lòng điền đầy đủ thông tin');
-      return;
-    }
-    if (passwordData.newPassword !== passwordData.confirmPassword) {
-      Alert.alert('Lỗi', 'Mật khẩu mới không khớp');
-      return;
-    }
-    if (passwordData.newPassword.length < 6) {
-      Alert.alert('Lỗi', 'Mật khẩu mới phải có ít nhất 6 ký tự');
-      return;
-    }
-
-    try {
-      setSaving(true);
-      await userService.changePassword(passwordData.oldPassword, passwordData.newPassword);
-      setPasswordData({ oldPassword: '', newPassword: '', confirmPassword: '' });
-      setModalVisible(false);
-      setEditMode(null);
-      Alert.alert('Thành công', 'Đổi mật khẩu thành công');
-    } catch (e: any) {
-      Alert.alert('Lỗi', e.response?.data?.message || 'Không thể đổi mật khẩu');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  // Search Logic
-  useEffect(() => {
-    if (editMode !== 'allergies') return;
-
-    const delayDebounceFn = setTimeout(async () => {
-      if (searchQuery.length > 1) {
-        setSearching(true);
-        try {
-          const res = await rawFoodService.search(searchQuery);
-          setSearchResults(res.data || []);
-        } catch (error) {
-          console.error(error);
-        } finally {
-          setSearching(false);
-        }
-      } else {
-        setSearchResults([]);
-      }
-    }, 500);
-
-    return () => clearTimeout(delayDebounceFn);
-  }, [searchQuery, editMode]);
-
-  const toggleAllergy = (name: string) => {
-    if (selectedAllergies.includes(name)) {
-      setSelectedAllergies(selectedAllergies.filter(item => item !== name));
-    } else {
-      setSelectedAllergies([...selectedAllergies, name]);
-    }
-    setSearchQuery(''); // Clear search after selecting
-    setSearchResults([]);
-  };
-
-  const handleAvatarEdit = async () => {
-    try {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Quyền truy cập bị từ chối', 'Chúng tôi cần quyền truy cập thư viện ảnh để thay đổi avatar.');
-        return;
-      }
-
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 0.5,
-      });
-
-      if (!result.canceled) {
-        const asset = result.assets[0];
-        const uri = asset.uri;
-
-        // Prepare form data
-        const formData = new FormData();
-        const filename = uri.split('/').pop() || 'avatar.jpg';
-        const match = /\.(\w+)$/.exec(filename);
-        const type = match ? `image/${match[1]}` : `image`;
-
-        // @ts-ignore: FormData expects Blob/File on web but specific object on RN
-        formData.append('avatar', { uri, name: filename, type });
-
-        setLoading(true);
-        await userService.uploadAvatar(formData);
-        await loadData(); // Reload profile to see new avatar
-        Alert.alert('Thành công', 'Avatar đã được cập nhật');
-      }
-    } catch (error) {
-      console.error('Avatar upload error:', error);
-      Alert.alert('Lỗi', 'Không thể Cập nhật avatar. Vui lòng thử lại.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // --- RENDER HELPERS ---
-
-  const renderDietCard = (preset: any) => {
-    // Map preset code to UI config
-    const uiConfig = DIET_MODES_UI[preset.code.toLowerCase()] || DIET_MODES_UI['balanced'];
-    const isActive = profile?.UserNutritionTarget?.DietPreset?.code === preset.code;
-
-    return (
-      <TouchableOpacity
-        key={preset.code}
-        onPress={() => updateDietMode(preset.code)}
-        className={`w-28 p-3 mr-3 rounded-2xl border ${isActive ? 'bg-white border-yellow-400' : 'bg-white border-gray-100'}`}
-        style={isActive ? { shadowColor: '#FBBF24', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 5, elevation: 5 } : {}}
-      >
-        <View className={`w-10 h-10 rounded-full items-center justify-center mb-3 ${uiConfig.colorBg}`}>
-          <uiConfig.icon size={20} color={uiConfig.color} />
-        </View>
-        {isActive && (
-          <View className="absolute top-2 right-2 bg-yellow-400 w-4 h-4 rounded-full items-center justify-center">
-            <Text className="text-white text-[10px] font-bold">✓</Text>
-          </View>
-        )}
-        <Text className="font-bold text-gray-800 text-sm mb-1">{preset.name}</Text>
-        <Text className="text-xs text-gray-500">
-          {preset.carb_ratio}/{preset.protein_ratio}/{preset.fat_ratio}
-        </Text>
-      </TouchableOpacity>
-    );
-  };
-
-  const renderActivityItem = (level: typeof ACTIVITY_LEVELS[0]) => {
-    const isActive = profile?.UserProfile?.activity_level === level.id;
-
-    return (
-      <TouchableOpacity
-        key={level.id}
-        onPress={() => updateActivityLevel(level.id)}
-        className={`flex-row items-center p-4 mb-3 rounded-2xl border ${isActive ? 'bg-orange-50 border-orange-400' : 'bg-white border-gray-100'
-          }`}
-      >
-        <View className={`w-10 h-10 rounded-full items-center justify-center ${isActive ? 'bg-orange-200' : 'bg-gray-100'}`}>
-          <level.icon size={20} color={isActive ? '#F97316' : '#9CA3AF'} />
-        </View>
-        <View className="ml-3 flex-1">
-          <Text className={`font-bold text-base ${isActive ? 'text-orange-600' : 'text-gray-700'}`}>
-            {level.label}
-          </Text>
-          <Text className="text-xs text-gray-500 mt-0.5">
-            {level.sub}
-          </Text>
-        </View>
-        <View className={`w-5 h-5 rounded-full border-2 items-center justify-center ${isActive ? 'border-orange-500' : 'border-gray-300'
-          }`}>
-          {isActive && <View className="w-2.5 h-2.5 rounded-full bg-orange-500" />}
-        </View>
-      </TouchableOpacity>
-    );
-  };
-
-  const MenuItem = ({ icon: Icon, title, sub, onPress, isDestructive = false }: any) => (
-    <TouchableOpacity
-      onPress={onPress}
-      className="flex-row items-center justify-between p-4 border-b border-gray-50 bg-white first:rounded-t-xl last:rounded-b-xl last:border-0"
-    >
-      <View className="flex-row items-center">
-        <Icon size={22} color={isDestructive ? '#EF4444' : '#6B7280'} />
-        <View className="ml-3">
-          <Text className={`font-medium text-base ${isDestructive ? 'text-red-500' : 'text-gray-700'}`}>
-            {title}
-          </Text>
-          {sub && <Text className="text-xs text-gray-400 mt-0.5">{sub}</Text>}
-        </View>
-      </View>
-      <ChevronRightIcon size={18} color="#D1D5DB" />
-    </TouchableOpacity>
-  );
-
-  if (loading) {
-    return (
-      <View className="flex-1 justify-center items-center bg-gray-50">
-        <ActivityIndicator size="large" color={Colors.primary} />
-      </View>
-    );
+  const handleSave = async (action: () => Promise<void>) => {
+    try { setSaving(true); await action(); setModalVisible(false); await loadData(); Alert.alert('Thành công', 'Đã cập nhật'); }
+    catch (e) { Alert.alert('Lỗi', 'Cập nhật thất bại'); } finally { setSaving(false); }
   }
 
+  // Search Logic for Allergies
+  useEffect(() => {
+    if (editMode !== 'allergies' || searchQuery.length <= 1) { setSearchResults([]); return; }
+    const timer = setTimeout(async () => {
+      setSearching(true);
+      try { const res = await rawFoodService.search(searchQuery); setSearchResults(res.data || []); }
+      catch (e) { } finally { setSearching(false); }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchQuery, editMode]);
+
+  const handleAvatarEdit = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, allowsEditing: true, aspect: [1, 1], quality: 0.5 });
+    if (!result.canceled) {
+      const asset = result.assets[0];
+      const data = new FormData();
+      // @ts-ignore
+      data.append('avatar', { uri: asset.uri, name: 'avatar.jpg', type: 'image/jpeg' });
+      setLoading(true);
+      try { await userService.uploadAvatar(data); await loadData(); } catch (e) { Alert.alert('Lỗi Upload'); } finally { setLoading(false); }
+    }
+  };
+
+  // --- RENDERS ---
+
+  if (loading && !profile) return <View className="flex-1 justify-center items-center bg-[#F8FAFC]"><ActivityIndicator size="large" color="#0D9488" /></View>;
   if (!profile) return null;
 
   const p = profile.UserProfile || {};
   const n = profile.UserNutritionTarget || {};
   const bmi = getBMI(p.height, p.current_weight);
 
+  const InfoRow = ({ label, value, sub }: any) => (
+    <View className="items-center">
+      <Text className="text-slate-400 text-[10px] uppercase font-bold tracking-wider mb-1">{label}</Text>
+      <Text className="text-slate-800 text-xl font-bold">{value}</Text>
+      {sub && <Text className="text-slate-400 text-xs">{sub}</Text>}
+    </View>
+  );
+
+  const SettingsParams = ({ icon, label, value, onPress, isDestructive }: any) => (
+    <TouchableOpacity onPress={onPress} className="flex-row items-center justify-between py-4 border-b border-slate-50 last:border-0">
+      <View className="flex-row items-center">
+        <View className={`w-9 h-9 rounded-full items-center justify-center mr-3 ${isDestructive ? 'bg-red-50' : 'bg-slate-50'}`}>
+          <Feather name={icon} size={16} color={isDestructive ? '#EF4444' : '#64748B'} />
+        </View>
+        <Text className={`font-medium text-[15px] ${isDestructive ? 'text-red-500' : 'text-slate-700'}`}>{label}</Text>
+      </View>
+      <View className="flex-row items-center">
+        {value && <Text className="text-slate-400 text-sm mr-2">{value}</Text>}
+        <Feather name="chevron-right" size={16} color="#CBD5E1" />
+      </View>
+    </TouchableOpacity>
+  );
+
   return (
-    <SafeAreaView className="flex-1 bg-gray-50" edges={['top']}>
-      {/* Header */}
-      <View className="px-5 py-3 flex-row items-center justify-between bg-white z-10 sticky top-0">
-        <TouchableOpacity onPress={() => router.back()}>
-          {/* Placeholder for back if needed, or empty for tab root */}
-          {/* <ArrowLeftIcon size={24} color="black" /> */}
-          <View className="w-6" />
-        </TouchableOpacity>
-        <Text className="text-lg font-bold text-gray-800">Hồ sơ & Mục tiêu</Text>
-        <TouchableOpacity onPress={() => { /* Settings route? */ }}>
-          <View className="w-6" />
-          {/* <Cog6ToothIcon size={24} color={Colors.primary} /> */}
-        </TouchableOpacity>
+    <SafeAreaView className="flex-1 bg-[#F8FAFC]" edges={['top']}>
+      <View className="px-5 pt-2 pb-4 bg-white shadow-sm shadow-slate-100 z-10 flex-row justify-between items-center">
+        <Text className="text-xl font-bold text-slate-800">Tài khoản</Text>
+        <TouchableOpacity><Feather name="settings" size={22} color="#475569" /></TouchableOpacity>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
-        {/* Avatar Section */}
-        <View className="items-center mt-6 mb-8">
+
+        {/* Profile Header */}
+        <View className="items-center mt-8 mb-6">
           <View className="relative">
-            <View className="w-24 h-24 rounded-full border-4 border-white shadow-sm overflow-hidden bg-gray-200">
-              {profile.avatar ? (
-                <Image
-                  source={{ uri: profile.avatar.startsWith('http') ? profile.avatar : `${process.env.EXPO_PUBLIC_API_URL?.replace('/api', '')}${profile.avatar}` }}
-                  className="w-full h-full"
-                  resizeMode="cover"
-                />
-              ) : (
-                <Image source={{ uri: 'https://ui-avatars.com/api/?name=' + profile.full_name }} className="w-full h-full" />
-              )}
+            <View className="w-28 h-28 rounded-full border-[3px] border-white shadow-lg shadow-teal-500/20 overflow-hidden">
+              <Image source={{ uri: profile.avatar?.startsWith('http') ? profile.avatar : 'https://ui-avatars.com/api/?background=0D9488&color=fff&name=' + profile.full_name }} className="w-full h-full" />
             </View>
-            <TouchableOpacity
-              className="absolute bottom-0 right-0 bg-yellow-400 p-1.5 rounded-full border-2 border-white"
-              onPress={handleAvatarEdit}
-            >
-              <PencilSquareIcon size={14} color="white" />
+            <TouchableOpacity onPress={handleAvatarEdit} className="absolute bottom-0 right-0 bg-teal-600 p-2 rounded-full border-2 border-white shadow-sm">
+              <Feather name="camera" size={14} color="white" />
             </TouchableOpacity>
           </View>
-          <Text className="text-xl font-bold text-gray-800 mt-3">{profile.full_name}</Text>
-          {/* Deleted Pro Badge as requested */}
+          <Text className="text-xl font-bold text-slate-800 mt-4">{profile.full_name}</Text>
+          <Text className="text-slate-500 text-sm">{profile.email}</Text>
         </View>
 
-        {/* Stats Grid - PB_32 */}
-        <View className="flex-row justify-between px-5 mb-8">
-          {/* BMI */}
-          <View className="bg-white p-3 rounded-2xl w-[31%] items-center shadow-sm">
-            <Text className="text-xs font-semibold text-gray-400 mb-1">BMI</Text>
-            <Text className={`text-xl font-bold ${bmi.color}`}>{bmi.value}</Text>
-            <View className={`px-2 py-0.5 rounded-full mt-1 ${bmi.bg}`}>
-              <Text className={`text-[10px] font-bold ${bmi.color}`}>{bmi.label}</Text>
-            </View>
-          </View>
-
-          {/* BMR */}
-          <View className="bg-white p-3 rounded-2xl w-[31%] items-center shadow-sm">
-            <Text className="text-xs font-semibold text-gray-400 mb-1">BMR</Text>
-            <Text className="text-xl font-bold text-gray-800">
-              {Math.round(n.tdee / (p.activity_level ? 1.2 : 1)) || 0}
-            </Text>
-            <Text className="text-[10px] text-gray-400 mt-1">kcal/ngày</Text>
-          </View>
-
-          {/* TDEE */}
-          <View className="bg-white p-3 rounded-2xl w-[31%] items-center shadow-sm border border-orange-100">
-            <Text className="text-xs font-semibold text-gray-400 mb-1">TDEE</Text>
-            <Text className="text-xl font-bold text-orange-500">{n.tdee || 0}</Text>
-            <Text className="text-[10px] text-gray-400 mt-1">kcal/ngày</Text>
-          </View>
+        {/* Stats Grid */}
+        <View className="mx-5 bg-white p-5 rounded-3xl shadow-sm border border-slate-100 flex-row justify-between mb-6">
+          <InfoRow label="BMI" value={bmi.value} sub={bmi.label} />
+          <View className="w-[1px] h-full bg-slate-100" />
+          <InfoRow label="TDEE" value={n.tdee} sub="kcal/ngày" />
+          <View className="w-[1px] h-full bg-slate-100" />
+          <InfoRow label="Cân nặng" value={`${p.current_weight}kg`} sub={`Mục tiêu: ${p.goal_weight}`} />
         </View>
 
-        {/* Diet Mode - PB_35 */}
+        {/* Diet Mode */}
         <View className="mb-8">
-          <View className="px-5 flex-row justify-between items-end mb-3">
-            <Text className="text-base font-bold text-gray-800">Chế độ ăn</Text>
-            <TouchableOpacity>
-              <Text className="text-xs text-green-600 font-medium">Chi tiết</Text>
-            </TouchableOpacity>
-          </View>
-
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ paddingHorizontal: 20 }}
-          >
-            {/* Fallback mock data if API empty */}
-            {dietPresets.length > 0 ? dietPresets.map(renderDietCard) : (
-              Object.keys(DIET_MODES_UI).map(code => renderDietCard({ code, ...DIET_MODES_UI[code] }))
-            )}
+          <Text className="px-5 text-base font-bold text-slate-800 mb-3">Chế độ dinh dưỡng</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20 }}>
+            {(dietPresets.length > 0 ? dietPresets : Object.keys(DIET_MODES_UI).map(k => ({ code: k, ...DIET_MODES_UI[k] }))).map((preset: any) => {
+              const ui = DIET_MODES_UI[preset.code.toLowerCase()] || DIET_MODES_UI['balanced'];
+              const isActive = profile?.UserNutritionTarget?.DietPreset?.code === preset.code;
+              return (
+                <TouchableOpacity
+                  key={preset.code} onPress={() => updateDietMode(preset.code)}
+                  className={`mr-3 w-32 p-4 rounded-2xl border bg-white ${isActive ? `border-teal-500 shadow-sm shadow-teal-500/20` : 'border-slate-100'}`}
+                >
+                  <View className={`w-10 h-10 rounded-full items-center justify-center mb-3 ${ui.colorBg}`}>
+                    <Feather name={ui.icon} size={18} color={ui.color} />
+                  </View>
+                  <Text className={`font-bold mb-1 ${isActive ? 'text-teal-700' : 'text-slate-700'}`}>{ui.name || preset.name}</Text>
+                  {isActive && <View className="absolute top-3 right-3 w-2 h-2 rounded-full bg-teal-500" />}
+                </TouchableOpacity>
+              );
+            })}
           </ScrollView>
-
-          <View className="mx-5 mt-3 bg-green-50 p-3 rounded-xl flex-row items-start">
-            <View className="mt-0.5"><QuestionMarkCircleIcon size={16} color="#15803d" /></View>
-            <Text className="text-xs text-green-800 ml-2 flex-1 leading-4">
-              Chế độ hiện tại sẽ ảnh hưởng trực tiếp đến thực đơn gợi ý hàng ngày của bạn.
-            </Text>
-          </View>
         </View>
 
-        {/* Activity Level - PB_33 */}
-        <View className="px-5 mb-8">
-          <Text className="text-base font-bold text-gray-800 mb-3">Mức độ vận động</Text>
-          <View className="bg-white rounded-2xl overflow-hidden shadow-sm">
-            {ACTIVITY_LEVELS.map(renderActivityItem)}
-          </View>
+        {/* Settings Group */}
+        <View className="mx-5 bg-white rounded-3xl p-2 shadow-sm border border-slate-100 mb-8">
+          <SettingsParams icon="user" label="Thông tin cá nhân" onPress={openEditInfo} />
+          <SettingsParams icon="activity" label="Mức độ vận động" value={ACTIVITY_LEVELS.find(a => a.id === p.activity_level)?.label} onPress={() => { }} />
+          <SettingsParams icon="alert-circle" label="Dị ứng & Kiêng kỵ" value={p.allergies?.length ? `${p.allergies.length} món` : ''} onPress={() => { setEditMode('allergies'); setSelectedAllergies(p.allergies || []); setModalVisible(true); }} />
+          <SettingsParams icon="lock" label="Đổi mật khẩu" onPress={() => { setEditMode('password'); setPasswordData({ oldPassword: '', newPassword: '', confirmPassword: '' }); setModalVisible(true); }} />
+          <SettingsParams icon="log-out" label="Đăng xuất" isDestructive onPress={handleLogout} />
         </View>
 
-        {/* Additional Settings */}
-        <View className="px-5 mb-10">
-          <Text className="text-base font-bold text-gray-800 mb-3">Cài đặt khác</Text>
-          <View className="rounded-xl overflow-hidden shadow-sm">
-            <MenuItem
-              icon={UserIcon}
-              title="Thông tin cá nhân"
-              onPress={openEditInfo}
-            />
-            <MenuItem
-              icon={NoSymbolIcon}
-              title="Dị ứng & Kiêng kỵ"
-              sub={p.allergies?.length ? `${p.allergies.length} món` : 'Không có'}
-              onPress={() => {
-                setEditMode('allergies');
-                setSelectedAllergies(p.allergies || []);
-                setModalVisible(true);
-              }}
-            />
-            <MenuItem
-              icon={EnvelopeIcon}
-              title="Hỗ trợ & Góp ý"
-              onPress={() => Linking.openURL('mailto:support@healio.vn?subject=Góp ý ứng dụng Healio')}
-            />
-            <MenuItem
-              icon={LockClosedIcon}
-              title="Đổi mật khẩu"
-              onPress={() => {
-                setEditMode('password');
-                setPasswordData({ oldPassword: '', newPassword: '', confirmPassword: '' });
-                setModalVisible(true);
-              }}
-            />
-            <MenuItem
-              icon={ArrowRightOnRectangleIcon}
-              title="Đăng xuất"
-              isDestructive
-              onPress={handleLogout}
-            />
-          </View>
-        </View>
+        <Text className="text-center text-slate-300 text-xs mb-8">Version 1.0.0 (Build 240)</Text>
+
       </ScrollView>
 
-      {/* Edit Info Modal - PB_30 */}
+      {/* Edit Modal */}
       <Modal visible={modalVisible} animationType="slide" presentationStyle="pageSheet">
-        <View className="flex-1 bg-gray-50 mt-4">
-          <View className="px-5 py-4 bg-white flex-row justify-between items-center border-b border-gray-100">
-            <Text className="text-lg font-bold">
-              {editMode === 'info' ? 'Chỉnh sửa thông tin' : 'Kiêng kỵ & Dị ứng'}
-            </Text>
-            <TouchableOpacity onPress={() => setModalVisible(false)} className="bg-gray-100 p-1 rounded-full">
-              <XMarkIcon size={20} color="black" />
-            </TouchableOpacity>
+        <View className="flex-1 bg-[#F8FAFC] mt-4">
+          <View className="bg-white px-5 py-4 border-b border-slate-100 flex-row justify-between items-center">
+            <Text className="font-bold text-lg text-slate-800">{editMode === 'info' ? 'Sửa thông tin' : editMode === 'allergies' ? 'Dị ứng' : 'Đổi mật khẩu'}</Text>
+            <TouchableOpacity onPress={() => setModalVisible(false)} className="bg-slate-100 p-2 rounded-full"><Feather name="x" size={20} /></TouchableOpacity>
           </View>
 
           {editMode === 'info' && (
             <ScrollView className="p-5">
-              <Text className="text-sm font-bold text-gray-500 mb-2 uppercase">Thông tin cơ bản</Text>
-              <View className="bg-white p-4 rounded-xl mb-6">
-                <Text className="text-xs text-gray-400 mb-1">Họ và tên</Text>
-                <TextInput
-                  className="text-base font-medium text-gray-800 border-b border-gray-100 py-2"
-                  value={formData.full_name}
-                  onChangeText={t => setFormData({ ...formData, full_name: t })}
-                />
+              <View className="bg-white p-4 rounded-2xl mb-4 border border-slate-100">
+                <Text className="text-xs text-slate-400 mb-1 font-bold uppercase">Họ tên</Text>
+                <TextInput value={formData.full_name} onChangeText={t => setFormData({ ...formData, full_name: t })} className="py-2 text-base border-b border-slate-100 text-slate-800 font-medium" />
 
-                <View className="flex-row mt-4">
-                  <View className="flex-1 mr-4">
-                    <Text className="text-xs text-gray-400 mb-1">Chiều cao (cm)</Text>
-                    <TextInput
-                      className="text-base font-medium text-gray-800 border-b border-gray-100 py-2"
-                      value={formData.height?.toString()}
-                      keyboardType="numeric"
-                      onChangeText={t => setFormData({ ...formData, height: parseFloat(t) || 0 })}
-                    />
+                <View className="flex-row gap-4 mt-4">
+                  <View className="flex-1">
+                    <Text className="text-xs text-slate-400 mb-1 font-bold uppercase">Chiều cao (cm)</Text>
+                    <TextInput value={formData.height?.toString()} keyboardType="numeric" onChangeText={t => setFormData({ ...formData, height: parseFloat(t) || 0 })} className="py-2 text-base border-b border-slate-100 text-slate-800 font-medium" />
                   </View>
                   <View className="flex-1">
-                    <Text className="text-xs text-gray-400 mb-1">Ngày sinh</Text>
-                    <TextInput
-                      className="text-base font-medium text-gray-800 border-b border-gray-100 py-2"
-                      value={formData.dob}
-                      placeholder="YYYY-MM-DD"
-                      onChangeText={t => setFormData({ ...formData, dob: t })}
-                    />
+                    <Text className="text-xs text-slate-400 mb-1 font-bold uppercase">Ngày sinh</Text>
+                    <TextInput value={formData.dob} placeholder="YYYY-MM-DD" onChangeText={t => setFormData({ ...formData, dob: t })} className="py-2 text-base border-b border-slate-100 text-slate-800 font-medium" />
                   </View>
                 </View>
               </View>
 
-              <Text className="text-sm font-bold text-gray-500 mb-2 uppercase">Cân nặng</Text>
-              <View className="bg-white p-4 rounded-xl mb-6">
-                <View className="flex-row">
-                  <View className="flex-1 mr-4">
-                    <Text className="text-xs text-gray-400 mb-1">Hiện tại (kg)</Text>
-                    <TextInput
-                      className="text-base font-medium text-gray-800 border-b border-gray-100 py-2"
-                      value={formData.current_weight?.toString()}
-                      keyboardType="numeric"
-                      onChangeText={t => setFormData({ ...formData, current_weight: parseFloat(t) || 0 })}
-                    />
+              <View className="bg-white p-4 rounded-2xl mb-6 border border-slate-100">
+                <Text className="text-xs text-slate-400 mb-1 font-bold uppercase">Cân nặng (kg)</Text>
+                <View className="flex-row gap-4">
+                  <View className="flex-1">
+                    <Text className="text-xs text-slate-400 mt-2">Hiện tại</Text>
+                    <TextInput value={formData.current_weight?.toString()} keyboardType="numeric" onChangeText={t => setFormData({ ...formData, current_weight: parseFloat(t) || 0 })} className="py-2 text-base border-b border-slate-100 text-slate-800 font-medium" />
                   </View>
                   <View className="flex-1">
-                    <Text className="text-xs text-gray-400 mb-1">Mục tiêu (kg)</Text>
-                    <TextInput
-                      className="text-base font-medium text-gray-800 border-b border-gray-100 py-2"
-                      value={formData.goal_weight?.toString()}
-                      keyboardType="numeric"
-                      onChangeText={t => setFormData({ ...formData, goal_weight: parseFloat(t) || 0 })}
-                    />
+                    <Text className="text-xs text-slate-400 mt-2">Mục tiêu</Text>
+                    <TextInput value={formData.goal_weight?.toString()} keyboardType="numeric" onChangeText={t => setFormData({ ...formData, goal_weight: parseFloat(t) || 0 })} className="py-2 text-base border-b border-slate-100 text-slate-800 font-medium" />
                   </View>
                 </View>
               </View>
 
-              <TouchableOpacity
-                className="bg-orange-500 py-4 rounded-xl items-center shadow-md shadow-orange-200"
-                onPress={saveInfo}
-                disabled={saving}
-              >
-                {saving ? <ActivityIndicator color="white" /> : (
-                  <Text className="text-white font-bold text-base">Lưu thay đổi</Text>
-                )}
+              <TouchableOpacity onPress={() => handleSave(async () => await userService.updateProfile(formData))} className="bg-teal-600 py-4 rounded-xl items-center shadow-lg shadow-teal-600/30">
+                {saving ? <ActivityIndicator color="white" /> : <Text className="text-white font-bold text-base">Lưu thay đổi</Text>}
               </TouchableOpacity>
             </ScrollView>
           )}
 
           {editMode === 'allergies' && (
             <View className="flex-1">
-              <View className="px-5 pt-2 pb-4 bg-white border-b border-gray-100 z-10">
-                <Text className="text-sm text-gray-500 mb-2">Tìm kiếm nguyên liệu & thêm vào danh sách:</Text>
-                <TextInput
-                  className="bg-gray-100 px-4 py-3 rounded-xl text-gray-800"
-                  placeholder="Ví dụ: Tôm, Sữa, Đậu phộng..."
-                  value={searchQuery}
-                  onChangeText={setSearchQuery}
-                  autoFocus
-                />
-              </View>
-
-              {searchQuery.length > 0 && (
-                <ScrollView className="max-h-60 bg-white border-b border-gray-100 absolute top-[110px] w-full z-20 shadow-lg">
-                  {searching ? (
-                    <ActivityIndicator className="py-4" color={Colors.primary} />
-                  ) : searchResults.length > 0 ? (
-                    searchResults.map((item: any) => (
-                      <TouchableOpacity
-                        key={item.id}
-                        className="p-4 border-b border-gray-50 flex-row items-center justify-between"
-                        onPress={() => toggleAllergy(item.name)}
-                      >
-                        <Text className="text-gray-800 font-medium">{item.name}</Text>
-                        {selectedAllergies.includes(item.name) && (
-                          <View className="w-2 h-2 rounded-full bg-green-500" />
-                        )}
+              <View className="px-5 py-2 z-20">
+                <TextInput className="bg-white border border-slate-200 p-3 rounded-xl" placeholder="Tìm kiếm món dị ứng..." value={searchQuery} onChangeText={setSearchQuery} />
+                {searchResults.length > 0 && (
+                  <View className="absolute top-[60px] left-5 right-5 bg-white rounded-xl shadow-lg border border-slate-100 z-50 max-h-40">
+                    {searchResults.map((item: any) => (
+                      <TouchableOpacity key={item.id} onPress={() => { setSelectedAllergies([...selectedAllergies, item.name]); setSearchQuery(''); setSearchResults([]); }} className="p-3 border-b border-slate-50 last:border-0">
+                        <Text>{item.name}</Text>
                       </TouchableOpacity>
-                    ))
-                  ) : (
-                    <Text className="p-4 text-center text-gray-400">Không tìm thấy kết quả</Text>
-                  )}
-                </ScrollView>
-              )}
-
-              <ScrollView className="flex-1 p-5" keyboardShouldPersistTaps="handled">
-                <Text className="text-sm font-bold text-gray-500 mb-3 uppercase">Đã chọn ({selectedAllergies.length})</Text>
+                    ))}
+                  </View>
+                )}
+              </View>
+              <ScrollView className="flex-1 px-5 pt-4">
                 <View className="flex-row flex-wrap gap-2">
-                  {selectedAllergies.map((allergy, index) => (
-                    <TouchableOpacity
-                      key={index}
-                      onPress={() => toggleAllergy(allergy)}
-                      className="bg-orange-100 px-3 py-1.5 rounded-full flex-row items-center mr-1 mb-1"
-                    >
-                      <Text className="text-orange-700 font-medium mr-1">{allergy}</Text>
-                      <XMarkIcon size={14} color="#C2410C" />
+                  {selectedAllergies.map((a, i) => (
+                    <TouchableOpacity key={i} onPress={() => setSelectedAllergies(selectedAllergies.filter(x => x !== a))} className="bg-red-50 flex-row items-center px-3 py-1.5 rounded-full border border-red-100">
+                      <Text className="text-red-600 mr-2">{a}</Text>
+                      <Feather name="x" size={12} color="#DC2626" />
                     </TouchableOpacity>
                   ))}
-                  {selectedAllergies.length === 0 && (
-                    <Text className="text-gray-400 italic">Chưa có món nào.</Text>
-                  )}
                 </View>
               </ScrollView>
-
-              <View className="p-5 border-t border-gray-100 bg-white">
-                <TouchableOpacity
-                  className="bg-orange-500 py-4 rounded-xl items-center shadow-md shadow-orange-200"
-                  onPress={saveAllergies}
-                  disabled={saving}
-                >
-                  {saving ? <ActivityIndicator color="white" /> : (
-                    <Text className="text-white font-bold text-base">Lưu danh sách</Text>
-                  )}
+              <View className="p-5 bg-white border-t border-slate-100">
+                <TouchableOpacity onPress={() => handleSave(async () => await userService.updateProfile({ allergies: selectedAllergies }))} className="bg-teal-600 py-4 rounded-xl items-center shadow-lg">
+                  <Text className="text-white font-bold">Lưu danh sách</Text>
                 </TouchableOpacity>
               </View>
             </View>
-          )}
-
-          {editMode === 'password' && (
-            <ScrollView className="p-5">
-              <View className="bg-white p-4 rounded-xl mb-6">
-                <Text className="text-xs text-gray-400 mb-1">Mật khẩu hiện tại</Text>
-                <TextInput
-                  className="text-base font-medium text-gray-800 border-b border-gray-100 py-2"
-                  secureTextEntry
-                  value={passwordData.oldPassword}
-                  onChangeText={t => setPasswordData({ ...passwordData, oldPassword: t })}
-                />
-
-                <Text className="text-xs text-gray-400 mb-1 mt-4">Mật khẩu mới</Text>
-                <TextInput
-                  className="text-base font-medium text-gray-800 border-b border-gray-100 py-2"
-                  secureTextEntry
-                  value={passwordData.newPassword}
-                  onChangeText={t => setPasswordData({ ...passwordData, newPassword: t })}
-                />
-
-                <Text className="text-xs text-gray-400 mb-1 mt-4">Nhập lại mật khẩu mới</Text>
-                <TextInput
-                  className="text-base font-medium text-gray-800 border-b border-gray-100 py-2"
-                  secureTextEntry
-                  value={passwordData.confirmPassword}
-                  onChangeText={t => setPasswordData({ ...passwordData, confirmPassword: t })}
-                />
-              </View>
-
-              <TouchableOpacity
-                className="bg-orange-500 py-4 rounded-xl items-center shadow-md shadow-orange-200"
-                onPress={handleChangePassword}
-                disabled={saving}
-              >
-                {saving ? <ActivityIndicator color="white" /> : (
-                  <Text className="text-white font-bold text-base">Đổi mật khẩu</Text>
-                )}
-              </TouchableOpacity>
-            </ScrollView>
           )}
         </View>
       </Modal>

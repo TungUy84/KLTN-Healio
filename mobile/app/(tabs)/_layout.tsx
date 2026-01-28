@@ -1,42 +1,39 @@
 import { Tabs } from 'expo-router';
 import React from 'react';
-import { View, TouchableOpacity, Text, Platform } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import Animated, { useAnimatedStyle, withTiming, useSharedValue, interpolateColor, interpolate } from 'react-native-reanimated';
+import { View, TouchableOpacity, Platform } from 'react-native';
+import { Feather } from '@expo/vector-icons';
+import Animated, { useAnimatedStyle, withTiming, useSharedValue, interpolateColor, interpolate, withSpring } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-// CẤU HÌNH MENU
+// CẤU HÌNH MENU - Sử dụng Feather Icons
 const TABS = [
-  { name: 'index', title: 'Nhật ký', icon: 'book' },
-  { name: 'foods', title: 'Thực đơn', icon: 'restaurant' },
-  { name: 'progress', title: 'Thống kê', icon: 'stats-chart' },
-  { name: 'profile', title: 'Tài khoản', icon: 'person' },
+  { name: 'index', title: 'Nhật ký', icon: 'book-open' },
+  { name: 'foods', title: 'Thực đơn', icon: 'coffee' },
+  { name: 'progress', title: 'Thống kê', icon: 'bar-chart-2' },
+  { name: 'profile', title: 'Tài khoản', icon: 'user' },
 ];
 
 const TabButton = ({ item, isFocused, onPress }: { item: any, isFocused: boolean, onPress: () => void }) => {
   const focusedSV = useSharedValue(isFocused ? 1 : 0);
 
   React.useEffect(() => {
-    focusedSV.value = withTiming(isFocused ? 1 : 0, { duration: 200 });
+    focusedSV.value = withSpring(isFocused ? 1 : 0, { damping: 12, stiffness: 100 });
   }, [isFocused]);
 
   // Animation Style
   const animatedContainerStyle = useAnimatedStyle(() => {
     return {
       transform: [
-        { translateY: interpolate(focusedSV.value, [0, 1], [0, -10]) },
+        { translateY: interpolate(focusedSV.value, [0, 1], [0, -6]) }, // Nhảy nhẹ lên
       ],
-      backgroundColor: interpolateColor(focusedSV.value, [0, 1], ['rgba(255, 255, 255, 0)', '#10b981']),
-      // Shadow động
-      shadowOpacity: interpolate(focusedSV.value, [0, 1], [0, 0.3]),
-      elevation: interpolate(focusedSV.value, [0, 1], [0, 8]),
+      backgroundColor: interpolateColor(focusedSV.value, [0, 1], ['transparent', '#0D9488']), // Primary Color
     };
   });
 
-  const animatedTextStyle = useAnimatedStyle(() => {
+  const animatedIconStyle = useAnimatedStyle(() => {
     return {
-      opacity: interpolate(focusedSV.value, [0, 1], [0.7, 1]),
-      color: interpolateColor(focusedSV.value, [0, 1], ['#9ca3af', '#10b981'])
+      color: interpolateColor(focusedSV.value, [0, 1], ['#94a3b8', '#ffffff']), // Slate-400 -> White
+      transform: [{ scale: interpolate(focusedSV.value, [0, 1], [1, 0.9]) }]
     }
   });
 
@@ -46,28 +43,17 @@ const TabButton = ({ item, isFocused, onPress }: { item: any, isFocused: boolean
       className="flex-1 items-center justify-center h-full z-10"
       activeOpacity={0.8}
     >
-      <View className="items-center h-[60px] justify-center">
-        {/* Circle Icon Container */}
-        <Animated.View
-          style={[
-            { width: 50, height: 50, borderRadius: 28, justifyContent: 'center', alignItems: 'center', shadowColor: '#10b981', shadowOffset: { width: 0, height: 8 } },
-            animatedContainerStyle
-          ]}
-        >
-          <Ionicons
-            name={isFocused ? item.icon : `${item.icon}-outline`}
-            size={isFocused ? 28 : 24}
-            color={isFocused ? 'white' : '#9ca3af'}
+      <Animated.View
+        className="w-12 h-12 items-center justify-center rounded-full"
+        style={[animatedContainerStyle]}
+      >
+        <Animated.Text style={animatedIconStyle}>
+          <Feather
+            name={item.icon as any}
+            size={24}
           />
-        </Animated.View>
-
-        {/* Text Label */}
-        <Animated.Text
-          style={[{ marginTop: 4, fontSize: 10, fontWeight: isFocused ? '600' : '400' }, animatedTextStyle]}
-        >
-          {item.title}
         </Animated.Text>
-      </View>
+      </Animated.View>
     </TouchableOpacity>
   );
 };
@@ -76,14 +62,14 @@ const CustomTabBar = ({ state, descriptors, navigation }: { state: any, descript
   const insets = useSafeAreaInsets();
 
   return (
-    <View
-      className="bg-white absolute bottom-0 w-full shadow-lg rounded-t-[24px]"
-      style={{
-        paddingBottom: insets.bottom,
-        shadowColor: '#000', shadowOffset: { width: 0, height: -2 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 20
-      }}
-    >
-      <View className="flex-row h-[70px] items-center justify-around">
+    <View className="absolute bottom-0 w-full items-center pointer-events-box-none">
+      <View
+        className="bg-white flex-row h-[70px] w-[90%] items-center justify-around rounded-[35px] shadow-lg shadow-slate-200/50 border border-slate-100 mb-5 pl-2 pr-2"
+        style={{
+          elevation: 10, // Android shadow
+          marginBottom: Platform.OS === 'ios' ? insets.bottom : 20
+        }}
+      >
         {state.routes.map((route: any, index: number) => {
           const item = TABS.find(t => t.name === route.name);
           if (!item) return null;

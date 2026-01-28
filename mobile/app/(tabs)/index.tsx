@@ -1,654 +1,421 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StatusBar, RefreshControl, Dimensions, Image, Platform, StyleSheet, ActivityIndicator, Modal, TextInput, Alert, KeyboardAvoidingView } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import React, { useState, useCallback, useEffect } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, StatusBar, RefreshControl, Image, Dimensions } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { Feather, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import Svg, { Circle, G } from 'react-native-svg';
+import Animated, {
+  FadeInDown,
+  FadeInUp,
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withTiming,
+  Easing,
+  interpolateColor,
+} from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
+
 import { userService, CalculatedMetrics } from '../../services/userService';
 import { foodService } from '../../services/foodService';
-import { Colors } from '../../constants/Colors';
-
-// --- MOCK DATA ---
-const DAILY_LOG_MOCK = {
-  eaten: 0,
-  carbs: 0,
-  protein: 0,
-  fat: 0,
-  meals: {
-    breakfast: { calories: 0, items: [] as any[] },
-    lunch: { calories: 0, items: [] as any[] },
-    dinner: { calories: 0, items: [] as any[] },
-    snack: { calories: 0, items: [] as any[] }
-  }
-};
-
-const { width } = Dimensions.get('window');
 
 // --- COMPONENTS ---
+const AnimatedView = Animated.createAnimatedComponent(View);
+const { width } = Dimensions.get('window');
 
-// --- Component: Vòng tròn năng lượng --- (from HEAD - enhanced version)
-const EnergyRing = ({ consumed, target, onAdd }: { consumed: number, target: number, onAdd?: () => void }) => {
-  const radius = 70;
-  const stroke = 12;
-  const circum = 2 * Math.PI * radius;
-  const percentValue = (consumed / target) * 100; // % Calo đã nạp
-  const percent = Math.min(consumed / target, 1);
-  const strokeDashoffset = circum - (percent * circum);
-  const remaining = target - consumed;
+// 1. Modern Header
+const Header = ({ userProfile, selectedDate, onPrevDate, onNextDate, onDatePress }: any) => {
+  const insets = useSafeAreaInsets();
 
-  // AC3: Màu sắc thanh tiến độ thay đổi theo trạng thái
-  // Xanh (<80%), Vàng (80-100%), Đỏ (>100%)
-  let progressColor: string;
-  if (percentValue < 80) {
-    progressColor = Colors.primary; // Xanh (An toàn)
-  } else if (percentValue <= 100) {
-    progressColor = Colors.warning; // Vàng (Sắp đạt ngưỡng)
-  } else {
-    progressColor = Colors.error; // Đỏ (Vượt quá mục tiêu)
-  }
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 11) return 'Chào buổi sáng';
+    if (hour < 14) return 'Chào buổi trưa';
+    if (hour < 18) return 'Chào buổi chiều';
+    return 'Chào buổi tối';
+  };
+
+  const greeting = getGreeting();
+  const titleName = userProfile?.full_name;
+  const avatarUri = userProfile?.avatar;
+
+  const formatDate = (date: Date) => {
+    const today = new Date();
+    if (date.toDateString() === today.toDateString()) return 'Hôm nay';
+    return `${date.getDate()} thg ${date.getMonth() + 1}`;
+  };
 
   return (
-    <View style={styles.ringCard}>
-      <Text style={styles.cardHeader}>Tổng quan Năng lượng</Text>
-      
-      {/* AC2: Thanh tiến độ (Progress Bar) thể hiện % lượng Calo đã nạp */}
-      <View style={styles.progressBarContainer}>
-        <View style={styles.progressBarLabelRow}>
-          <Text style={styles.progressBarLabel}>Tiến độ hôm nay</Text>
-          <Text style={[styles.progressBarPercent, { color: progressColor }]}>
-            {percentValue.toFixed(0)}%
-          </Text>
-        </View>
-        <View style={styles.progressBarBg}>
-          <View 
-            style={[
-              styles.progressBarFill, 
-              { 
-                width: `${Math.min(percentValue, 100)}%`, 
-                backgroundColor: progressColor 
-              }
-            ]} 
-          />
-        </View>
-      </View>
-
-      <View style={styles.chartArea}>
-        <Svg width={160} height={160} viewBox="0 0 160 160">
-          <G rotation="-90" origin="80, 80">
-            <Circle cx="80" cy="80" r={radius} stroke="#F5F5F5" strokeWidth={stroke} fill="transparent" />
-            <Circle 
-              cx="80" cy="80" r={radius} 
-              stroke={progressColor} strokeWidth={stroke} fill="transparent"
-              strokeDasharray={circum} strokeDashoffset={strokeDashoffset} strokeLinecap="round"
+    <View style={{ paddingTop: insets.top + 10 }} className="px-6 pb-4 bg-white z-20">
+      {/* Top Row */}
+      <View className="flex-row justify-between items-center mb-6">
+        <View className="flex-row items-center gap-3">
+          <View className="p-0.5 bg-gradient-to-tr from-teal-400 to-emerald-500 rounded-full shadow-sm">
+            <Image
+              source={{ uri: avatarUri }}
+              className="w-12 h-12 rounded-full border-2 border-white"
             />
-          </G>
-        </Svg>
-        <View style={styles.centerText}>
-          <Text style={[styles.bigNum, { color: progressColor }]}>{Math.abs(remaining)}</Text>
-          <Text style={styles.unit}>KCAL</Text>
-          {remaining < 0 && <Text style={{fontSize: 10, color: Colors.error}}>Vượt mức</Text>}
-        </View>
-        {onAdd && (
-          <TouchableOpacity 
-            onPress={onAdd}
-            className="w-10 h-10 bg-emerald-50 rounded-full items-center justify-center border border-emerald-100 active:bg-emerald-100"
-            style={{ marginTop: 10 }}
-          >
-            <Ionicons name="add" size={24} color="#10b981" />
-          </TouchableOpacity>
-        )}
-      </View>
-      
-      {/* AC1: Hiển thị công thức tổng quát: Mục tiêu - Đã ăn = Còn lại */}
-      <View style={styles.formulaContainer}>
-        <View style={styles.formulaRow}>
-          <Text style={styles.formulaLabel}>Mục tiêu:</Text>
-          <Text style={styles.formulaValue}>{target} kcal</Text>
-        </View>
-        <View style={styles.formulaRow}>
-          <Text style={styles.formulaLabel}>Đã ăn:</Text>
-          <Text style={styles.formulaValue}>{consumed} kcal</Text>
-        </View>
-        <View style={styles.formulaDivider} />
-        <View style={styles.formulaRow}>
-          <Text style={[styles.formulaLabel, { color: progressColor, fontWeight: 'bold' }]}>Còn lại:</Text>
-          <Text style={[styles.formulaValue, { color: progressColor, fontWeight: 'bold' }]}>{Math.abs(remaining)} kcal</Text>
-        </View>
-        <View style={styles.formulaEquation}>
-          <Text style={styles.formulaEquationText}>
-            {target} - {consumed} = {Math.abs(remaining)} kcal
-          </Text>
-        </View>
-      </View>
-    </View>
-  );
-};
-
-// --- Component: Thanh Macro --- (from HEAD)
-const MacroBar = ({ label, current, max, color }: any) => {
-  const percent = Math.min((current / max) * 100, 100);
-  return (
-    <View style={{ marginBottom: 15 }}>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
-        <Text style={{ fontSize: 14, fontWeight: '600', color: Colors.text }}>{label}</Text>
-        <Text style={{ fontSize: 12, color: Colors.gray }}>{current} / {max}g</Text>
-      </View>
-      <View style={{ height: 8, backgroundColor: '#F5F5F5', borderRadius: 4 }}>
-        <View style={{ width: `${percent}%`, height: '100%', backgroundColor: color, borderRadius: 4 }} />
-      </View>
-    </View>
-  );
-};
-
-// --- Component: MealCard --- (from origin/uy)
-const MealCard = ({ 
-  title, calories, icon, color, bgColor, onAdd, items = [], onItemPress 
-}: { 
-  title: string, calories: number, icon: any, color: string, bgColor: string, 
-  onAdd: () => void, items?: any[], onItemPress?: (item: any) => void 
-}) => {
-  return (
-    <View className="bg-white rounded-[24px] p-5 mb-4 shadow-sm border border-gray-100">
-      <View className="flex-row items-center justify-between mb-3">
-        <View className="flex-row items-center gap-4">
-          <View className={`w-12 h-12 ${bgColor} rounded-full items-center justify-center`}>
-            <Ionicons name={icon} size={24} color={color} />
           </View>
           <View>
-            <Text className="text-gray-900 font-bold text-lg">{title}</Text>
-            <Text className="text-gray-500 text-sm font-medium">
-              {calories > 0 ? `${Math.round(calories)} Kcal` : 'Chưa nhập'}
-            </Text>
+            <Text className="text-slate-400 text-xs font-medium uppercase tracking-wider mb-0.5">{greeting}</Text>
+            <Text className="text-slate-800 font-bold text-xl">{titleName} 👋</Text>
           </View>
         </View>
-        
-        <TouchableOpacity 
-          onPress={onAdd}
-          className="w-10 h-10 bg-emerald-50 rounded-full items-center justify-center border border-emerald-100 active:bg-emerald-100"
-        >
-          <Ionicons name="add" size={24} color="#10b981" />
+
+        <TouchableOpacity className="w-11 h-11 bg-slate-50 rounded-full items-center justify-center border border-slate-100 shadow-sm active:bg-slate-100">
+          <Feather name="bell" size={22} color="#64748B" />
+          {/* Notification Dot */}
+          <View className="absolute top-2.5 right-3 w-2.5 h-2.5 bg-rose-500 rounded-full border-2 border-white" />
         </TouchableOpacity>
       </View>
 
-      {/* Render Items */}
-      {items.length > 0 && (
-        <View style={{ marginTop: 8 }}>
-          {items.map((item, index) => (
-            <TouchableOpacity 
-              key={item.id || index} 
-              onPress={() => onItemPress && onItemPress(item)}
-              style={{
-                flexDirection: 'row', 
-                justifyContent: 'space-between', 
-                paddingVertical: 12, 
-                borderTopWidth: index === 0 ? 0 : 1, 
-                borderTopColor: '#f3f4f6'
-              }}
-            >
-              <View style={{flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1}}>
-                 {item.food?.image ? (
-                     <Image source={{ uri: item.food.image }} style={{width: 40, height: 40, borderRadius: 8, backgroundColor: '#f0f0f0'}} />
-                 ) : (
-                     <View style={{width: 40, height: 40, borderRadius: 8, backgroundColor: '#f3f4f6', alignItems: 'center', justifyContent: 'center'}}>
-                        <Ionicons name="fast-food" size={20} color="#ccc" />
-                     </View>
-                 )}
-                 <View style={{flex: 1}}>
-                     <Text style={{fontWeight: '600', color: Colors.text}} numberOfLines={1}>{item.food?.name || 'Món ăn'}</Text>
-                     <Text style={{fontSize: 12, color: Colors.gray}}>{item.amount} {item.food?.serving_unit}</Text>
-                 </View>
-              </View>
-              <Text style={{fontWeight: '600', color: Colors.primary}}>{Math.round(item.calories)}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      )}
+      {/* Date Navigator - Capsule Style */}
+      <View className="flex-row items-center justify-between bg-slate-50 p-1.5 rounded-full border border-slate-100/80">
+        <TouchableOpacity onPress={onPrevDate} className="w-10 h-10 items-center justify-center rounded-full bg-white shadow-sm border border-slate-50 active:scale-95">
+          <Feather name="chevron-left" size={20} color="#64748B" />
+        </TouchableOpacity>
 
-      {/* Empty State placeholder */}
-      {items.length === 0 && (
-        <View className="bg-gray-50 rounded-xl p-3 items-center justify-center border border-dashed border-gray-200 mt-1">
-          <Text className="text-gray-400 text-xs">Chưa có món ăn nào</Text>
-        </View>
-      )}
+        <TouchableOpacity onPress={onDatePress} className="flex-1 h-10 flex-row items-center justify-center gap-2 active:opacity-60">
+          <Feather name="calendar" size={16} color="#0D9488" />
+          <Text className="text-slate-700 font-bold text-base">{formatDate(selectedDate)}</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity onPress={onNextDate} className="w-10 h-10 items-center justify-center rounded-full bg-white shadow-sm border border-slate-50 active:scale-95">
+          <Feather name="chevron-right" size={20} color="#64748B" />
+        </TouchableOpacity>
+      </View>
     </View>
   );
 };
 
-// --- Main Component: DiaryScreen --- (from origin/uy)
+// 2. Premium Liquid Hero Card (Redesigned)
+const LiquidHero = ({ target, eaten, dailyLog, tCarb, tProt, tFat }: any) => {
+  const percent = Math.min(Math.max(eaten / (target || 2000), 0), 1.5); // Allow overflow for color logic
+  const waveAnim = useSharedValue(0);
+  const progress = useSharedValue(0);
+
+  useEffect(() => {
+    waveAnim.value = withRepeat(
+      withTiming(1, { duration: 2000, easing: Easing.linear }),
+      -1,
+      false
+    );
+    progress.value = withTiming(percent, { duration: 1000 });
+  }, [percent]);
+
+  const animatedStyle = useAnimatedStyle(() => {
+    const heightPercent = Math.min(progress.value, 1.1) * 100; // Cap visual height at 110%
+    return {
+      height: `${heightPercent}%`,
+      backgroundColor: interpolateColor(
+        progress.value,
+        [0, 0.8, 1, 1.1], // Orange -> Green -> Green -> Red
+        ['#F97316', '#10B981', '#10B981', '#EF4444']
+      )
+    };
+  });
+
+  const buttonAnimatedStyle = useAnimatedStyle(() => {
+    return {
+      backgroundColor: interpolateColor(
+        progress.value,
+        [0, 1, 1.1],
+        ['#F97316', '#0F766E', '#DC2626'] // Match button to liquid theme
+      )
+    };
+  });
+
+  return (
+    <AnimatedView entering={FadeInUp.delay(100).springify()} className="px-5 mt-4">
+      {/* Container Chính */}
+      <View className="bg-white rounded-[40px] p-6 shadow-xl shadow-slate-200/60 border border-slate-50 overflow-hidden relative">
+
+        {/* Decorative Background Blur */}
+        <View className="absolute -top-10 -right-10 w-40 h-40 bg-teal-50 rounded-full blur-3xl opacity-50" />
+        <View className="absolute -bottom-10 -left-10 w-40 h-40 bg-orange-50 rounded-full blur-3xl opacity-50" />
+
+        <View className="flex-row justify-between items-start mb-6">
+          <View>
+            <Text className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1">Mục tiêu hôm nay</Text>
+            <Text className="text-slate-800 text-2xl font-bold">{target} <Text className="text-sm font-medium text-slate-400">kcal</Text></Text>
+          </View>
+          <View className="bg-slate-50 px-3 py-1 rounded-full border border-slate-100">
+            <Text className="text-slate-600 font-bold text-xs">{Math.round(percent * 100)}%</Text>
+          </View>
+        </View>
+
+        {/* Main Circle Container */}
+        <View className="items-center justify-center py-2 mb-6">
+          <View className="w-56 h-56 rounded-full border-[8px] border-slate-50 shadow-inner bg-white overflow-hidden relative justify-center items-center">
+            {/* Background Circle */}
+            <View className="absolute inset-0 bg-slate-50/50" />
+
+            {/* The Liquid */}
+            <Animated.View className="absolute bottom-0 left-0 right-0 opacity-90 w-full z-10" style={animatedStyle}>
+              <View className="w-full h-4 bg-white/20 absolute top-0" />
+            </Animated.View>
+
+            {/* Content Inside Water */}
+            <View className="z-20 items-center justify-center">
+              <Text className="text-slate-500 font-bold text-[10px] uppercase tracking-widest mb-1 shadow-sm opacity-80">Đã nạp</Text>
+              <Text className="text-slate-800 font-bold text-5xl tracking-tighter shadow-sm">{Math.round(eaten)}</Text>
+              <Text className="text-slate-500 font-medium text-xs mt-1 shadow-sm">kcal</Text>
+            </View>
+          </View>
+
+          {/* Quick Add Button Floating - Color Sync */}
+          <AnimatedView className="absolute -bottom-4 px-5 py-2.5 rounded-full flex-row items-center shadow-lg shadow-gray-400/30 active:scale-95 z-30 border-4 border-white" style={buttonAnimatedStyle}>
+            <Feather name="plus" size={16} color="white" />
+            <Text className="text-white font-bold text-xs ml-2">Nạp nhanh</Text>
+          </AnimatedView>
+        </View>
+
+        {/* Macros Bars - Clean Style */}
+        <View className="mt-4 gap-3 bg-slate-50/50 p-4 rounded-3xl border border-slate-100">
+          <DetailedMacroBar label="Carbs" value={dailyLog.carbs} max={tCarb} color="#10b981" />
+          <DetailedMacroBar label="Protein" value={dailyLog.protein} max={tProt} color="#f97316" />
+          <DetailedMacroBar label="Fat" value={dailyLog.fat} max={tFat} color="#3b82f6" />
+        </View>
+      </View>
+    </AnimatedView>
+  )
+}
+
+const DetailedMacroBar = ({ label, value, max, color }: any) => {
+  const p = Math.min((value / max) * 100, 100);
+  return (
+    <View className="flex-row items-center gap-3">
+      <View className="w-16">
+        <Text className="text-slate-500 font-bold text-[11px] uppercase">{label}</Text>
+      </View>
+      <View className="flex-1 h-2.5 bg-slate-200 rounded-full overflow-hidden">
+        <View style={{ width: `${p}%`, backgroundColor: color }} className="h-full rounded-full" />
+      </View>
+      <View className="w-16 items-end">
+        <Text className="text-slate-700 font-bold text-xs">{Math.round(value)}<Text className="text-slate-400 text-[10px]">/{max}g</Text></Text>
+      </View>
+    </View>
+  )
+}
+
+// 3. Metrics Section - Sync with Result Screen (Centered & Styled)
+const MetricSection = ({ metrics }: any) => {
+  const getBMIInfo = (bmi: number) => {
+    if (!bmi) return { label: '--', color: 'text-slate-400', bg: 'bg-slate-100' };
+    if (bmi < 18.5) return { label: 'Thiếu cân', color: 'text-blue-600', bg: 'bg-blue-100' };
+    if (bmi < 24.9) return { label: 'Bình thường', color: 'text-emerald-600', bg: 'bg-emerald-100' };
+    if (bmi < 29.9) return { label: 'Thừa cân', color: 'text-orange-600', bg: 'bg-orange-100' };
+    return { label: 'Béo phì', color: 'text-red-600', bg: 'bg-red-100' };
+  };
+
+  const bmiInfo = getBMIInfo(metrics?.bmi);
+
+  return (
+    <View className="px-5 mt-6 flex-row gap-3">
+      {/* BMI Card */}
+      <AnimatedView entering={FadeInDown.delay(200).springify()} style={{ flex: 1 }} className="bg-white py-4 px-2 rounded-3xl border border-slate-100 shadow-sm items-center">
+        <View className="w-10 h-10 rounded-full bg-blue-50 items-center justify-center mb-2">
+          <Ionicons name="body" size={18} color="#3B82F6" />
+        </View>
+        <Text className="text-slate-400 text-[10px] font-bold uppercase mb-1">BMI</Text>
+        <Text className="text-slate-800 font-bold text-xl mb-1">{metrics?.bmi || '--'}</Text>
+        <View className={`px-2 py-0.5 rounded-full ${bmiInfo.bg}`}>
+          <Text className={`text-[9px] font-bold ${bmiInfo.color}`}>{bmiInfo.label}</Text>
+        </View>
+      </AnimatedView>
+
+      {/* BMR Card */}
+      <AnimatedView entering={FadeInDown.delay(300).springify()} style={{ flex: 1.2 }} className="bg-white py-4 px-2 rounded-3xl border border-slate-100 shadow-sm items-center">
+        <View className="w-10 h-10 rounded-full bg-orange-50 items-center justify-center mb-2">
+          <Ionicons name="flame" size={18} color="#F97316" />
+        </View>
+        <Text className="text-slate-400 text-[10px] font-bold uppercase mb-1">BMR</Text>
+        <Text className="text-slate-800 font-bold text-xl mb-1">{Math.round(metrics?.bmr) || 0}</Text>
+        <Text className="text-slate-400 text-[9px] font-medium">Kcal/ngày</Text>
+      </AnimatedView>
+
+      {/* TDEE Card */}
+      <AnimatedView entering={FadeInDown.delay(400).springify()} style={{ flex: 1.2 }} className="bg-white py-4 px-2 rounded-3xl border border-slate-100 shadow-sm items-center">
+        <View className="w-10 h-10 rounded-full bg-purple-50 items-center justify-center mb-2">
+          <Ionicons name="flash" size={18} color="#A855F7" />
+        </View>
+        <Text className="text-slate-400 text-[10px] font-bold uppercase mb-1">TDEE</Text>
+        <Text className="text-slate-800 font-bold text-xl mb-1">{Math.round(metrics?.tdee) || 0}</Text>
+        <Text className="text-slate-400 text-[9px] font-medium">Kcal/ngày</Text>
+      </AnimatedView>
+    </View>
+  )
+}
+
+// 4. Meal Grid - Colorful & Vibrancy
+const MealItem = ({ title, calories, icon, checkDelay, onPress, colorTheme }: any) => {
+  // Extract base color from Tailwind class (simplified mapping)
+  let bgSoft = 'bg-slate-50';
+  let border = 'border-slate-100';
+
+  if (colorTheme?.includes('orange')) { bgSoft = 'bg-orange-50'; border = 'border-orange-100'; }
+  else if (colorTheme?.includes('blue')) { bgSoft = 'bg-blue-50'; border = 'border-blue-100'; }
+  else if (colorTheme?.includes('indigo')) { bgSoft = 'bg-indigo-50'; border = 'border-indigo-100'; }
+  else if (colorTheme?.includes('rose')) { bgSoft = 'bg-rose-50'; border = 'border-rose-100'; }
+
+  return (
+    <AnimatedView entering={FadeInDown.delay(checkDelay).duration(500)} className="w-[48%] mb-4">
+      <TouchableOpacity
+        onPress={onPress}
+        activeOpacity={0.7}
+        className={`rounded-[28px] p-5 border ${border} ${bgSoft} shadow-sm relative overflow-hidden h-36 justify-between active:scale-[0.98]`}
+      >
+        {/* Decorative Blob */}
+        <View className={`absolute -right-4 -top-4 w-20 h-20 rounded-full opacity-10 bg-white`} />
+
+        <View className="flex-row justify-between items-start">
+          <View className={`w-12 h-12 bg-white rounded-2xl items-center justify-center shadow-sm`}>
+            <Image source={{ uri: icon }} className="w-7 h-7" resizeMode="contain" />
+          </View>
+          <View className="w-8 h-8 rounded-full bg-white/60 items-center justify-center">
+            <Feather name="plus" size={18} color="#64748B" />
+          </View>
+        </View>
+
+        <View>
+          <Text className="text-slate-800 font-bold text-lg leading-tight mb-1">{title}</Text>
+          <View className="bg-white/80 self-start px-2.5 py-1 rounded-lg overflow-hidden">
+            <Text className="text-slate-600 font-bold text-xs">
+              {calories} <Text className="text-[10px] font-normal text-slate-400">kcal</Text>
+            </Text>
+          </View>
+        </View>
+      </TouchableOpacity>
+    </AnimatedView>
+  )
+}
+
+// --- MAIN SCREEN ---
 export default function DiaryScreen() {
   const router = useRouter();
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  
+
+  // Data
   const [metrics, setMetrics] = useState<CalculatedMetrics | null>(null);
-  const [dailyLog, setDailyLog] = useState(DAILY_LOG_MOCK);
+  const [userProfile, setUserProfile] = useState<any>(null);
+  const [dailyLog, setDailyLog] = useState({
+    eaten: 0, carbs: 0, protein: 0, fat: 0,
+    meals: { breakfast: { calories: 0 }, lunch: { calories: 0 }, dinner: { calories: 0 }, snack: { calories: 0 } } as any
+  });
 
-  // Edit State
-  const [editModalVisible, setEditModalVisible] = useState(false);
-  const [selectedLog, setSelectedLog] = useState<any>(null);
-  const [quantityInput, setQuantityInput] = useState('');
-
-  // Load Data
   const fetchMetrics = async () => {
     try {
       const dateStr = selectedDate.toISOString().split('T')[0];
-      
-      const [metricsData, logsData] = await Promise.all([
-         userService.getCalculatedMetrics(),
-         foodService.getDailyLog(dateStr)
+      const [metricsData, logsData, profile] = await Promise.all([
+        userService.getCalculatedMetrics(),
+        foodService.getDailyLog(dateStr),
+        userService.getProfile()
       ]);
-      
+
       setMetrics(metricsData);
+      setUserProfile(profile);
 
-      // Process Logs
-      const newLogState = {
-        eaten: 0, carbs: 0, protein: 0, fat: 0,
-        meals: {
-            breakfast: { calories: 0, items: [] as any[] },
-            lunch: { calories: 0, items: [] as any[] },
-            dinner: { calories: 0, items: [] as any[] },
-            snack: { calories: 0, items: [] as any[] }
-        }
-      };
-
+      const newLog: any = { eaten: 0, carbs: 0, protein: 0, fat: 0, meals: { breakfast: { calories: 0 }, lunch: { calories: 0 }, dinner: { calories: 0 }, snack: { calories: 0 } } };
       if (Array.isArray(logsData)) {
-         logsData.forEach((log: any) => {
-             const type = log.meal_type as keyof typeof newLogState.meals;
-             if (newLogState.meals[type]) {
-                 newLogState.meals[type].items.push(log);
-                 newLogState.meals[type].calories += (log.calories || 0);
-             }
-             newLogState.eaten += (log.calories || 0);
-             newLogState.carbs += (log.carb || 0);
-             newLogState.protein += (log.protein || 0);
-             newLogState.fat += (log.fat || 0);
-         });
+        logsData.forEach((log: any) => {
+          const type = log.meal_type;
+          if (newLog.meals[type]) { newLog.meals[type].calories += (log.calories || 0); }
+          newLog.eaten += (log.calories || 0); newLog.carbs += (log.carb || 0); newLog.protein += (log.protein || 0); newLog.fat += (log.fat || 0);
+        });
       }
-
-      setDailyLog(newLogState);
-    } catch (error) {
-      console.error("Failed to fetch metrics", error);
-    }
+      setDailyLog(newLog);
+    } catch (e) { console.log(e); }
   };
 
-  useFocusEffect(
-    useCallback(() => {
-      fetchMetrics();
-    }, [selectedDate])
-  );
+  useFocusEffect(useCallback(() => { fetchMetrics(); }, [selectedDate]));
+  const onRefresh = async () => { setRefreshing(true); await fetchMetrics(); setRefreshing(false); };
 
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true);
-    await fetchMetrics();
-    setRefreshing(false);
-  }, [selectedDate]); // Add selectedDate dependency
-
-  // Date Logic
-  const changeDate = (days: number) => {
-    const newDate = new Date(selectedDate);
-    newDate.setDate(selectedDate.getDate() + days);
-    setSelectedDate(newDate);
-  };
-  const onDateChange = (event: any, date?: Date) => {
-    setShowDatePicker(false);
-    if (date) setSelectedDate(date);
-  };
-
-  const formatDate = (date: Date) => {
-    const today = new Date();
-    const yesterday = new Date(); yesterday.setDate(today.getDate() - 1);
-    const tomorrow = new Date(); tomorrow.setDate(today.getDate() + 1);
-
-    if (date.toDateString() === today.toDateString()) return 'Hôm nay';
-    if (date.toDateString() === yesterday.toDateString()) return 'Hôm qua';
-    if (date.toDateString() === tomorrow.toDateString()) return 'Ngày mai';
-    return `${date.getDate()} thg ${date.getMonth() + 1}, ${date.getFullYear()}`;
-  };
-
-  // Interaction Logic
-  const handleItemPress = (item: any) => {
-      setSelectedLog(item);
-      setQuantityInput(item.amount.toString());
-      setEditModalVisible(true);
-  };
-
-  const handleDelete = () => {
-    if(!selectedLog) return;
-    Alert.alert("Xác nhận", "Bạn có chắc muốn xóa món này?", [
-        { text: "Hủy", style: "cancel"},
-        { text: "Xóa", style: "destructive", onPress: async () => {
-            try {
-                await foodService.deleteDailyLog(selectedLog.id);
-                setEditModalVisible(false);
-                fetchMetrics(); // simpler than full refresh
-            } catch (e) { Alert.alert("Lỗi", "Không thể xóa nhật ký."); }
-        }}
-    ]);
-  };
-
-  const handleUpdate = async () => {
-      if (!selectedLog) return;
-      if (!quantityInput || isNaN(parseFloat(quantityInput))) {
-          Alert.alert("Lỗi", "Vui lòng nhập số lượng hợp lệ");
-          return;
-      }
-      try {
-          await foodService.updateDailyLog(selectedLog.id, parseFloat(quantityInput));
-          setEditModalVisible(false);
-          fetchMetrics();
-      } catch (e) { Alert.alert("Lỗi", "Không thể cập nhật."); }
-  };
-
-  // Calculations
-  const targetCalories = metrics?.target_calories || 2000;
-  const eatenCalories = dailyLog.eaten;
-  const remainingCalories = targetCalories - eatenCalories;
-  
-  const progressPercent = Math.min((eatenCalories / targetCalories) * 100, 100);
-  
-  // Macros Targets
-  const targetCarb = metrics?.target_carb_g || 250;
-  const targetProtein = metrics?.target_protein_g || 150;
-  const targetFat = metrics?.target_fat_g || 65;
+  const target = metrics?.target_calories || 2000;
+  const tCarb = metrics?.target_carb_g || 250;
+  const tProt = metrics?.target_protein_g || 150;
+  const tFat = metrics?.target_fat_g || 65;
 
   return (
-    <View className="flex-1 bg-gray-50">
-      <StatusBar barStyle="light-content" backgroundColor="#10b981" />
-      
-      {/* HEADER AREA */}
-      {/*Background */}
-      <View className="bg-emerald-500 pt-12 pb-6 px-6 rounded-b-[32px] shadow-sm z-10 relative overflow-hidden">
-        {/* Top Row: Date & Actions */}
-        <View className="flex-row justify-between items-center mb-6">
-            <View>
-                <TouchableOpacity 
-                    onPress={() => setShowDatePicker(true)}
-                    className="flex-row items-center mt-1"
-                >
-                    <Text className="text-white font-bold text-2xl mr-2">{formatDate(selectedDate)}</Text>
-                    <Ionicons name="chevron-down" size={20} color="white" />
-                </TouchableOpacity>
-            </View>
-            <View className="flex-row gap-3">
-                 <TouchableOpacity onPress={() => changeDate(-1)} className="w-10 h-10 bg-black/10 rounded-full items-center justify-center">
-                    <Ionicons name="chevron-back" size={24} color="white" />
-                 </TouchableOpacity>
-                 <TouchableOpacity onPress={() => changeDate(1)} className="w-10 h-10 bg-black/10 rounded-full items-center justify-center">
-                    <Ionicons name="chevron-forward" size={24} color="white" />
-                 </TouchableOpacity>
-            </View>
-        </View>
+    <View className="flex-1 bg-[#F8FAFC]">
+      <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
+      {/* Background Gradient Mesh (Optional - Adds subtle depth) */}
+      <LinearGradient
+        colors={['#F0FDFA', '#F8FAFC', '#F8FAFC']}
+        className="absolute top-0 left-0 right-0 h-96"
+      />
 
-        {/* Energy Summary Card */}
-        <View className="flex-row justify-between items-end">
-             <View>
-                 <Text className="text-emerald-100 text-sm mb-1">Cần nạp / ngày</Text>
-                 <View className="flex-row items-baseline">
-                    <Text className="text-white text-5xl font-extrabold mr-2">{Math.round(remainingCalories)}</Text>
-                    <Text className="text-emerald-100 text-lg font-medium">Kcal</Text>
-                 </View>
-                 <View className="bg-black/20 self-start px-3 py-1 rounded-full mt-2">
-                    <Text className="text-white text-xs font-bold">{Math.round(eatenCalories)} đã tìm nạp</Text>
-                 </View>
-             </View>
+      {/* 1. Header */}
+      <Header
+        userProfile={userProfile}
+        selectedDate={selectedDate}
+        onPrevDate={() => { const d = new Date(selectedDate); d.setDate(d.getDate() - 1); setSelectedDate(d); }}
+        onNextDate={() => { const d = new Date(selectedDate); d.setDate(d.getDate() + 1); setSelectedDate(d); }}
+        onDatePress={() => setShowDatePicker(true)}
+      />
 
-             <View className="items-end">
-                 <View className="items-end">
-                    <Text className="text-emerald-100 text-xs mb-1">Mục tiêu</Text>
-                    <Text className="text-white font-bold text-xl">{targetCalories}</Text>
-                 </View>
-             </View>
-        </View>
-
-        {/* Progress Bar */}
-        <View className="mt-6 bg-black/20 h-2 rounded-full overflow-hidden w-full">
-            <View style={{ width: `${progressPercent}%` as any }} className="h-full bg-white rounded-full" />
-        </View>
-      </View>
-
-      {/* === CONTENT SCROLL === */}
-      <ScrollView 
-        className="flex-1 px-5 pt-6"
+      <ScrollView
+        className="flex-1"
+        contentContainerStyle={{ paddingBottom: 110 }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={'#0D9488'} />}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 100 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#10b981']} />}
       >
-        
-        {/* MACRO SECTION */}
-        <Text className="text-gray-800 font-bold text-lg mb-4 ml-1">Dinh dưỡng hôm nay</Text>
-        <View className="flex-row gap-3 mb-8">
-            {/* Carbs */}
-            <View className="flex-1 bg-white p-4 rounded-[20px] shadow-sm border border-gray-100 justify-between min-h-[110px]">
-                <View className="flex-row justify-between items-start">
-                    <Text className="text-gray-500 text-xs font-bold uppercase">Carbs</Text>
-                    <Ionicons name="leaf" size={16} color="#3b82f6" />
-                </View>
-                <View>
-                    <Text className="text-gray-900 font-bold text-xl">{Math.round(dailyLog.carbs)}g</Text>
-                    <Text className="text-gray-400 text-xs mt-0.5">/{targetCarb}g</Text>
-                    <View className="mt-3 bg-gray-100 h-1.5 rounded-full overflow-hidden">
-                        <View style={{ width: `${Math.min((dailyLog.carbs / targetCarb) * 100, 100)}%` as any }} className="h-full bg-blue-500 rounded-full" />
-                    </View>
-                </View>
+
+        {/* 2. Liquid Hero & Macros */}
+        <LiquidHero
+          target={target} eaten={dailyLog.eaten}
+          dailyLog={dailyLog} tCarb={tCarb} tProt={tProt} tFat={tFat}
+        />
+
+        {/* 3. Reordered Metrics */}
+        <MetricSection metrics={metrics} />
+
+        {/* 4. Compact Meal List */}
+        <View className="px-6 mt-8">
+          <View className="flex-row justify-between items-center mb-5 px-1">
+            <View>
+              <Text className="text-slate-800 font-extrabold text-xl">Nhật ký hôm nay</Text>
             </View>
+            <TouchableOpacity className="bg-slate-100 p-2 rounded-full">
+              <MaterialCommunityIcons name="dots-horizontal" size={20} color="#64748B" />
+            </TouchableOpacity>
+          </View>
 
-            {/* Protein */}
-            <View className="flex-1 bg-white p-4 rounded-[20px] shadow-sm border border-gray-100 justify-between min-h-[110px]">
-                <View className="flex-row justify-between items-start">
-                    <Text className="text-gray-500 text-xs font-bold uppercase">Protein</Text>
-                    <Ionicons name="fitness" size={16} color="#f97316" />
-                </View>
-                <View>
-                    <Text className="text-gray-900 font-bold text-xl">{Math.round(dailyLog.protein)}g</Text>
-                    <Text className="text-gray-400 text-xs mt-0.5">/{targetProtein}g</Text>
-                    <View className="mt-3 bg-gray-100 h-1.5 rounded-full overflow-hidden">
-                        <View style={{ width: `${Math.min((dailyLog.protein / targetProtein) * 100, 100)}%` as any }} className="h-full bg-orange-500 rounded-full" />
-                    </View>
-                </View>
-            </View>
-
-            {/* Fat */}
-            <View className="flex-1 bg-white p-4 rounded-[20px] shadow-sm border border-gray-100 justify-between min-h-[110px]">
-                <View className="flex-row justify-between items-start">
-                    <Text className="text-gray-500 text-xs font-bold uppercase">Fat</Text>
-                    <Ionicons name="water" size={16} color="#eab308" />
-                </View>
-                <View>
-                    <Text className="text-gray-900 font-bold text-xl">{Math.round(dailyLog.fat)}g</Text>
-                    <Text className="text-gray-400 text-xs mt-0.5">/{targetFat}g</Text>
-                    <View className="mt-3 bg-gray-100 h-1.5 rounded-full overflow-hidden">
-                        <View style={{ width: `${Math.min((dailyLog.fat / targetFat) * 100, 100)}%` as any }} className="h-full bg-yellow-500 rounded-full" />
-                    </View>
-                </View>
-            </View>
-        </View>
-        
-        {/* MEALS LIST */}
-        <View className="flex-row justify-between items-end mb-4 ml-1">
-             <Text className="text-gray-800 font-bold text-lg">Bữa ăn</Text>
-        </View>
-
-        <View className="pb-8">
-            <MealCard 
-                title="Bữa Sáng" 
-                calories={dailyLog.meals.breakfast.calories} 
-                icon="sunny"
-                color="#f97316"
-                bgColor="bg-orange-100" 
-                items={dailyLog.meals.breakfast.items}
-                onItemPress={handleItemPress}
-                onAdd={() => router.push({ pathname: '/(tabs)/foods', params: { meal: 'breakfast' } })}
+          <View className="flex-row flex-wrap justify-between">
+            <MealItem
+              title="Bữa Sáng" calories={Math.round(dailyLog.meals.breakfast.calories)}
+              icon="https://cdn-icons-png.flaticon.com/512/887/887359.png" checkDelay={500} colorTheme="bg-orange-400"
+              onPress={() => router.push({ pathname: '/(tabs)/foods', params: { meal: 'breakfast' } })}
             />
-
-            <MealCard 
-                title="Bữa Trưa" 
-                calories={dailyLog.meals.lunch.calories} 
-                icon="restaurant"
-                color="#10b981"
-                bgColor="bg-emerald-100"
-                items={dailyLog.meals.lunch.items}
-                onItemPress={handleItemPress}
-                onAdd={() => router.push({ pathname: '/(tabs)/foods', params: { meal: 'lunch' } })}
+            <MealItem
+              title="Bữa Trưa" calories={Math.round(dailyLog.meals.lunch.calories)}
+              icon="https://cdn-icons-png.flaticon.com/512/2921/2921822.png" checkDelay={600} colorTheme="bg-blue-400"
+              onPress={() => router.push({ pathname: '/(tabs)/foods', params: { meal: 'lunch' } })}
             />
-
-            <MealCard 
-                title="Bữa Tối" 
-                calories={dailyLog.meals.dinner.calories} 
-                icon="moon"
-                color="#6366f1"
-                bgColor="bg-indigo-100"
-                items={dailyLog.meals.dinner.items}
-                onItemPress={handleItemPress}
-                onAdd={() => router.push({ pathname: '/(tabs)/foods', params: { meal: 'dinner' } })}
+            <MealItem
+              title="Bữa Tối" calories={Math.round(dailyLog.meals.dinner.calories)}
+              icon="https://cdn-icons-png.flaticon.com/512/706/706164.png" checkDelay={700} colorTheme="bg-indigo-400"
+              onPress={() => router.push({ pathname: '/(tabs)/foods', params: { meal: 'dinner' } })}
             />
-
-            <MealCard 
-                title="Bữa Phụ" 
-                calories={dailyLog.meals.snack.calories} 
-                icon="cafe"
-                color="#db2777"
-                bgColor="bg-pink-100"
-                items={dailyLog.meals.snack.items}
-                onItemPress={handleItemPress}
-                onAdd={() => router.push({ pathname: '/(tabs)/foods', params: { meal: 'snack' } })}
+            <MealItem
+              title="Bữa Phụ" calories={Math.round(dailyLog.meals.snack.calories)}
+              icon="https://cdn-icons-png.flaticon.com/512/2515/2515183.png" checkDelay={800} colorTheme="bg-rose-400"
+              onPress={() => router.push({ pathname: '/(tabs)/foods', params: { meal: 'snack' } })}
             />
+          </View>
         </View>
 
       </ScrollView>
-
-      {/* EDIT MODAL */}
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={editModalVisible}
-        onRequestClose={() => setEditModalVisible(false)}
-      >
-        <KeyboardAvoidingView 
-            behavior={Platform.OS === "ios" ? "padding" : "height"}
-            style={{flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0,0,0,0.5)"}}
-        >
-            <View style={{backgroundColor: "white", borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24}}>
-                <View style={{flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 20}}>
-                    <Text style={{fontSize: 20, fontWeight: "bold", color: Colors.text}}>Chỉnh sửa món ăn</Text>
-                    <TouchableOpacity onPress={() => setEditModalVisible(false)}>
-                        <Ionicons name="close" size={24} color={Colors.gray} />
-                    </TouchableOpacity>
-                </View>
-
-                {selectedLog && (
-                    <View style={{flexDirection: 'row', gap: 16, marginBottom: 24}}>
-                         {selectedLog.food?.image && (
-                             <Image source={{ uri: selectedLog.food.image }} style={{width: 60, height: 60, borderRadius: 12, backgroundColor: '#f0f0f0'}} />
-                         )}
-                         <View style={{flex: 1}}>
-                             <Text style={{fontSize: 18, fontWeight: '600', color: Colors.text}}>{selectedLog.food?.name}</Text>
-                             <Text style={{fontSize: 14, color: Colors.primary, fontWeight: '500', marginTop: 4}}>
-                                {Math.round(Platform.OS === 'ios' ? selectedLog.food?.calories : (selectedLog.food?.calories || 0) * (parseFloat(quantityInput) || 0))} Kcal 
-                                <Text style={{color: Colors.gray, fontWeight: '400'}}> (Ước tính)</Text>
-                             </Text>
-                         </View>
-                    </View>
-                )}
-
-                <Text style={{fontSize: 14, fontWeight: "600", color: Colors.text, marginBottom: 8}}>Số lượng / Khối lượng</Text>
-                <View style={{flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 32}}>
-                    <TextInput 
-                        style={{
-                            flex: 1, height: 50, borderWidth: 1, borderColor: '#e5e7eb', 
-                            borderRadius: 12, paddingHorizontal: 16, fontSize: 16, fontWeight: '600'
-                        }}
-                        keyboardType="numeric"
-                        value={quantityInput}
-                        onChangeText={setQuantityInput}
-                        placeholder="Nhập số lượng..."
-                    />
-                    <View style={{height: 50, justifyContent: 'center', paddingHorizontal: 16, backgroundColor: '#f3f4f6', borderRadius: 12}}>
-                        <Text style={{fontWeight: '600', color: Colors.gray}}>{selectedLog?.food?.serving_unit || 'đơn vị'}</Text>
-                    </View>
-                </View>
-                
-                <View style={{flexDirection: 'row', gap: 12}}>
-                    <TouchableOpacity 
-                        onPress={handleDelete}
-                        style={{flex: 1, height: 50, borderRadius: 25, borderWidth: 1, borderColor: '#ef4444', justifyContent: 'center', alignItems: 'center'}}
-                    >
-                        <Text style={{color: '#ef4444', fontWeight: 'bold', fontSize: 16}}>Xóa</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity 
-                        onPress={handleUpdate}
-                        style={{flex: 2, height: 50, borderRadius: 25, backgroundColor: Colors.primary, justifyContent: 'center', alignItems: 'center'}}
-                    >
-                        <Text style={{color: 'white', fontWeight: 'bold', fontSize: 16}}>Cập nhật</Text>
-                    </TouchableOpacity>
-                </View>
-                <View style={{height: 20}} /> 
-            </View>
-        </KeyboardAvoidingView>
-      </Modal>
 
       {showDatePicker && (
         <DateTimePicker
           value={selectedDate}
           mode="date"
           display="default"
-          onChange={onDateChange}
+          onChange={(event, date) => { setShowDatePicker(false); if (date) setSelectedDate(date); }}
         />
       )}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8F9FA', paddingTop: 50 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 20, marginBottom: 20 },
-  date: { fontSize: 13, color: Colors.gray, fontWeight: '500' },
-  greeting: { fontSize: 22, fontWeight: 'bold', color: Colors.text },
-  bellBtn: { width: 40, height: 40, backgroundColor: '#fff', borderRadius: 20, justifyContent: 'center', alignItems: 'center', elevation: 2 },
-  
-  ringCard: { backgroundColor: '#fff', marginHorizontal: 20, borderRadius: 24, padding: 20, alignItems: 'center', elevation: 2, marginBottom: 20 },
-  cardHeader: { fontSize: 16, color: Colors.gray, fontWeight: '600', marginBottom: 16 },
-  
-  // Progress Bar styles (from HEAD)
-  progressBarContainer: { width: '100%', marginBottom: 20 },
-  progressBarLabelRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
-  progressBarLabel: { fontSize: 14, fontWeight: '600', color: Colors.text },
-  progressBarPercent: { fontSize: 14, fontWeight: 'bold' },
-  progressBarBg: { height: 12, backgroundColor: '#F5F5F5', borderRadius: 6, overflow: 'hidden' },
-  progressBarFill: { height: '100%', borderRadius: 6 },
-  
-  chartArea: { marginVertical: 20, alignItems: 'center', justifyContent: 'center' },
-  centerText: { position: 'absolute', alignItems: 'center' },
-  bigNum: { fontSize: 36, fontWeight: 'bold', color: Colors.primary },
-  unit: { fontSize: 12, fontWeight: 'bold', color: Colors.gray },
-  
-  // Formula styles (AC1: Mục tiêu - Đã ăn = Còn lại) (from HEAD)
-  formulaContainer: { width: '100%', marginTop: 16, paddingTop: 16, borderTopWidth: 1, borderTopColor: '#F5F5F5' },
-  formulaRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginVertical: 4 },
-  formulaLabel: { fontSize: 14, color: Colors.gray, fontWeight: '500' },
-  formulaValue: { fontSize: 16, fontWeight: '600', color: Colors.text },
-  formulaDivider: { height: 1, backgroundColor: '#F5F5F5', marginVertical: 8 },
-  formulaEquation: { marginTop: 8, padding: 12, backgroundColor: '#F8F9FA', borderRadius: 8 },
-  formulaEquationText: { fontSize: 15, fontWeight: '600', color: Colors.text, textAlign: 'center' },
-  
-  statsRow: { flexDirection: 'row', width: '100%', justifyContent: 'space-around' },
-  stat: { alignItems: 'center' },
-  statLabel: { fontSize: 12, color: Colors.gray },
-  statVal: { fontSize: 16, fontWeight: 'bold', color: Colors.text },
-  divider: { width: 1, height: 30, backgroundColor: '#EEE' },
-
-  section: { paddingHorizontal: 20, marginBottom: 20 },
-  secTitle: { fontSize: 18, fontWeight: 'bold', color: Colors.text, marginBottom: 12 },
-  card: { backgroundColor: '#fff', padding: 20, borderRadius: 20, elevation: 1 },
-
-  advisorCard: { flexDirection: 'row', backgroundColor: '#E8F5E9', marginHorizontal: 20, padding: 15, borderRadius: 16, marginBottom: 25, alignItems: 'center' },
-  advisorTitle: { fontWeight: 'bold', color: '#2E7D32', marginBottom: 2 },
-  advisorText: { fontSize: 13, color: '#333' },
-
-  mealRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#fff', padding: 16, borderRadius: 16, marginBottom: 10, elevation: 1 },
-  mealName: { fontSize: 16, fontWeight: '600', color: Colors.text },
-  mealCal: { fontSize: 13, color: Colors.gray },
-  addMiniBtn: { width: 32, height: 32, backgroundColor: '#F5F5F5', borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
-});

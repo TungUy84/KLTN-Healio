@@ -15,11 +15,13 @@ export interface UserProfileUpdate {
 }
 
 export interface CalculatedMetrics {
+  bmr: number;
   tdee: number;
   target_calories: number;
   target_carb_g: number;
   target_protein_g: number;
   target_fat_g: number;
+  bmi: number;
 }
 
 export const userService = {
@@ -75,6 +77,7 @@ export const userService = {
   getCalculatedMetrics: async (): Promise<CalculatedMetrics> => {
     const response = await api.get('/users/profile');
     const user = response.data;
+    const profile = user.UserProfile || {};
     const nutrition = user.UserNutritionTarget || {};
     const preset = nutrition.DietPreset || { carb_ratio: 50, protein_ratio: 30, fat_ratio: 20 }; // Default: Balanced
 
@@ -82,13 +85,23 @@ export const userService = {
     const tdee = nutrition.tdee || 2000;
 
     // Calculate Macros (grams)
-    // 1g Carb = 4 kcal, 1g Protein = 4 kcal, 1g Fat = 9 kcal
     const target_carb_g = Math.round((targetCalories * (preset.carb_ratio / 100)) / 4);
     const target_protein_g = Math.round((targetCalories * (preset.protein_ratio / 100)) / 4);
     const target_fat_g = Math.round((targetCalories * (preset.fat_ratio / 100)) / 9);
 
+    const bmr = nutrition.bmr || 1600;
+
+    // Calculate BMI
+    let bmi = 0;
+    if (profile.current_weight && profile.height) {
+      const heightM = profile.height / 100;
+      bmi = parseFloat((profile.current_weight / (heightM * heightM)).toFixed(1));
+    }
+
     return {
+      bmr,
       tdee,
+      bmi,
       target_calories: targetCalories,
       target_carb_g,
       target_protein_g,
