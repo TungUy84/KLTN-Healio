@@ -39,10 +39,10 @@ export interface FoodListResponse {
 
 export const foodService = {
     getAll: async (
-        page = 1, 
-        limit = 10, 
-        search = '', 
-        sort = 'created_at', 
+        page = 1,
+        limit = 10,
+        search = '',
+        sort = 'created_at',
         order = 'DESC',
         filters?: {
             meal_category?: string;
@@ -89,6 +89,11 @@ export const foodService = {
 
     delete: async (id: number | string) => {
         const response = await api.delete(`/foods/${id}`);
+        return response.data;
+    },
+
+    generateRecipeByAI: async (foodName: string) => {
+        const response = await api.post<{ success: boolean; description: string; ingredients: any[]; newIngredientsCount: number }>('/ai/generate-recipe', { foodName });
         return response.data;
     }
 };

@@ -203,8 +203,8 @@ const MetricSection = ({ metrics }: any) => {
   const getBMIInfo = (bmi: number) => {
     if (!bmi) return { label: '--', color: 'text-slate-400', bg: 'bg-slate-100' };
     if (bmi < 18.5) return { label: 'Thiếu cân', color: 'text-blue-600', bg: 'bg-blue-100' };
-    if (bmi < 24.9) return { label: 'Bình thường', color: 'text-emerald-600', bg: 'bg-emerald-100' };
-    if (bmi < 29.9) return { label: 'Thừa cân', color: 'text-orange-600', bg: 'bg-orange-100' };
+    if (bmi < 23) return { label: 'Bình thường', color: 'text-emerald-600', bg: 'bg-emerald-100' };
+    if (bmi < 25) return { label: 'Thừa cân', color: 'text-orange-600', bg: 'bg-orange-100' };
     return { label: 'Béo phì', color: 'text-red-600', bg: 'bg-red-100' };
   };
 

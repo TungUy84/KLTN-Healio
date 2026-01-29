@@ -10,6 +10,7 @@ const foodRoutes = require('./src/routes/foods');
 const dashboardRoutes = require('./src/routes/dashboard');
 const adminUsersRoutes = require('./src/routes/adminUsers');
 const statsRoutes = require('./src/routes/stats');
+const aiRoutes = require('./src/routes/ai');
 
 // Require models để đảm bảo chúng được sync
 require('./src/models/RawFood');
@@ -35,6 +36,7 @@ app.use('/api/foods', foodRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/admin/users', adminUsersRoutes);
 app.use('/api/stats', statsRoutes);
+app.use('/api/ai', aiRoutes);
 
 // Sync DB & Start Server
 // Use alter: true to update tables if models change (add columns)

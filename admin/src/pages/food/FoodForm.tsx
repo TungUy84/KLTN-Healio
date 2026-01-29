@@ -10,39 +10,39 @@ import NutritionSection from './components/NutritionSection';
 // Helper: Calculate diet tags (PB_53) - Pure function, moved outside component
 const calculateDietTags = (totalCalories: number, totalProtein: number, totalCarb: number, totalFat: number): string[] => {
     if (totalCalories === 0) return [];
-    
+
     const tags: string[] = [];
     const carbPercent = (totalCarb * 4 / totalCalories) * 100;
     const proteinPercent = (totalProtein * 4 / totalCalories) * 100;
     const fatPercent = (totalFat * 9 / totalCalories) * 100;
-    
+
     // Keto: Fat > 70%, Carb < 10%
     if (fatPercent > 70 && carbPercent < 10) {
         tags.push('keto');
     }
-    
+
     // Low Carb: Carb < 25%
     if (carbPercent < 25) {
         tags.push('low_carb');
     }
-    
+
     // High Protein: Protein > 30%
     if (proteinPercent > 30) {
         tags.push('high_protein');
     }
-    
+
     // Low Fat: Fat < 20%
     if (fatPercent < 20) {
         tags.push('low_fat');
     }
-    
+
     // Balanced: 40-50% Carb, 25-30% Protein, 20-30% Fat
-    if (carbPercent >= 40 && carbPercent <= 50 && 
-        proteinPercent >= 25 && proteinPercent <= 30 && 
+    if (carbPercent >= 40 && carbPercent <= 50 &&
+        proteinPercent >= 25 && proteinPercent <= 30 &&
         fatPercent >= 20 && fatPercent <= 30) {
         tags.push('balanced');
     }
-    
+
     return tags;
 };
 
@@ -61,7 +61,7 @@ const FoodForm: React.FC = () => {
     const [previewImage, setPreviewImage] = useState<string | null>(null);
     const [status, setStatus] = useState<'active' | 'inactive'>('active');
     const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
-    
+
     // PB_51: Meal Categories
     const [mealCategories, setMealCategories] = useState<string[]>([]);
 
@@ -208,7 +208,7 @@ const FoodForm: React.FC = () => {
             }
             setMealCategories(data.meal_categories || []);
             setStatus(data.status || 'active');
-            
+
             // PB_52: Load ingredients
             if (data.ingredients && Array.isArray(data.ingredients)) {
                 const loadedIngredients: Ingredient[] = data.ingredients.map((ing: any) => ({
@@ -217,7 +217,7 @@ const FoodForm: React.FC = () => {
                     amount_in_grams: ing.FoodIngredient?.amount_in_grams || 0
                 }));
                 setIngredients(loadedIngredients);
-                
+
                 // Cache raw foods
                 const cache = new Map<number, RawFood>();
                 for (const ing of data.ingredients) {
@@ -225,7 +225,7 @@ const FoodForm: React.FC = () => {
                 }
                 setRawFoodCache(cache);
             }
-            
+
             // PB_53: Load nutrition from backend fields
             setNutrition({
                 total_calories: data.calories || data.total_calories || 0,
@@ -233,7 +233,7 @@ const FoodForm: React.FC = () => {
                 total_carb: data.carb || 0,
                 total_fat: data.fat || 0
             });
-            
+
             // PB_53: Load diet tags
             if (data.diet_tags) {
                 setDietTags(data.diet_tags);
@@ -282,13 +282,13 @@ const FoodForm: React.FC = () => {
             alert('Nguyên liệu này đã được thêm vào danh sách.');
             return;
         }
-        
+
         setIngredients(prev => [...prev, {
             ingredient_id: rawFood.id,
             raw_food_name: rawFood.name,
             amount_in_grams: 100 // Default 100g
         }]);
-        
+
         setRawFoodCache(prev => new Map(prev).set(rawFood.id, rawFood));
         setSearchQuery('');
         setShowSearchDropdown(false);
@@ -301,7 +301,7 @@ const FoodForm: React.FC = () => {
 
     // PB_52: Update ingredient quantity
     const handleUpdateQuantity = (index: number, quantity: number) => {
-        setIngredients(prev => prev.map((ing, i) => 
+        setIngredients(prev => prev.map((ing, i) =>
             i === index ? { ...ing, amount_in_grams: quantity || 0 } : ing
         ));
     };
@@ -341,7 +341,7 @@ const FoodForm: React.FC = () => {
 
         try {
             const submitData = new FormData();
-            
+
             // PB_51: Basic info
             submitData.append('name', formData.name);
             submitData.append('serving_unit', formData.serving_unit);
@@ -359,7 +359,7 @@ const FoodForm: React.FC = () => {
             submitData.append('total_carb', nutrition.total_carb.toString());
             submitData.append('total_fat', nutrition.total_fat.toString());
             submitData.append('diet_tags', JSON.stringify(dietTags));
-            
+
             // Micronutrients: Send calculated micronutrients
             submitData.append('micronutrients', JSON.stringify(micronutrients));
 
@@ -382,6 +382,67 @@ const FoodForm: React.FC = () => {
         } catch (error: any) {
             console.error('Submit error', error);
             alert(error.response?.data?.message || 'Có lỗi xảy ra.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // AI Generation Handler
+    const handleGenerateAI = async () => {
+        if (!formData.name) return;
+
+        try {
+            setLoading(true); // Reuse loading or create separate state if needed
+            const result = await foodService.generateRecipeByAI(formData.name);
+
+            if (result.success) {
+                // 1. Update Description
+                setFormData(prev => ({
+                    ...prev,
+                    description: result.description || prev.description
+                }));
+
+                // 2. Update Ingredients
+                if (result.ingredients && result.ingredients.length > 0) {
+                    const newIngredients: Ingredient[] = result.ingredients.map((ing: any) => ({
+                        ingredient_id: ing.raw_food_id,
+                        raw_food_name: ing.name,
+                        amount_in_grams: ing.amount || 100
+                    }));
+
+                    // Merge avoiding duplicates
+                    setIngredients(prev => {
+                        const existingIds = new Set(prev.map(p => p.ingredient_id));
+                        const uniqueNew = newIngredients.filter(n => !existingIds.has(n.ingredient_id));
+                        return [...prev, ...uniqueNew];
+                    });
+
+                    // Cache new raw foods for calculation
+                    const newCache = new Map(rawFoodCache);
+                    // Minimal RawFood object sufficient for cache/calculation
+                    result.ingredients.forEach((ing: any) => {
+                        newCache.set(ing.raw_food_id, {
+                            id: ing.raw_food_id,
+                            name: ing.name,
+                            energy_kcal: ing.calories,
+                            protein_g: ing.protein,
+                            fat_g: ing.fat,
+                            carb_g: ing.carb,
+                            code: 'AI_Generated', // Dummy code
+                            unit: 'g' // Default unit
+                        } as RawFood);
+                    });
+                    setRawFoodCache(newCache);
+                }
+
+                // 3. Notify User
+                alert(`🎉 Đã tạo thành công! ${result.newIngredientsCount > 0 ? `Thêm ${result.newIngredientsCount} nguyên liệu mới vào kho.` : ''}`);
+            }
+        } catch (error: any) {
+            console.error("AI Gen Error", error);
+            const serverMessage = error.response?.data?.message;
+            const serverDetails = error.response?.data?.details || error.response?.data?.error;
+            alert(`${serverMessage || "Lỗi khi tạo công thức bằng AI."}\n${serverDetails || error.message}`);
         } finally {
             setLoading(false);
         }
@@ -412,6 +473,8 @@ const FoodForm: React.FC = () => {
                             setStatusDropdownOpen(false);
                         }}
                         onCategoryChange={handleCategoryChange}
+                        onGenerateAI={handleGenerateAI}
+                        aiLoading={loading}
                     />
 
                     <IngredientSection
@@ -436,9 +499,9 @@ const FoodForm: React.FC = () => {
 
                     {/* PB_54: Submit Button */}
                     <div className="mt-8 flex justify-end border-t border-gray-200 pt-5">
-                        <button 
-                            type="submit" 
-                            disabled={loading} 
+                        <button
+                            type="submit"
+                            disabled={loading}
                             className="flex items-center bg-indigo-600 text-white px-6 py-3 rounded-lg border-none cursor-pointer font-semibold text-base hover:bg-indigo-700 transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5 disabled:opacity-70 disabled:cursor-not-allowed"
                         >
                             <FaSave className="mr-2" />
