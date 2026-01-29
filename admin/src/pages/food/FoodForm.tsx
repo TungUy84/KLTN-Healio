@@ -396,11 +396,16 @@ const FoodForm: React.FC = () => {
             const result = await foodService.generateRecipeByAI(formData.name);
 
             if (result.success) {
-                // 1. Update Description
+                // 1. Update Description & Basic Info
                 setFormData(prev => ({
                     ...prev,
-                    description: result.description || prev.description
+                    description: result.description || prev.description,
+                    serving_unit: result.serving_unit || prev.serving_unit || 'Suất'
                 }));
+
+                // Update Categories & Tags
+                if (result.meal_categories) setMealCategories(result.meal_categories);
+                if (result.diet_tags) setDietTags(result.diet_tags);
 
                 // 2. Update Ingredients
                 if (result.ingredients && result.ingredients.length > 0) {

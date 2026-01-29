@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StatusBar, RefreshControl, Image, Dimensions } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StatusBar, RefreshControl, Image, Dimensions, Modal, ActivityIndicator, Alert } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Feather, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -18,13 +18,14 @@ import { LinearGradient } from 'expo-linear-gradient';
 
 import { userService, CalculatedMetrics } from '../../services/userService';
 import { foodService } from '../../services/foodService';
+import { aiService, MealPlanSuggestion } from '../../services/aiService';
 
 // --- COMPONENTS ---
 const AnimatedView = Animated.createAnimatedComponent(View);
 const { width } = Dimensions.get('window');
 
 // 1. Modern Header
-const Header = ({ userProfile, selectedDate, onPrevDate, onNextDate, onDatePress }: any) => {
+const Header = ({ userProfile, selectedDate, onPrevDate, onNextDate, onDatePress, handleSuggestMeal }: any) => {
   const insets = useSafeAreaInsets();
 
   const getGreeting = () => {
@@ -58,7 +59,13 @@ const Header = ({ userProfile, selectedDate, onPrevDate, onNextDate, onDatePress
           </View>
           <View>
             <Text className="text-slate-400 text-xs font-medium uppercase tracking-wider mb-0.5">{greeting}</Text>
-            <Text className="text-slate-800 font-bold text-xl">{titleName} 👋</Text>
+            <View className="flex-row items-center gap-2">
+              <Text className="text-slate-800 font-bold text-xl">{titleName} 👋</Text>
+              <TouchableOpacity onPress={handleSuggestMeal} className="bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-100 flex-row items-center gap-1 active:bg-indigo-100">
+                <Ionicons name="sparkles" size={12} color="#6366F1" />
+                <Text className="text-indigo-600 text-[10px] font-bold">Gợi ý AI</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
 
@@ -305,6 +312,58 @@ export default function DiaryScreen() {
     meals: { breakfast: { calories: 0 }, lunch: { calories: 0 }, dinner: { calories: 0 }, snack: { calories: 0 } } as any
   });
 
+  // AI Meal Planner State
+  const [showAiModal, setShowAiModal] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [mealPlan, setMealPlan] = useState<MealPlanSuggestion | null>(null);
+
+  const handleSuggestMeal = async () => {
+    setAiLoading(true);
+    setShowAiModal(true);
+    try {
+      const plan = await aiService.suggestMealPlan();
+      setMealPlan(plan);
+    } catch (error) {
+      console.error(error);
+      Alert.alert('Lỗi', 'Không thể tạo thực đơn lúc này.');
+      setShowAiModal(false);
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const handleApplyMealPlan = async () => {
+    if (!mealPlan) return;
+    setAiLoading(true);
+    try {
+      const dateStr = selectedDate.toISOString().split('T')[0];
+      const meals = [
+        { ...mealPlan.breakfast, type: 'breakfast' },
+        { ...mealPlan.lunch, type: 'lunch' },
+        { ...mealPlan.dinner, type: 'dinner' }
+      ];
+
+      for (const meal of meals) {
+        await foodService.addToDiary({
+          food_id: meal.food_id,
+          meal_type: meal.type,
+          quantity: meal.amount, // API expects 'quantity'
+          unit_name: meal.detail?.serving_unit || 'suất',
+          date: dateStr
+        });
+      }
+
+      Alert.alert('Thành công', 'Đã lưu thực đơn vào nhật ký!');
+      setShowAiModal(false);
+      fetchMetrics(); // Reload data
+    } catch (error) {
+      console.error(error);
+      Alert.alert('Lỗi', 'Có lỗi khi lưu thực đơn.');
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
   const fetchMetrics = async () => {
     try {
       const dateStr = selectedDate.toISOString().split('T')[0];
@@ -353,6 +412,7 @@ export default function DiaryScreen() {
         onPrevDate={() => { const d = new Date(selectedDate); d.setDate(d.getDate() - 1); setSelectedDate(d); }}
         onNextDate={() => { const d = new Date(selectedDate); d.setDate(d.getDate() + 1); setSelectedDate(d); }}
         onDatePress={() => setShowDatePicker(true)}
+        handleSuggestMeal={handleSuggestMeal}
       />
 
       <ScrollView
@@ -416,6 +476,89 @@ export default function DiaryScreen() {
           onChange={(event, date) => { setShowDatePicker(false); if (date) setSelectedDate(date); }}
         />
       )}
-    </View>
-  );
+
+          {/* AI Meal Plan Modal */}
+          <Modal visible={showAiModal} animationType="slide" transparent>
+            <View className="flex-1 bg-black/50 justify-end">
+              <View className="bg-white rounded-t-[32px] h-[85%] overflow-hidden">
+                <View className="p-5 border-b border-slate-100 flex-row justify-between items-center bg-white z-10">
+                  <View>
+                    <Text className="text-xl font-bold text-slate-800">Thực đơn AI 🤖</Text>
+                    <Text className="text-xs text-slate-400 font-medium">Được thiết kế riêng cho bạn</Text>
+                  </View>
+                  <TouchableOpacity onPress={() => setShowAiModal(false)} className="w-8 h-8 bg-slate-100 rounded-full items-center justify-center">
+                    <Feather name="x" size={18} color="#64748B" />
+                  </TouchableOpacity>
+                </View>
+
+                {aiLoading ? (
+                  <View className="flex-1 justify-center items-center">
+                    <ActivityIndicator size="large" color="#0D9488" />
+                    <Text className="mt-4 text-slate-500 font-medium text-sm animate-pulse">Đang phân tích dinh dưỡng...</Text>
+                  </View>
+                ) : mealPlan ? (
+                  <ScrollView className="flex-1 p-5" showsVerticalScrollIndicator={false}>
+                    {/* Summary Card */}
+                    <View className="bg-emerald-50 p-4 rounded-2xl border border-emerald-100 mb-6 flex-row justify-between items-center">
+                      <View>
+                        <Text className="text-emerald-800 font-bold text-lg">Tổng Calo dự kiến</Text>
+                        <Text className="text-emerald-600 text-xs">Phù hợp mục tiêu của bạn</Text>
+                      </View>
+                      <View className="bg-white px-3 py-1.5 rounded-lg shadow-sm">
+                        <Text className="text-emerald-700 font-bold text-xl">{mealPlan.total_calories} <Text className="text-xs">kcal</Text></Text>
+                      </View>
+                    </View>
+
+                    {/* Meals */}
+                    <View className="gap-4">
+                      {[
+                        { title: 'Sữa Sáng', data: mealPlan.breakfast, icon: '☀️', color: 'bg-orange-50 border-orange-100' },
+                        { title: 'Bữa Trưa', data: mealPlan.lunch, icon: '🌤️', color: 'bg-blue-50 border-blue-100' },
+                        { title: 'Bữa Tối', data: mealPlan.dinner, icon: '🌙', color: 'bg-indigo-50 border-indigo-100' }
+                      ].map((meal, index) => (
+                        <View key={index} className={`p-4 rounded-2xl border ${meal.color}`}>
+                          <View className="flex-row justify-between items-start mb-2">
+                            <View className="flex-row gap-2 items-center">
+                              <Text className="text-xl">{meal.icon}</Text>
+                              <Text className="font-bold text-slate-700 text-base">{meal.title}</Text>
+                            </View>
+                            <View className="bg-white/60 px-2 py-1 rounded text-xs">
+                              <Text className="text-slate-500 font-bold text-xs">{meal.data.amount} {meal.data.detail?.serving_unit || 'suất'}</Text>
+                            </View>
+                          </View>
+
+                          <Text className="text-slate-800 font-bold text-lg mb-1">{meal.data.detail?.name || 'Món ăn gợi ý'}</Text>
+                          <Text className="text-slate-500 text-xs italic mb-3">"{meal.data.reason}"</Text>
+
+                          {/* Mini Macros */}
+                          <View className="flex-row gap-2">
+                            <View className="bg-white px-2 py-1 rounded border border-slate-100">
+                              <Text className="text-[10px] text-slate-500 font-bold">🔥 {Math.round((meal.data.detail?.calories || 0) * meal.data.amount)} kcal</Text>
+                            </View>
+                            <View className="bg-white px-2 py-1 rounded border border-slate-100">
+                              <Text className="text-[10px] text-slate-500 font-bold">🥩 {Math.round((meal.data.detail?.protein || 0) * meal.data.amount)}g Pro</Text>
+                            </View>
+                          </View>
+                        </View>
+                      ))}
+                    </View>
+
+                    <View className="h-24" />
+                  </ScrollView>
+                ) : null}
+
+                {/* Bottom Button */}
+                {!aiLoading && mealPlan && (
+                  <View className="p-5 border-t border-slate-100 bg-white absolute bottom-0 left-0 right-0">
+                    <TouchableOpacity onPress={handleApplyMealPlan} className="bg-black py-4 rounded-2xl flex-row justify-center items-center shadow-lg shadow-slate-300">
+                      <Ionicons name="checkmark-circle" size={20} color="white" />
+                      <Text className="text-white font-bold text-base ml-2">Áp dụng ngay</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
+            </View>
+          </Modal>
+        </View>
+        );
 }

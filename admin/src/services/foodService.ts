@@ -93,7 +93,15 @@ export const foodService = {
     },
 
     generateRecipeByAI: async (foodName: string) => {
-        const response = await api.post<{ success: boolean; description: string; ingredients: any[]; newIngredientsCount: number }>('/ai/generate-recipe', { foodName });
+        const response = await api.post<{
+            success: boolean;
+            description: string;
+            ingredients: any[];
+            newIngredientsCount: number;
+            serving_unit: string;
+            meal_categories: string[];
+            diet_tags: string[];
+        }>('/ai/generate-recipe', { foodName });
         return response.data;
     }
 };
