@@ -11,7 +11,6 @@ interface Nutrition {
 interface NutritionSectionProps {
     nutrition: Nutrition;
     dietTags: string[];
-    onNutritionChange: (field: keyof Nutrition, value: number) => void;
     onResetCalculation: () => void;
     onDietTagToggle: (tag: string) => void;
 }
@@ -19,7 +18,6 @@ interface NutritionSectionProps {
 const NutritionSection: React.FC<NutritionSectionProps> = ({
     nutrition,
     dietTags,
-    onNutritionChange,
     onResetCalculation,
     onDietTagToggle
 }) => {
@@ -51,41 +49,41 @@ const NutritionSection: React.FC<NutritionSectionProps> = ({
                 <div className="flex flex-col">
                     <label className="block text-sm font-medium text-gray-700 mb-1.5">Tổng Calo (kcal)</label>
                     <input
-                        type="number"
-                        value={nutrition.total_calories}
-                        onChange={(e) => onNutritionChange('total_calories', parseFloat(e.target.value) || 0)}
-                        className="w-full p-2.5 rounded-lg border border-gray-300 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
-                        step="0.01"
+                        type="text"
+                        readOnly
+                        value={nutrition.total_calories === 0 ? '' : nutrition.total_calories}
+                        className="w-full p-2.5 rounded-lg border border-gray-300 text-sm bg-gray-50 text-gray-700 cursor-default pointer-events-none select-none"
+                        tabIndex={-1}
                     />
                 </div>
                 <div className="flex flex-col">
                     <label className="block text-sm font-medium text-gray-700 mb-1.5">Protein (g)</label>
                     <input
-                        type="number"
-                        value={nutrition.total_protein}
-                        onChange={(e) => onNutritionChange('total_protein', parseFloat(e.target.value) || 0)}
-                        className="w-full p-2.5 rounded-lg border border-gray-300 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
-                        step="0.01"
+                        type="text"
+                        readOnly
+                        value={nutrition.total_protein === 0 ? '' : nutrition.total_protein}
+                        className="w-full p-2.5 rounded-lg border border-gray-300 text-sm bg-gray-50 text-gray-700 cursor-default pointer-events-none select-none"
+                        tabIndex={-1}
                     />
                 </div>
                 <div className="flex flex-col">
                     <label className="block text-sm font-medium text-gray-700 mb-1.5">Carb (g)</label>
                     <input
-                        type="number"
-                        value={nutrition.total_carb}
-                        onChange={(e) => onNutritionChange('total_carb', parseFloat(e.target.value) || 0)}
-                        className="w-full p-2.5 rounded-lg border border-gray-300 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
-                        step="0.01"
+                        type="text"
+                        readOnly
+                        value={nutrition.total_carb === 0 ? '' : nutrition.total_carb}
+                        className="w-full p-2.5 rounded-lg border border-gray-300 text-sm bg-gray-50 text-gray-700 cursor-default pointer-events-none select-none"
+                        tabIndex={-1}
                     />
                 </div>
                 <div className="flex flex-col">
                     <label className="block text-sm font-medium text-gray-700 mb-1.5">Fat (g)</label>
                     <input
-                        type="number"
-                        value={nutrition.total_fat}
-                        onChange={(e) => onNutritionChange('total_fat', parseFloat(e.target.value) || 0)}
-                        className="w-full p-2.5 rounded-lg border border-gray-300 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
-                        step="0.01"
+                        type="text"
+                        readOnly
+                        value={nutrition.total_fat === 0 ? '' : nutrition.total_fat}
+                        className="w-full p-2.5 rounded-lg border border-gray-300 text-sm bg-gray-50 text-gray-700 cursor-default pointer-events-none select-none"
+                        tabIndex={-1}
                     />
                 </div>
             </div>

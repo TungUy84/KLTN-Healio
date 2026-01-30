@@ -306,12 +306,6 @@ const FoodForm: React.FC = () => {
         ));
     };
 
-    // PB_53: Handle nutrition manual override
-    const handleNutritionChange = (field: 'total_calories' | 'total_protein' | 'total_carb' | 'total_fat', value: number) => {
-        setNutrition(prev => ({ ...prev, [field]: value }));
-        setManualOverrides(prev => ({ ...prev, [field]: true }));
-    };
-
     // PB_53: Reset calculation
     const handleResetCalculation = () => {
         setManualOverrides({
@@ -497,7 +491,6 @@ const FoodForm: React.FC = () => {
                     <NutritionSection
                         nutrition={nutrition}
                         dietTags={dietTags}
-                        onNutritionChange={handleNutritionChange}
                         onResetCalculation={handleResetCalculation}
                         onDietTagToggle={handleDietTagToggle}
                     />
