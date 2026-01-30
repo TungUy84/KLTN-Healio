@@ -311,7 +311,7 @@ const FoodForm: React.FC = () => {
         setManualOverrides({
             calories: false,
             protein: false,
-            carb: false,
+            carb: false, 
             fat: false
         });
         // useEffect will recalculate automatically
@@ -449,14 +449,17 @@ const FoodForm: React.FC = () => {
 
     return (
         <div className="w-full max-w-5xl mx-auto">
-            <div className="flex items-center gap-4 mb-6">
-                <Link to="/foods" className="flex items-center justify-center w-9 h-9 rounded-full bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 transition-colors">
+            <div className="mb-8 flex items-center gap-4">
+                <Link to="/foods" className="flex items-center justify-center w-9 h-9 rounded-full bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm">
                     <FaArrowLeft />
                 </Link>
-                <h1 className="text-2xl font-bold text-gray-900 m-0">{isEditMode ? 'Chỉnh sửa Món ăn' : 'Thêm mới Món ăn'}</h1>
+                <div>
+                    <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-1 m-0">{isEditMode ? 'Chỉnh sửa Món ăn' : 'Thêm mới Món ăn'}</h1>
+                    <p className="text-base text-gray-500 dark:text-gray-400 m-0">{isEditMode ? 'Cập nhật thông tin món ăn' : 'Tạo công thức món ăn mới'}</p>
+                </div>
             </div>
 
-            <div className="bg-white rounded-xl p-8 shadow-sm">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-sm border border-gray-100 dark:border-gray-700">
                 <form onSubmit={handleSubmit}>
                     <BasicInfoSection
                         formData={formData}
@@ -496,7 +499,7 @@ const FoodForm: React.FC = () => {
                     />
 
                     {/* PB_54: Submit Button */}
-                    <div className="mt-8 flex justify-end border-t border-gray-200 pt-5">
+                    <div className="mt-8 flex justify-end border-t border-gray-200 dark:border-gray-600 pt-5">
                         <button
                             type="submit"
                             disabled={loading}

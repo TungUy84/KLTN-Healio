@@ -60,7 +60,7 @@ const Statistics = () => {
         }
     };
 
-    if (loading) return <div className="p-8">Đang tải dữ liệu...</div>;
+    if (loading) return <div className="p-10 text-center text-gray-500 dark:text-gray-400">Đang tải dữ liệu...</div>;
 
     // Process Pie Data
     const goalData = demographics.goals.map((g: any) => ({ name: g.goal_type, value: parseInt(g.count) }));
@@ -69,17 +69,17 @@ const Statistics = () => {
     return (
         <div className="space-y-8 pb-10">
             {/* Header */}
-            <div className="flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+            <div className="flex justify-between items-center bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-                        <FaChartPie className="text-blue-600" />
+                    <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2 flex items-center gap-2">
+                        <FaChartPie className="text-indigo-600 dark:text-indigo-400" />
                         Thống kê & Báo cáo
                     </h1>
-                    <p className="text-gray-500 text-sm mt-1">Tổng quan về người dùng, xu hướng và dinh dưỡng</p>
+                    <p className="text-base text-gray-500 dark:text-gray-400">Tổng quan về người dùng, xu hướng và dinh dưỡng</p>
                 </div>
                 <div className="flex items-center gap-4">
                     <select
-                        className="border border-gray-300 rounded-lg px-4 py-2 bg-gray-50 text-sm font-medium focus:ring-2 focus:ring-blue-500 outline-none"
+                        className="border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-200 text-sm font-medium focus:ring-2 focus:ring-blue-500 outline-none"
                         value={timeRange}
                         onChange={(e) => setTimeRange(e.target.value)}
                     >
@@ -99,9 +99,9 @@ const Statistics = () => {
             </div>
 
             {/* 1. User Growth (Line Chart) */}
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                <h3 className="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2">
-                    <FaUserPlus className="text-indigo-500" /> Tăng trưởng người dùng
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
+                <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 mb-6 flex items-center gap-2">
+                    <FaUserPlus className="text-indigo-500 dark:text-indigo-400" /> Tăng trưởng người dùng
                 </h3>
                 <div className="h-[300px] w-full">
                     <ResponsiveContainer width="100%" height="100%">
@@ -129,8 +129,8 @@ const Statistics = () => {
             {/* 2. Demographics (Pie Charts) */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {/* Goal Distribution */}
-                <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                    <h3 className="text-lg font-bold text-gray-800 mb-4">Phân bổ Mục tiêu</h3>
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
+                    <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 mb-4">Phân bổ Mục tiêu</h3>
                     <div className="h-[250px] flex items-center justify-center">
                         <ResponsiveContainer width="100%" height="100%">
                             <PieChart>
@@ -156,8 +156,8 @@ const Statistics = () => {
                 </div>
 
                 {/* Gender Distribution */}
-                <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                    <h3 className="text-lg font-bold text-gray-800 mb-4">Phân bổ Giới tính</h3>
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
+                    <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 mb-4">Phân bổ Giới tính</h3>
                     <div className="h-[250px] flex items-center justify-center">
                         <ResponsiveContainer width="100%" height="100%">
                             <PieChart>
@@ -180,44 +180,44 @@ const Statistics = () => {
                         </ResponsiveContainer>
                     </div>
                     {/* Fallback if no data */}
-                    {genderData.length === 0 && <p className="text-center text-gray-400">Chưa có dữ liệu</p>}
+                    {genderData.length === 0 && <p className="text-center text-gray-400 dark:text-gray-500">Chưa có dữ liệu</p>}
                 </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {/* 3. Trending Foods (Table) */}
-                <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                    <h3 className="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2">
-                        <FaUtensils className="text-orange-500" /> Xu hướng Món ăn
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
+                    <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 mb-6 flex items-center gap-2">
+                        <FaUtensils className="text-orange-500 dark:text-orange-400" /> Xu hướng Món ăn
                     </h3>
                     <div className="overflow-x-auto">
                         <table className="w-full text-left">
                             <thead>
-                                <tr className="border-b border-gray-100 text-gray-500 text-xs uppercase font-semibold">
+                                <tr className="border-b border-gray-100 dark:border-gray-600 text-gray-500 dark:text-gray-400 text-xs uppercase font-semibold">
                                     <th className="pb-3 pl-2">Tên món</th>
                                     <th className="pb-3 text-right">Số lần chọn</th>
                                     <th className="pb-3 text-right">Tổng Calo</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-50">
+                            <tbody className="divide-y divide-gray-50 dark:divide-gray-600">
                                 {trendingFoods.map((item: any, idx) => (
-                                    <tr key={item.id} className="hover:bg-gray-50 transition-colors">
+                                    <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                                         <td className="py-3 pl-2 flex items-center gap-3">
-                                            <span className="text-gray-400 font-bold w-4">{idx + 1}</span>
+                                            <span className="text-gray-400 dark:text-gray-500 font-bold w-4">{idx + 1}</span>
                                             {item.image ? (
                                                 <img
                                                     src={item.image.startsWith('http') ? item.image : `${import.meta.env.VITE_API_URL?.replace('/api', '')}${item.image}`}
-                                                    className="w-10 h-10 rounded-lg object-cover bg-gray-100"
+                                                    className="w-10 h-10 rounded-lg object-cover bg-gray-100 dark:bg-gray-700"
                                                 />
                                             ) : (
-                                                <div className="w-10 h-10 rounded-lg bg-orange-100 flex items-center justify-center text-orange-500">
+                                                <div className="w-10 h-10 rounded-lg bg-orange-100 dark:bg-orange-900/50 flex items-center justify-center text-orange-500 dark:text-orange-400">
                                                     <FaUtensils size={14} />
                                                 </div>
                                             )}
-                                            <span className="font-medium text-gray-800 text-sm">{item.name}</span>
+                                            <span className="font-medium text-gray-800 dark:text-gray-200 text-sm">{item.name}</span>
                                         </td>
-                                        <td className="py-3 text-right font-bold text-gray-700">{item.count}</td>
-                                        <td className="py-3 text-right text-sm text-gray-500">{parseInt(item.total_calories).toLocaleString()}</td>
+                                        <td className="py-3 text-right font-bold text-gray-700 dark:text-gray-300">{item.count}</td>
+                                        <td className="py-3 text-right text-sm text-gray-500 dark:text-gray-400">{parseInt(item.total_calories).toLocaleString()}</td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -226,9 +226,9 @@ const Statistics = () => {
                 </div>
 
                 {/* 4. Diet Stats (Bar Chart) */}
-                <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                    <h3 className="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2">
-                        <FaLeaf className="text-green-500" /> Chế độ Dinh dưỡng
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
+                    <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 mb-6 flex items-center gap-2">
+                        <FaLeaf className="text-green-500 dark:text-green-400" /> Chế độ Dinh dưỡng
                     </h3>
                     <div className="h-[300px] w-full">
                         <ResponsiveContainer width="100%" height="100%">

@@ -34,23 +34,24 @@ const RawFoodImport: React.FC = () => {
 
     return (
         <div className="w-full max-w-4xl mx-auto">
-            <div className="mb-6">
-                <div className="flex items-center gap-4">
-                    <Link to="/raw-foods" className="flex items-center justify-center w-9 h-9 rounded-full bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 transition-colors">
-                        <FaArrowLeft />
-                    </Link>
-                    <h1 className="text-2xl font-bold text-gray-900 m-0">Import Nguyên liệu từ CSV</h1>
+            <div className="mb-8 flex items-center gap-4">
+                <Link to="/raw-foods" className="flex items-center justify-center w-9 h-9 rounded-full bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm">
+                    <FaArrowLeft />
+                </Link>
+                <div>
+                    <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-1 m-0">Import Nguyên liệu từ CSV</h1>
+                    <p className="text-base text-gray-500 dark:text-gray-400 m-0">Tải lên file CSV theo mẫu chuẩn</p>
                 </div>
             </div>
 
-            <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-100">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-sm border border-gray-100 dark:border-gray-700">
                 {!result ? (
                     <>
-                        <div className="border-2 border-dashed border-gray-300 rounded-xl p-10 flex flex-col items-center justify-center relative mb-8 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer group">
-                            <FaCloudUploadAlt className="text-5xl text-gray-400 mb-4 group-hover:text-indigo-500 transition-colors" />
-                            <p className="text-gray-600 mb-4 font-medium">Kéo thả file .csv vào đây hoặc click để chọn</p>
-                            <p className="text-xs text-gray-500 mt-1">
-                                (Vui lòng sử dụng <a href="/template_raw_food.csv" download className="text-blue-600 hover:text-blue-800 hover:underline font-medium">file mẫu chuẩn</a> để tránh lỗi)
+                        <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-10 flex flex-col items-center justify-center relative mb-8 bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer group">
+                            <FaCloudUploadAlt className="text-5xl text-gray-400 dark:text-gray-500 mb-4 group-hover:text-indigo-500 dark:group-hover:text-indigo-400 transition-colors" />
+                            <p className="text-gray-600 dark:text-gray-300 mb-4 font-medium">Kéo thả file .csv vào đây hoặc click để chọn</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                (Vui lòng sử dụng <a href="/template_raw_food.csv" download className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline font-medium">file mẫu chuẩn</a> để tránh lỗi)
                             </p>
                             <input 
                                 type="file" 
@@ -59,17 +60,17 @@ const RawFoodImport: React.FC = () => {
                                 className="absolute top-0 left-0 w-full h-full opacity-0 cursor-pointer"
                             />
                             {file && (
-                                <div className="flex items-center bg-white px-4 py-2 rounded-full shadow-sm mt-4 font-medium text-gray-700 border border-gray-200">
-                                    <FaFileExcel className="text-emerald-500 mr-2" />
+                                <div className="flex items-center bg-white dark:bg-gray-700 px-4 py-2 rounded-full shadow-sm mt-4 font-medium text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-600">
+                                    <FaFileExcel className="text-emerald-500 dark:text-emerald-400 mr-2" />
                                     <span>{file.name} ({(file.size / 1024).toFixed(2)} KB)</span>
                                 </div>
                             )}
                         </div>
 
                         <div className="mb-8">
-                            <h4 className="text-base font-semibold mb-4 text-gray-700">Tùy chọn xử lý trùng lặp (dựa trên Mã số):</h4>
+                            <h4 className="text-base font-semibold mb-4 text-gray-700 dark:text-gray-300">Tùy chọn xử lý trùng lặp (dựa trên Mã số):</h4>
                             <div className="flex flex-col gap-3">
-                                <label className="flex items-start gap-3 cursor-pointer p-3 border border-gray-200 rounded-lg transition-colors hover:bg-gray-50">
+                                <label className="flex items-start gap-3 cursor-pointer p-3 border border-gray-200 dark:border-gray-600 rounded-lg transition-colors hover:bg-gray-50 dark:hover:bg-gray-700/50">
                                     <input 
                                         type="radio" 
                                         name="mode" 
@@ -79,11 +80,11 @@ const RawFoodImport: React.FC = () => {
                                         className="mt-1 accent-indigo-600" 
                                     />
                                     <div>
-                                        <span className="font-semibold text-gray-900 block mb-0.5">Bỏ qua (Skip)</span>
-                                        <p className="text-xs text-gray-500 m-0">Giữ nguyên dữ liệu cũ, không cập nhật.</p>
+                                        <span className="font-semibold text-gray-900 dark:text-gray-200 block mb-0.5">Bỏ qua (Skip)</span>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400 m-0">Giữ nguyên dữ liệu cũ, không cập nhật.</p>
                                     </div>
                                 </label>
-                                <label className="flex items-start gap-3 cursor-pointer p-3 border border-gray-200 rounded-lg transition-colors hover:bg-gray-50">
+                                <label className="flex items-start gap-3 cursor-pointer p-3 border border-gray-200 dark:border-gray-600 rounded-lg transition-colors hover:bg-gray-50 dark:hover:bg-gray-700/50">
                                     <input 
                                         type="radio" 
                                         name="mode" 
@@ -93,8 +94,8 @@ const RawFoodImport: React.FC = () => {
                                         className="mt-1 accent-indigo-600" 
                                     />
                                     <div>
-                                        <span className="font-semibold text-gray-900 block mb-0.5">Ghi đè (Overwrite)</span>
-                                        <p className="text-xs text-gray-500 m-0">Cập nhật thông tin mới từ file đè lên dữ liệu cũ.</p>
+                                        <span className="font-semibold text-gray-900 dark:text-gray-200 block mb-0.5">Ghi đè (Overwrite)</span>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400 m-0">Cập nhật thông tin mới từ file đè lên dữ liệu cũ.</p>
                                     </div>
                                 </label>
                             </div>
@@ -114,37 +115,37 @@ const RawFoodImport: React.FC = () => {
                     </>
                 ) : (
                     <div className="text-center">
-                        <div className="text-6xl text-emerald-500 mb-4 inline-block">
+                        <div className="text-6xl text-emerald-500 dark:text-emerald-400 mb-4 inline-block">
                             <FaCheckCircle />
                         </div>
-                        <h2 className="text-2xl font-bold text-gray-900 mb-8">Import hoàn tất!</h2>
+                        <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-8">Import hoàn tất!</h2>
                         <div className="grid grid-cols-5 gap-4 mb-8">
-                            <div className="bg-gray-50 p-4 rounded-lg flex flex-col items-center">
-                                <strong className="text-2xl mb-1 text-gray-900">{result.stats.total}</strong>
-                                <span className="text-xs text-gray-500">Tổng số dòng</span>
+                            <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg flex flex-col items-center">
+                                <strong className="text-2xl mb-1 text-gray-900 dark:text-gray-200">{result.stats.total}</strong>
+                                <span className="text-xs text-gray-500 dark:text-gray-400">Tổng số dòng</span>
                             </div>
-                            <div className="bg-gray-50 p-4 rounded-lg flex flex-col items-center text-emerald-600">
+                            <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg flex flex-col items-center text-emerald-600 dark:text-emerald-400">
                                 <strong className="text-2xl mb-1">{result.stats.added}</strong>
-                                <span className="text-xs text-gray-500">Thêm mới</span>
+                                <span className="text-xs text-gray-500 dark:text-gray-400">Thêm mới</span>
                             </div>
-                            <div className="bg-gray-50 p-4 rounded-lg flex flex-col items-center text-amber-500">
+                            <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg flex flex-col items-center text-amber-500 dark:text-amber-400">
                                 <strong className="text-2xl mb-1">{result.stats.updated}</strong>
-                                <span className="text-xs text-gray-500">Cập nhật</span>
+                                <span className="text-xs text-gray-500 dark:text-gray-400">Cập nhật</span>
                             </div>
-                            <div className="bg-gray-50 p-4 rounded-lg flex flex-col items-center text-gray-500">
+                            <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg flex flex-col items-center text-gray-500 dark:text-gray-400">
                                 <strong className="text-2xl mb-1">{result.stats.skipped}</strong>
-                                <span className="text-xs text-gray-500">Bỏ qua</span>
+                                <span className="text-xs text-gray-500 dark:text-gray-400">Bỏ qua</span>
                             </div>
-                            <div className="bg-gray-50 p-4 rounded-lg flex flex-col items-center text-red-500">
+                            <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg flex flex-col items-center text-red-500 dark:text-red-400">
                                 <strong className="text-2xl mb-1">{result.stats.errors}</strong>
-                                <span className="text-xs text-gray-500">Lỗi</span>
+                                <span className="text-xs text-gray-500 dark:text-gray-400">Lỗi</span>
                             </div>
                         </div>
                         
                         {result.errorDetails && result.errorDetails.length > 0 && (
-                            <div className="text-left bg-red-50 p-4 rounded-lg mb-8 max-h-48 overflow-y-auto border border-red-100">
-                                <h4 className="font-semibold text-red-800 mb-2">Chi tiết lỗi:</h4>
-                                <ul className="list-disc pl-5 text-sm text-red-700 space-y-1">
+                            <div className="text-left bg-red-50 dark:bg-red-900/30 p-4 rounded-lg mb-8 max-h-48 overflow-y-auto border border-red-100 dark:border-red-800">
+                                <h4 className="font-semibold text-red-800 dark:text-red-300 mb-2">Chi tiết lỗi:</h4>
+                                <ul className="list-disc pl-5 text-sm text-red-700 dark:text-red-300 space-y-1">
                                     {result.errorDetails.slice(0, 10).map((err: any, idx: number) => (
                                         <li key={idx}>Dòng {JSON.stringify(err.row)}: {err.error}</li>
                                     ))}
@@ -154,7 +155,7 @@ const RawFoodImport: React.FC = () => {
                         )}
 
                         <div className="flex justify-center gap-4">
-                            <button onClick={() => setResult(null)} className="bg-white text-gray-700 border border-gray-300 px-6 py-2.5 rounded-lg font-semibold hover:bg-gray-50 cursor-pointer">Import tiếp</button>
+                            <button onClick={() => setResult(null)} className="bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 px-6 py-2.5 rounded-lg font-semibold hover:bg-gray-50 dark:hover:bg-gray-600 cursor-pointer">Import tiếp</button>
                             <button onClick={() => navigate('/raw-foods')} className="bg-indigo-600 text-white border-none px-6 py-2 rounded-lg font-semibold hover:bg-indigo-700 cursor-pointer">Về danh sách</button>
                         </div>
                     </div>

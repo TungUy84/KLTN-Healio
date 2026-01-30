@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Tailwind v4: dark mode dùng class .dark trên ancestor (vd: html) */
+@custom-variant dark (&&:where(.dark, .dark *));
+
 :root {
   /* Colors Scheme */
   --primary-color: #4f46e5;
@@ -74,4 +77,23 @@ ul {
 
 button {
   font-family: inherit;
+}
+
+/* Dark mode: chữ sáng trên nền tối, tránh trùng với background */
+.dark body {
+  color: #e5e7eb;
+  background-color: #111827;
+}
+.dark h1,
+.dark h2,
+.dark h3,
+.dark h4,
+.dark h5,
+.dark h6 {
+  color: #f9fafb;
+}
+
+/* Số trên card KPI Dashboard: luôn trắng (tránh bị rule h3 toàn cục ghi đè) */
+.dashboard-stat-card h3 {
+  color: #ffffff !important;
 }

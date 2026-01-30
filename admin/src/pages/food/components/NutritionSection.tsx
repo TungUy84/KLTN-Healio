@@ -32,12 +32,12 @@ const NutritionSection: React.FC<NutritionSectionProps> = ({
     return (
         <>
             {/* PB_53: Tính Dinh dưỡng & Gắn nhãn */}
-            <h3 className="text-base font-semibold text-gray-900 border-b border-gray-200 pb-2 mb-4 mt-6">
+            <h3 className="text-base font-semibold text-gray-900 dark:text-gray-200 border-b border-gray-200 dark:border-gray-600 pb-2 mb-4 mt-6">
                 Tính Dinh dưỡng & Gắn nhãn
                 <button
                     type="button"
                     onClick={onResetCalculation}
-                    className="ml-3 px-3 py-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors flex items-center gap-1"
+                    className="ml-3 px-3 py-1 text-xs bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition-colors flex items-center gap-1"
                     title="Tính lại từ nguyên liệu"
                 >
                     <FaRedo className="text-xs" />
@@ -47,42 +47,42 @@ const NutritionSection: React.FC<NutritionSectionProps> = ({
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                 <div className="flex flex-col">
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Tổng Calo (kcal)</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Tổng Calo (kcal)</label>
                     <input
                         type="text"
                         readOnly
                         value={nutrition.total_calories === 0 ? '' : nutrition.total_calories}
-                        className="w-full p-2.5 rounded-lg border border-gray-300 text-sm bg-gray-50 text-gray-700 cursor-default pointer-events-none select-none"
+                        className="w-full p-2.5 rounded-lg border border-gray-300 dark:border-gray-600 text-sm bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 cursor-default pointer-events-none select-none"
                         tabIndex={-1}
                     />
                 </div>
                 <div className="flex flex-col">
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Protein (g)</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Protein (g)</label>
                     <input
                         type="text"
                         readOnly
                         value={nutrition.total_protein === 0 ? '' : nutrition.total_protein}
-                        className="w-full p-2.5 rounded-lg border border-gray-300 text-sm bg-gray-50 text-gray-700 cursor-default pointer-events-none select-none"
+                        className="w-full p-2.5 rounded-lg border border-gray-300 dark:border-gray-600 text-sm bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 cursor-default pointer-events-none select-none"
                         tabIndex={-1}
                     />
                 </div>
                 <div className="flex flex-col">
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Carb (g)</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Carb (g)</label>
                     <input
                         type="text"
                         readOnly
                         value={nutrition.total_carb === 0 ? '' : nutrition.total_carb}
-                        className="w-full p-2.5 rounded-lg border border-gray-300 text-sm bg-gray-50 text-gray-700 cursor-default pointer-events-none select-none"
+                        className="w-full p-2.5 rounded-lg border border-gray-300 dark:border-gray-600 text-sm bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 cursor-default pointer-events-none select-none"
                         tabIndex={-1}
                     />
                 </div>
                 <div className="flex flex-col">
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Fat (g)</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Fat (g)</label>
                     <input
                         type="text"
                         readOnly
                         value={nutrition.total_fat === 0 ? '' : nutrition.total_fat}
-                        className="w-full p-2.5 rounded-lg border border-gray-300 text-sm bg-gray-50 text-gray-700 cursor-default pointer-events-none select-none"
+                        className="w-full p-2.5 rounded-lg border border-gray-300 dark:border-gray-600 text-sm bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 cursor-default pointer-events-none select-none"
                         tabIndex={-1}
                     />
                 </div>
@@ -90,15 +90,15 @@ const NutritionSection: React.FC<NutritionSectionProps> = ({
 
             {/* PB_53: Diet Tags */}
             <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Tag chế độ ăn</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Tag chế độ ăn</label>
                 <div className="flex flex-wrap gap-2">
                     {availableDietTags.map(tag => (
                         <label
                             key={tag.value}
                             className={`flex items-center px-3 py-1.5 rounded-lg border cursor-pointer transition-colors ${
                                 dietTags.includes(tag.value)
-                                    ? 'bg-indigo-100 border-indigo-300 text-indigo-700'
-                                    : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                                    ? 'bg-indigo-100 dark:bg-indigo-900/50 border-indigo-300 dark:border-indigo-600 text-indigo-700 dark:text-indigo-300'
+                                    : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'
                             }`}
                         >
                             <input

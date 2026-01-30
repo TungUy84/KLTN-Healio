@@ -145,8 +145,8 @@ const UserDetail: React.FC = () => {
         return 'Duy trì cân nặng';
     };
 
-    if (loading) return <div className="p-10 text-center text-gray-500">Đang tải...</div>;
-    if (!user) return <div className="p-10 text-center text-gray-500">Không tìm thấy tài khoản.</div>;
+    if (loading) return <div className="p-10 text-center text-gray-500 dark:text-gray-400">Đang tải...</div>;
+    if (!user) return <div className="p-10 text-center text-gray-500 dark:text-gray-400">Không tìm thấy tài khoản.</div>;
 
     const p = user.profile;
     const n = user.nutrition;
@@ -161,9 +161,9 @@ const UserDetail: React.FC = () => {
 
     return (
         <div className="w-full max-w-5xl mx-auto">
-            <div className="flex justify-between items-center mb-6">
+            <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
-                    <Link to="/users" className="flex items-center justify-center w-9 h-9 rounded-full bg-white text-gray-700 border border-gray-300 hover:bg-gray-50">
+                    <Link to="/users" className="flex items-center justify-center w-9 h-9 rounded-full bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm">
                         <FaArrowLeft />
                     </Link>
                     {user.avatar ? (
@@ -173,20 +173,20 @@ const UserDetail: React.FC = () => {
                             className="w-14 h-14 rounded-full object-cover border-2 border-gray-200"
                         />
                     ) : (
-                        <div className="w-14 h-14 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-xl border-2 border-indigo-200">
+                        <div className="w-14 h-14 rounded-full bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-300 flex items-center justify-center font-bold text-xl border-2 border-indigo-200 dark:border-indigo-700">
                             {(user.full_name || 'U').charAt(0).toUpperCase()}
                         </div>
                     )}
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-900 m-0">{user.full_name}</h1>
-                        <p className="text-gray-500 text-sm m-0 mt-0.5">{user.email}</p>
+                        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-1 m-0">{user.full_name}</h1>
+                        <p className="text-base text-gray-500 dark:text-gray-400 m-0">{user.email}</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
-                    <span className={`inline-flex px-3 py-1 rounded-full text-sm font-medium ${user.role === 'admin' ? 'bg-violet-100 text-violet-700' : 'bg-gray-100 text-gray-700'}`}>
+                    <span className={`inline-flex px-3 py-1 rounded-full text-sm font-medium ${user.role === 'admin' ? 'bg-violet-100 dark:bg-violet-900/50 text-violet-700 dark:text-violet-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}`}>
                         {user.role === 'admin' ? 'Admin' : 'User'}
                     </span>
-                    <span className={`inline-flex px-3 py-1 rounded-full text-sm font-medium ${isBanned ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+                    <span className={`inline-flex px-3 py-1 rounded-full text-sm font-medium ${isBanned ? 'bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300' : 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300'}`}>
                         {isBanned ? 'Đã khóa' : 'Hoạt động'}
                     </span>
                     {isBanned ? (
@@ -211,117 +211,117 @@ const UserDetail: React.FC = () => {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* PB_58: Identity & body metrics */}
-                <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-                    <h3 className="text-base font-bold text-gray-900 mb-4 m-0">Thông tin định danh & chỉ số cơ thể</h3>
+                <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
+                    <h3 className="text-base font-bold text-gray-900 dark:text-gray-200 mb-4 m-0">Thông tin định danh & chỉ số cơ thể</h3>
                     <div className="space-y-3">
                         <div className="flex justify-between text-sm">
-                            <span className="text-gray-500">ID</span>
-                            <span className="font-medium text-gray-900">{user.id}</span>
+                            <span className="text-gray-500 dark:text-gray-400">ID</span>
+                            <span className="font-medium text-gray-900 dark:text-gray-200">{user.id}</span>
                         </div>
                         <div className="flex justify-between text-sm">
-                            <span className="text-gray-500">Email</span>
-                            <span className="font-medium text-gray-900">{user.email}</span>
+                            <span className="text-gray-500 dark:text-gray-400">Email</span>
+                            <span className="font-medium text-gray-900 dark:text-gray-200">{user.email}</span>
                         </div>
                         <div className="flex justify-between text-sm">
-                            <span className="text-gray-500">Giới tính</span>
-                            <span className="font-medium text-gray-900">{genderLabel(p?.gender ?? null)}</span>
+                            <span className="text-gray-500 dark:text-gray-400">Giới tính</span>
+                            <span className="font-medium text-gray-900 dark:text-gray-200">{genderLabel(p?.gender ?? null)}</span>
                         </div>
                         <div className="flex justify-between text-sm">
-                            <span className="text-gray-500">Ngày sinh</span>
-                            <span className="font-medium text-gray-900">
+                            <span className="text-gray-500 dark:text-gray-400">Ngày sinh</span>
+                            <span className="font-medium text-gray-900 dark:text-gray-200">
                                 {p?.dob ? `${p.dob} (${age !== null ? age + ' tuổi' : '—'})` : '—'}
                             </span>
                         </div>
                         <div className="flex justify-between text-sm">
-                            <span className="text-gray-500">Chiều cao (cm)</span>
-                            <span className="font-medium text-gray-900">{p?.height ?? '—'}</span>
+                            <span className="text-gray-500 dark:text-gray-400">Chiều cao (cm)</span>
+                            <span className="font-medium text-gray-900 dark:text-gray-200">{p?.height ?? '—'}</span>
                         </div>
                         <div className="flex justify-between text-sm">
-                            <span className="text-gray-500">Cân nặng hiện tại (kg)</span>
-                            <span className="font-medium text-gray-900">{p?.current_weight ?? '—'}</span>
+                            <span className="text-gray-500 dark:text-gray-400">Cân nặng hiện tại (kg)</span>
+                            <span className="font-medium text-gray-900 dark:text-gray-200">{p?.current_weight ?? '—'}</span>
                         </div>
                         <div className="flex justify-between text-sm">
-                            <span className="text-gray-500">BMI</span>
+                            <span className="text-gray-500 dark:text-gray-400">BMI</span>
                             <span className={`font-medium ${bmiData.color}`}>
                                 {bmiData.value !== null ? `${bmiData.value} (${bmiData.label})` : '—'}
                             </span>
                         </div>
                         <div className="flex justify-between text-sm">
-                            <span className="text-gray-500">Mức vận động</span>
-                            <span className="font-medium text-gray-900">{activityLabel(p?.activity_level ?? null)}</span>
+                            <span className="text-gray-500 dark:text-gray-400">Mức vận động</span>
+                            <span className="font-medium text-gray-900 dark:text-gray-200">{activityLabel(p?.activity_level ?? null)}</span>
                         </div>
                         <div className="flex justify-between text-sm">
-                            <span className="text-gray-500">Mục tiêu</span>
-                            <span className="font-medium text-gray-900">{goalLabel(p?.goal_type ?? null)}</span>
+                            <span className="text-gray-500 dark:text-gray-400">Mục tiêu</span>
+                            <span className="font-medium text-gray-900 dark:text-gray-200">{goalLabel(p?.goal_type ?? null)}</span>
                         </div>
                         <div className="flex justify-between text-sm">
-                            <span className="text-gray-500">Cân nặng mục tiêu (kg)</span>
-                            <span className="font-medium text-gray-900">{p?.goal_weight ?? '—'}</span>
+                            <span className="text-gray-500 dark:text-gray-400">Cân nặng mục tiêu (kg)</span>
+                            <span className="font-medium text-gray-900 dark:text-gray-200">{p?.goal_weight ?? '—'}</span>
                         </div>
                         <div className="flex justify-between text-sm">
-                            <span className="text-gray-500">Lộ trình</span>
-                            <span className="font-medium text-indigo-600">{journey}</span>
+                            <span className="text-gray-500 dark:text-gray-400">Lộ trình</span>
+                            <span className="font-medium text-indigo-600 dark:text-indigo-400">{journey}</span>
                         </div>
                     </div>
                 </div>
 
                 {/* PB_59: Diet & nutrition, allergies */}
-                <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-                    <h3 className="text-base font-bold text-gray-900 mb-4 m-0">Chế độ ăn & dinh dưỡng</h3>
+                <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
+                    <h3 className="text-base font-bold text-gray-900 dark:text-gray-200 mb-4 m-0">Chế độ ăn & dinh dưỡng</h3>
                     <div className="space-y-4">
                         {n ? (
                             <>
                                 <div className="flex justify-between text-sm">
-                                    <span className="text-gray-500">Mức vận động</span>
-                                    <span className="font-medium text-gray-900">{activityLabel(p?.activity_level ?? null)}</span>
+                                    <span className="text-gray-500 dark:text-gray-400">Mức vận động</span>
+                                    <span className="font-medium text-gray-900 dark:text-gray-200">{activityLabel(p?.activity_level ?? null)}</span>
                                 </div>
                                 <div className="flex justify-between text-sm">
-                                    <span className="text-gray-500">BMR</span>
-                                    <span className="font-medium text-gray-900">{bmr ? `${bmr} kcal/ngày` : '—'}</span>
+                                    <span className="text-gray-500 dark:text-gray-400">BMR</span>
+                                    <span className="font-medium text-gray-900 dark:text-gray-200">{bmr ? `${bmr} kcal/ngày` : '—'}</span>
                                 </div>
                                 <div className="flex justify-between text-sm">
-                                    <span className="text-gray-500">TDEE</span>
-                                    <span className="font-medium text-gray-900">{n.tdee} kcal/ngày</span>
+                                    <span className="text-gray-500 dark:text-gray-400">TDEE</span>
+                                    <span className="font-medium text-gray-900 dark:text-gray-200">{n.tdee} kcal/ngày</span>
                                 </div>
                                 <div className="flex justify-between text-sm">
-                                    <span className="text-gray-500">Calo mục tiêu/ngày</span>
-                                    <span className="font-medium text-gray-900">{n.target_calories} kcal</span>
+                                    <span className="text-gray-500 dark:text-gray-400">Calo mục tiêu/ngày</span>
+                                    <span className="font-medium text-gray-900 dark:text-gray-200">{n.target_calories} kcal</span>
                                 </div>
                                 {diet ? (
                                     <>
-                                        <div className="pt-3 border-t border-gray-200">
-                                            <p className="text-sm font-semibold text-gray-700 mb-2">Chế độ ăn (Diet Mode)</p>
-                                            <p className="text-sm text-gray-900 m-0">{diet.name}</p>
+                                        <div className="pt-3 border-t border-gray-200 dark:border-gray-600">
+                                            <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Chế độ ăn (Diet Mode)</p>
+                                            <p className="text-sm text-gray-900 dark:text-gray-200 m-0">{diet.name}</p>
                                         </div>
                                         <div className="pt-2">
-                                            <p className="text-sm font-semibold text-gray-700 mb-2">Chế độ dinh dưỡng</p>
-                                            <p className="text-sm text-gray-900 m-0">
+                                            <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Chế độ dinh dưỡng</p>
+                                            <p className="text-sm text-gray-900 dark:text-gray-200 m-0">
                                                 Carb: {diet.carb_ratio}% / Đạm: {diet.protein_ratio}% / Béo: {diet.fat_ratio}%
                                             </p>
                                             {diet.description && (
-                                                <p className="text-xs text-gray-500 mt-1 m-0">{diet.description}</p>
+                                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 m-0">{diet.description}</p>
                                             )}
                                         </div>
                                     </>
                                 ) : (
-                                    <p className="text-sm text-gray-400 italic">Chưa chọn chế độ ăn</p>
+                                    <p className="text-sm text-gray-400 dark:text-gray-500 italic">Chưa chọn chế độ ăn</p>
                                 )}
                             </>
                         ) : (
-                            <p className="text-sm text-gray-400 italic">Chưa hoàn thành onboarding</p>
+                            <p className="text-sm text-gray-400 dark:text-gray-500 italic">Chưa hoàn thành onboarding</p>
                         )}
-                        <div className="pt-3 border-t border-gray-200">
-                            <p className="text-sm font-semibold text-gray-700 mb-1">Dị ứng & Kiêng kỵ</p>
+                        <div className="pt-3 border-t border-gray-200 dark:border-gray-600">
+                            <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Dị ứng & Kiêng kỵ</p>
                             {user.allergies ? (
                                 <div className="flex flex-wrap gap-2 mt-2">
                                     {user.allergies.split(',').map((allergy, idx) => (
-                                        <span key={idx} className="px-2 py-1 bg-red-50 text-red-700 rounded-full text-xs font-medium">
+                                        <span key={idx} className="px-2 py-1 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-full text-xs font-medium">
                                             {allergy.trim()}
                                         </span>
                                     ))}
                                 </div>
                             ) : (
-                                <p className="text-sm text-gray-600 m-0">Chưa có dữ liệu (từ Onboarding)</p>
+                                <p className="text-sm text-gray-600 dark:text-gray-400 m-0">Chưa có dữ liệu (từ Onboarding)</p>
                             )}
                         </div>
                     </div>

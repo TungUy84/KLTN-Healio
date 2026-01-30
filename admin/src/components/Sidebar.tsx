@@ -1,18 +1,16 @@
 import React from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
-import { 
-    FaHome, 
-    FaLeaf, 
-    FaUtensils, 
-    FaUsers, 
-    FaChartBar, 
-    FaSignOutAlt 
+import { NavLink } from 'react-router-dom';
+import {
+    FaHome,
+    FaLeaf,
+    FaUtensils,
+    FaUsers,
+    FaChartBar,
+    FaSignOutAlt
 } from 'react-icons/fa';
 import { authService } from '../services/authService';
 
 const Sidebar: React.FC = () => {
-    const navigate = useNavigate();
-
     const handleLogout = () => {
         authService.logout();
     };
@@ -26,34 +24,33 @@ const Sidebar: React.FC = () => {
     ];
 
     return (
-        <div className="w-[260px] h-screen bg-white border-r border-gray-200 flex flex-col fixed left-0 top-0 z-50">
-            <div className="h-[70px] flex items-center px-6 border-b border-gray-100">
-                <div className="w-8 h-8 bg-indigo-600 text-white rounded-lg flex items-center justify-center font-bold mr-3 text-lg">
+        <div className="w-[260px] h-screen bg-slate-800 dark:bg-slate-900 text-white flex flex-col fixed left-0 top-0 z-50 transition-colors">
+            <div className="h-[70px] flex items-center gap-3 px-4 border-b border-slate-700 dark:border-slate-600">
+                <div className="w-10 h-10 rounded-full bg-indigo-600 text-white flex items-center justify-center text-lg font-bold shrink-0">
                     H
                 </div>
-                <h2 className="text-xl font-bold text-gray-900 m-0">Healio Admin</h2>
+                <span className="text-white font-bold text-lg truncate">Admin Helio</span>
             </div>
 
-            <nav className="flex-1 px-4 py-6 flex flex-col gap-1">
+            <nav className="flex-1 px-3 py-4 flex flex-col gap-0.5 overflow-y-auto [&_a]:text-white [&_a:hover]:text-white">
                 {navItems.map((item) => (
                     <NavLink
                         key={item.path}
                         to={item.path}
-                        className={({ isActive }) => `
-                            flex items-center px-4 py-3 text-gray-600 no-underline rounded-lg text-[15px] font-medium transition-all
-                            ${isActive ? 'bg-indigo-50 text-indigo-600' : 'hover:bg-gray-50 hover:text-gray-900'}
-                        `}
+                        className={({ isActive }) =>
+                            `flex items-center px-4 py-3 no-underline rounded-lg text-[15px] font-medium transition-all ${isActive ? 'bg-indigo-600' : 'hover:bg-slate-700 dark:hover:bg-slate-700'}`
+                        }
                     >
-                        <span className="flex items-center mr-3 text-lg">{item.icon}</span>
-                        {item.label}
+                        <span className="flex items-center mr-3 text-lg text-inherit">{item.icon}</span>
+                        <span className="text-inherit">{item.label}</span>
                     </NavLink>
                 ))}
             </nav>
 
-            <div className="p-4 border-t border-gray-100">
-                <button 
-                    onClick={handleLogout} 
-                    className="w-full flex items-center justify-center p-2.5 bg-red-50 text-red-500 border-none rounded-lg cursor-pointer text-sm font-semibold transition-colors hover:bg-red-100"
+            <div className="p-4 border-t border-slate-700 dark:border-slate-600">
+                <button
+                    onClick={handleLogout}
+                    className="w-full flex items-center justify-center p-2.5 bg-slate-700 dark:bg-slate-800 text-white border-none rounded-lg cursor-pointer text-sm font-medium transition-colors hover:bg-red-900/30 hover:text-red-200"
                 >
                     <FaSignOutAlt className="mr-2" />
                     Đăng xuất
