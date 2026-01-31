@@ -1,10 +1,15 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, Pressable, StatusBar, Alert, Image, ScrollView } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TextInput, Pressable, StatusBar, Alert, Image, ScrollView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { userService } from '../../services/userService'; 
+import { userService } from '../../services/userService';
 import { authService } from '../../services/authService';
+import * as WebBrowser from 'expo-web-browser';
+import * as Google from 'expo-auth-session/providers/google';
+import { makeRedirectUri } from 'expo-auth-session';
+
+WebBrowser.maybeCompleteAuthSession();
 
 export default function SignInScreen() {
     const router = useRouter();
@@ -12,6 +17,51 @@ export default function SignInScreen() {
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
+
+    // Google Auth Request
+    const [request, response, promptAsync] = Google.useAuthRequest({
+        androidClientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID,
+        iosClientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID,
+        webClientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID,
+        redirectUri: Platform.select({
+            web: undefined,
+            default: 'https://auth.expo.io/@tunguykim/mobile'
+        })
+    });
+
+    // Handle Google Login Response
+    useEffect(() => {
+        if (response?.type === 'success') {
+            const { authentication } = response;
+            fetchUserInfo(authentication?.accessToken);
+        }
+    }, [response]);
+
+    const fetchUserInfo = async (token: string | undefined) => {
+        if (!token) return;
+        setLoading(true);
+        try {
+            const res = await fetch('https://www.googleapis.com/userinfo/v2/me', {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            const user = await res.json();
+
+            // Call Backend API
+            const data = await authService.loginGoogle(user);
+
+            // Navigate
+            if (data.user?.is_onboarded) {
+                router.replace('/(tabs)');
+            } else {
+                router.replace('/onboarding');
+            }
+        } catch (error: any) {
+            console.log("Google Login Error", error);
+            Alert.alert('Lỗi', 'Đăng nhập Google thất bại');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     // PB_01 - AC3 & AC4: Xử lý đăng nhập
     const handleLogin = async () => {
@@ -24,7 +74,7 @@ export default function SignInScreen() {
         try {
             // Gọi API Login thật
             const data = await authService.login(email, password);
-             
+
             // Check nếu chưa Onboard -> Chuyển sang Onboarding Step 1
             if (data.user?.is_onboarded) {
                 router.replace('/(tabs)');
@@ -33,19 +83,19 @@ export default function SignInScreen() {
             }
         } catch (error: any) {
             console.log("Login fail:", error);
-            
+
             // Check tài khoản chưa kích hoạt (status 403 & pending)
             if (error.response?.status === 403 && error.response?.data?.mustVerify) {
                 Alert.alert(
-                    'Chưa kích hoạt', 
+                    'Chưa kích hoạt',
                     'Tài khoản này chưa xác thực OTP. Bạn có muốn nhập mã ngay?',
                     [
                         { text: 'Hủy', style: 'cancel' },
-                        { 
-                            text: 'Nhập OTP', 
+                        {
+                            text: 'Nhập OTP',
                             onPress: () => {
                                 // Gửi lại OTP mới luôn cho tiện người dùng (Optional)
-                                authService.resendOtp(email, 'register').catch(() => {});
+                                authService.resendOtp(email, 'register').catch(() => { });
                                 router.push({ pathname: '/auth/otp', params: { email, type: 'register' } });
                             }
                         }
@@ -61,19 +111,13 @@ export default function SignInScreen() {
         }
     };
 
-    const handleGoogleLogin = () => {
-        // PB_02: Tạm thời chỉ hiện UI/Log
-        console.log("Đăng nhập Google");
-        Alert.alert("Thông báo", "Tính năng Đăng nhập Google đang phát triển");
-    };
-
     return (
         <View className="flex-1 bg-white">
             <StatusBar barStyle="dark-content" />
             <SafeAreaView className="flex-1">
                 {/* Dùng ScrollView để đảm bảo không bị che khi bật bàn phím trên màn nhỏ */}
                 <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', paddingHorizontal: 24 }}>
-                    
+
                     {/* Header Logo/Title */}
                     <View className="items-center mb-6">
                         <Image
@@ -147,7 +191,8 @@ export default function SignInScreen() {
 
                         {/* Google Login */}
                         <Pressable
-                            onPress={handleGoogleLogin}
+                            disabled={!request}
+                            onPress={() => promptAsync()}
                             className="h-14 rounded-full border border-gray-200 flex-row items-center justify-center bg-white active:bg-gray-50"
                         >
                             <Image

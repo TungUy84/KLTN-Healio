@@ -15,6 +15,8 @@ interface BasicInfoSectionProps {
     onStatusToggle: () => void;
     onStatusSelect: (status: 'active' | 'inactive') => void;
     onCategoryChange: (categoryValue: string) => void;
+    onGenerateAI?: () => void;
+    aiLoading?: boolean;
 }
 
 const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({
@@ -27,7 +29,9 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({
     onFileChange,
     onStatusToggle,
     onStatusSelect,
-    onCategoryChange
+    onCategoryChange,
+    onGenerateAI,
+    aiLoading
 }) => {
     const availableCategories = [
         { value: 'breakfast', label: 'Ăn sáng' },
@@ -40,10 +44,22 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({
         <>
             {/* PB_51: Basic Info */}
             <h3 className="text-base font-semibold text-gray-900 border-b border-gray-200 pb-2 mb-4 mt-0">Thông tin cơ bản</h3>
-            
+
             <div className="flex flex-col md:flex-row gap-4 mb-4">
                 <div className="flex-1 flex flex-col">
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Tên món *</label>
+                    <div className="flex justify-between items-center mb-1.5">
+                        <label className="block text-sm font-medium text-gray-700">Tên món *</label>
+                        {onGenerateAI && (
+                            <button
+                                type="button"
+                                onClick={onGenerateAI}
+                                disabled={aiLoading || !formData.name}
+                                className="text-xs flex items-center gap-1 text-indigo-600 hover:text-indigo-800 font-medium bg-indigo-50 px-2 py-1 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {aiLoading ? 'Đang tạo...' : '✨ Tạo bằng AI'}
+                            </button>
+                        )}
+                    </div>
                     <input
                         type="text"
                         name="name"
@@ -99,15 +115,13 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({
                     <button
                         type="button"
                         onClick={onStatusToggle}
-                        className={`w-full p-2.5 rounded-lg border border-gray-300 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors bg-white cursor-pointer text-left flex items-center justify-between ${
-                            status === 'active' ? 'text-green-700' : 'text-red-700'
-                        }`}
+                        className={`w-full p-2.5 rounded-lg border border-gray-300 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors bg-white cursor-pointer text-left flex items-center justify-between ${status === 'active' ? 'text-green-700' : 'text-red-700'
+                            }`}
                     >
-                        <span className={`px-2 py-1 rounded text-xs font-medium ${
-                            status === 'active' 
-                                ? 'bg-green-100 text-green-700' 
-                                : 'bg-red-100 text-red-700'
-                        }`}>
+                        <span className={`px-2 py-1 rounded text-xs font-medium ${status === 'active'
+                            ? 'bg-green-100 text-green-700'
+                            : 'bg-red-100 text-red-700'
+                            }`}>
                             {status === 'active' ? 'Active (Hoạt động)' : 'Inactive (Tạm ngưng)'}
                         </span>
                         <svg className={`w-4 h-4 transition-transform ${statusDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -116,8 +130,8 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({
                     </button>
                     {statusDropdownOpen && (
                         <>
-                            <div 
-                                className="fixed inset-0 z-10" 
+                            <div
+                                className="fixed inset-0 z-10"
                                 onClick={onStatusToggle}
                             />
                             <div className="absolute z-20 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg">

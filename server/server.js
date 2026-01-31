@@ -7,6 +7,10 @@ const authRoutes = require('./src/routes/auth');
 const userRoutes = require('./src/routes/users');
 const rawFoodRoutes = require('./src/routes/rawFoods');
 const foodRoutes = require('./src/routes/foods');
+const dashboardRoutes = require('./src/routes/dashboard');
+const adminUsersRoutes = require('./src/routes/adminUsers');
+const statsRoutes = require('./src/routes/stats');
+const aiRoutes = require('./src/routes/ai');
 
 // Require models để đảm bảo chúng được sync
 require('./src/models/RawFood');
@@ -14,6 +18,7 @@ require('./src/models/Food');
 require('./src/models/FoodIngredient'); // Junction table for Meal <-> RawFood relationship
 require('./src/models/UserFavoriteFood'); // PB_19: Favorites
 require('./src/models/UserDailyLog'); // PB_23: Diary
+require('./src/models/UserWeightLog'); // PB_27: Weight History
 
 const app = express();
 
@@ -28,6 +33,10 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/raw-foods', rawFoodRoutes);
 app.use('/api/foods', foodRoutes);
+app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/admin/users', adminUsersRoutes);
+app.use('/api/stats', statsRoutes);
+app.use('/api/ai', aiRoutes);
 
 // Sync DB & Start Server
 // Use alter: true to update tables if models change (add columns)

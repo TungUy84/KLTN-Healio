@@ -1,6 +1,6 @@
 const bcrypt = require('bcryptjs');
 // Responding to error: Cannot find module 'mongoose'. Removing unused mongoose import.
-const User = require('./src/models/User'); 
+const User = require('./src/models/User');
 const sequelize = require('./src/config/database');
 require('dotenv').config();
 

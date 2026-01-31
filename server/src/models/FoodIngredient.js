@@ -9,7 +9,7 @@ const FoodIngredient = sequelize.define('FoodIngredient', {
         primaryKey: true,
         autoIncrement: true
     },
-    // food_id là món ăn (đổi từ dish_id)
+    // food_id là món ăn
     food_id: {
         type: DataTypes.INTEGER,
         allowNull: false,
