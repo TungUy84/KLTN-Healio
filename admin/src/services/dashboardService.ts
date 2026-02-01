@@ -24,5 +24,17 @@ export const dashboardService = {
       }
     });
     return response.data;
+  },
+
+  // PB_44: Get User Activity Stats (Chart)
+  getActivityStats: async () => {
+    const response = await api.get('/dashboard/activity-stats');
+    return response.data;
+  },
+
+  // PB_45: Get Macro Stats (Pie Chart)
+  getMacroStats: async () => {
+    const response = await api.get('/dashboard/macro-stats');
+    return response.data;
   }
 };

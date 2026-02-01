@@ -1,99 +1,71 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 @import "tailwindcss";
 
-/* Tailwind v4: dark mode dùng class .dark trên ancestor (vd: html) */
-@custom-variant dark (&&:where(.dark, .dark *));
+@theme {
+  --font-sans: 'Inter', sans-serif;
 
-:root {
-  /* Colors Scheme */
-  --primary-color: #4f46e5;
-  --primary-light: #eef2ff;
-  --primary-dark: #4338ca;
-  
-  --secondary-color: #10b981;
-  --secondary-light: #d1fae5;
-  
-  --danger-color: #ef4444;
-  --danger-light: #fef2f2;
-  
-  --warning-color: #f59e0b;
-  --warning-light: #fef3c7;
-  
-  --info-color: #3b82f6;
-  --info-light: #dbeafe;
-
-  /* Typography Colors */
-  --text-main: #111827;
-  --text-secondary: #6b7280;
-  --text-light: #9ca3af;
-  --text-white: #ffffff;
-
-  /* Backgrounds & Borders */
-  --bg-body: #f9fafb;
-  --bg-surface: #ffffff;
-  --border-color: #e5e7eb;
-
-  /* Spacing & Sizes */
-  --header-height: 70px;
-  --sidebar-width: 260px;
-  --radius-md: 8px;
-  --radius-lg: 16px;
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  /* Nếu muốn màu slate, cần đảm bảo nó có trong theme hoặc dùng hex */
+  --color-bg-body: #F8FAFC;
 }
 
-* {
-  box-sizing: border-box;
+/* Base styles */
+@layer base {
+  body {
+    font-family: var(--font-sans);
+    background-color: var(--color-bg-body);
+    /* Dùng màu gray-800 mặc định của Tailwind */
+    @apply text-gray-800;
+  }
 }
 
-body {
-  margin: 0;
-  padding: 0;
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  background-color: var(--bg-body);
-  color: var(--text-main);
-  -webkit-font-smoothing: antialiased;
-  min-height: 100vh;
+/* Utilities */
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  /* Custom scrollbar - dùng mã màu trực tiếp để an toàn nếu class lỗi */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    /* Thay bg-slate-200 bằng mã màu tương đương #e2e8f0 để tránh lỗi apply */
+    background-color: #e2e8f0;
+    border-radius: 9999px;
+    /* rounded-full */
+    transition: background-color 0.3s;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: #34d399;
+    /* emerald-400 */
+  }
 }
 
-h1, h2, h3, h4, h5, h6 {
-  margin-top: 0;
-  color: var(--text-main);
+/* Animation */
+.fade-in {
+  animation: fadeIn 0.3s ease-in-out;
 }
 
-p {
-  margin-bottom: 1rem;
-}
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
 
-a {
-  text-decoration: none;
-  color: inherit;
-}
-
-ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-button {
-  font-family: inherit;
-}
-
-/* Dark mode: chữ sáng trên nền tối, tránh trùng với background */
-.dark body {
-  color: #e5e7eb;
-  background-color: #111827;
-}
-.dark h1,
-.dark h2,
-.dark h3,
-.dark h4,
-.dark h5,
-.dark h6 {
-  color: #f9fafb;
-}
-
-/* Số trên card KPI Dashboard: luôn trắng (tránh bị rule h3 toàn cục ghi đè) */
-.dashboard-stat-card h3 {
-  color: #ffffff !important;
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
