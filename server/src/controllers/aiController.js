@@ -60,13 +60,28 @@ const generateRecipe = async (req, res) => {
             });
         }
 
+        const totals = finalIngredients.reduce((acc, ing) => {
+            const ratio = ing.amount / 100;
+            return {
+                calories: acc.calories + (ing.calories * ratio),
+                protein: acc.protein + (ing.protein * ratio),
+                fat: acc.fat + (ing.fat * ratio),
+                carb: acc.carb + (ing.carb * ratio)
+            };
+        }, { calories: 0, protein: 0, fat: 0, carb: 0 });
+
         res.json({
             success: true,
+            name: foodName, // Explicitly return the name
             description,
             serving_unit,
             meal_categories,
             diet_tags,
             ingredients: finalIngredients,
+            total_calories: Math.round(totals.calories),
+            total_protein: Math.round(totals.protein * 10) / 10,
+            total_fat: Math.round(totals.fat * 10) / 10,
+            total_carb: Math.round(totals.carb * 10) / 10,
             newIngredientsCount: newCount
         });
 

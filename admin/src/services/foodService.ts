@@ -37,7 +37,30 @@ export interface FoodListResponse {
     };
 }
 
+export interface FoodStats {
+    total: number;
+    avgCalories: number;
+    diets: {
+        keto: number;
+        low_carb: number;
+        high_protein: number;
+        low_fat: number;
+        balanced: number;
+    };
+    meals: {
+        breakfast: number;
+        lunch: number;
+        dinner: number;
+        snack: number;
+    };
+}
+
 export const foodService = {
+    getStats: async () => {
+        const response = await api.get<FoodStats>('/foods/stats');
+        return response.data;
+    },
+
     getAll: async (
         page = 1,
         limit = 10,

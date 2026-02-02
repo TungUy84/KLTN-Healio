@@ -269,7 +269,16 @@ exports.importRawFoods = async (req, res) => {
                     });
 
                     // Check existence
-                    const existing = await RawFood.findOne({ where: { code } });
+                    let existing = await RawFood.findOne({ where: { code } });
+
+                    // Nếu không tìm thấy theo Code, thử tìm theo Tên (để bắt các món do AI tạo có mã AI_...)
+                    if (!existing && row.Name) {
+                        existing = await RawFood.findOne({
+                            where: {
+                                name: { [Op.iLike]: row.Name.trim() }
+                            }
+                        });
+                    }
 
                     if (existing) {
                         if (mode === 'overwrite') {

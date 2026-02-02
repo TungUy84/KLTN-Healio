@@ -14,29 +14,29 @@ exports.getFoods = async (req, res) => {
         const search = req.query.search || '';
         const sort = req.query.sort || 'created_at';
         const order = req.query.order || 'DESC';
-        
+
         // AC2: Filters
         const mealCategory = req.query.meal_category; // Keep as meal_category for backward compatibility or rename if needed
-        const dietTag = req.query.diet_tag; 
+        const dietTag = req.query.diet_tag;
         const calorieMin = req.query.calorie_min ? parseFloat(req.query.calorie_min) : null;
         const calorieMax = req.query.calorie_max ? parseFloat(req.query.calorie_max) : null;
-        const status = req.query.status; 
+        const status = req.query.status;
 
         const where = {};
-        
+
         // AC3: Search by name
         if (search) {
             where.name = { [Op.iLike]: `%${search}%` };
         }
-        
+
         if (mealCategory) {
             where.meal_categories = { [Op.contains]: [mealCategory] };
         }
-        
+
         if (dietTag) {
             where.diet_tags = { [Op.contains]: [dietTag] };
         }
-        
+
         if (calorieMin !== null || calorieMax !== null) {
             where.calories = {};
             if (calorieMin !== null) {
@@ -46,7 +46,7 @@ exports.getFoods = async (req, res) => {
                 where.calories[Op.lte] = calorieMax;
             }
         }
-        
+
         if (status) {
             where.status = status;
         } else {
@@ -120,7 +120,7 @@ exports.createFood = async (req, res) => {
     const transaction = await sequelize.transaction();
     try {
         const { name, serving_unit, description, meal_categories, total_calories, total_protein, total_carb, total_fat, diet_tags, status, ingredients, micronutrients } = req.body;
-        
+
         let parsedCategories = meal_categories;
         if (typeof meal_categories === 'string') {
             try {
@@ -129,7 +129,7 @@ exports.createFood = async (req, res) => {
                 parsedCategories = [];
             }
         }
-        
+
         let parsedDietTags = diet_tags || [];
         if (typeof diet_tags === 'string') {
             try {
@@ -138,7 +138,7 @@ exports.createFood = async (req, res) => {
                 parsedDietTags = [];
             }
         }
-        
+
         let parsedIngredients = [];
         if (ingredients && typeof ingredients === 'string') {
             try {
@@ -182,7 +182,7 @@ exports.createFood = async (req, res) => {
             diet_tags: Array.isArray(parsedDietTags) ? parsedDietTags : [],
             micronutrients: parsedMicronutrients,
             image: req.file ? `/uploads/${req.file.filename}` : null,
-            created_by_user_id: req.user?.id || null 
+            created_by_user_id: req.user?.id || null
         }, { transaction });
 
         if (parsedIngredients.length > 0) {
@@ -195,7 +195,7 @@ exports.createFood = async (req, res) => {
         }
 
         await transaction.commit();
-        
+
         const foodWithIngredients = await Food.findByPk(newFood.id, {
             include: [{
                 model: RawFood,
@@ -205,7 +205,7 @@ exports.createFood = async (req, res) => {
                 }
             }]
         });
-        
+
         res.status(201).json(foodWithIngredients);
     } catch (error) {
         await transaction.rollback();
@@ -219,13 +219,13 @@ exports.updateFood = async (req, res) => {
     try {
         const { id } = req.params;
         const { name, serving_unit, description, meal_categories, total_calories, total_protein, total_carb, total_fat, diet_tags, status, ingredients, micronutrients } = req.body;
-        
+
         const updateData = {};
         if (name) updateData.name = name;
         if (serving_unit) updateData.serving_unit = serving_unit;
         if (description !== undefined) updateData.cooking = description;
         if (status) updateData.status = status;
-        
+
         if (req.file) {
             updateData.image = `/uploads/${req.file.filename}`;
         }
@@ -244,7 +244,7 @@ exports.updateFood = async (req, res) => {
                 updateData.meal_categories = parsedCategories.filter(cat => validCategories.includes(cat));
             }
         }
-        
+
         if (diet_tags !== undefined) {
             let parsedDietTags = diet_tags;
             if (typeof diet_tags === 'string') {
@@ -256,7 +256,7 @@ exports.updateFood = async (req, res) => {
             }
             updateData.diet_tags = Array.isArray(parsedDietTags) ? parsedDietTags : [];
         }
-        
+
         if (total_calories !== undefined) {
             updateData.calories = parseFloat(total_calories) || 0;
         }
@@ -285,7 +285,7 @@ exports.updateFood = async (req, res) => {
         }
 
         const [updatedRows] = await Food.update(updateData, { where: { id }, transaction });
-        
+
         if (updatedRows === 0) {
             await transaction.rollback();
             return res.status(404).json({ message: 'Food not found or no changes made' });
@@ -293,7 +293,7 @@ exports.updateFood = async (req, res) => {
 
         if (ingredients !== undefined) {
             await FoodIngredient.destroy({ where: { food_id: id }, transaction });
-            
+
             let parsedIngredients = [];
             if (typeof ingredients === 'string') {
                 try {
@@ -304,7 +304,7 @@ exports.updateFood = async (req, res) => {
             } else if (Array.isArray(ingredients)) {
                 parsedIngredients = ingredients;
             }
-            
+
             if (parsedIngredients.length > 0) {
                 const ingredientsToCreate = parsedIngredients.map(ing => ({
                     food_id: id,
@@ -316,7 +316,7 @@ exports.updateFood = async (req, res) => {
         }
 
         await transaction.commit();
-        
+
         const updatedFood = await Food.findByPk(id, {
             include: [{
                 model: RawFood,
@@ -326,7 +326,7 @@ exports.updateFood = async (req, res) => {
                 }
             }]
         });
-        
+
         res.json(updatedFood);
     } catch (error) {
         await transaction.rollback();
@@ -346,5 +346,47 @@ exports.deleteFood = async (req, res) => {
         res.json({ message: 'Món ăn đã được xóa thành công' });
     } catch (error) {
         res.status(500).json({ message: 'Error deleting food', error: error.message });
+    }
+};
+
+// Get Food Stats
+// Get Food Stats
+exports.getStats = async (req, res) => {
+    try {
+        const total = await Food.count({ where: { status: 'active' } });
+
+        const avgCaloriesResult = await Food.findAll({
+            where: { status: 'active' },
+            attributes: [[sequelize.fn('AVG', sequelize.col('calories')), 'avgCalories']],
+            raw: true
+        });
+        const avgCalories = avgCaloriesResult[0]?.avgCalories ? Math.round(avgCaloriesResult[0].avgCalories) : 0;
+
+        // Count by Diet Tags
+        const diets = {
+            keto: await Food.count({ where: { status: 'active', diet_tags: { [Op.contains]: ['keto'] } } }),
+            low_carb: await Food.count({ where: { status: 'active', diet_tags: { [Op.contains]: ['low_carb'] } } }),
+            high_protein: await Food.count({ where: { status: 'active', diet_tags: { [Op.contains]: ['high_protein'] } } }),
+            low_fat: await Food.count({ where: { status: 'active', diet_tags: { [Op.contains]: ['low_fat'] } } }),
+            balanced: await Food.count({ where: { status: 'active', diet_tags: { [Op.contains]: ['balanced'] } } })
+        };
+
+        // Count by Meal Categories
+        const meals = {
+            breakfast: await Food.count({ where: { status: 'active', meal_categories: { [Op.contains]: ['breakfast'] } } }),
+            lunch: await Food.count({ where: { status: 'active', meal_categories: { [Op.contains]: ['lunch'] } } }),
+            dinner: await Food.count({ where: { status: 'active', meal_categories: { [Op.contains]: ['dinner'] } } }),
+            snack: await Food.count({ where: { status: 'active', meal_categories: { [Op.contains]: ['snack'] } } })
+        };
+
+        res.json({
+            total,
+            avgCalories,
+            diets,
+            meals
+        });
+    } catch (error) {
+        console.error('Error fetching stats:', error);
+        res.status(500).json({ message: 'Error fetching stats', error: error.message });
     }
 };
