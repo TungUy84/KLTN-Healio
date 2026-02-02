@@ -19,6 +19,7 @@ const upload = multer({ storage: storage });
 // Routes
 // Note: Add 'protect' and 'admin' middleware later for security
 router.get('/', rawFoodController.getRawFoods);
+router.get('/stats', rawFoodController.getRawFoodStats); // PB_44_STATS
 router.get('/:id', rawFoodController.getRawFoodById);
 router.post('/', upload.single('image'), rawFoodController.createRawFood);
 router.put('/:id', upload.single('image'), rawFoodController.updateRawFood);

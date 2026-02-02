@@ -10,7 +10,6 @@ import {
     Clock,
     MoreHorizontal,
     Flame,
-    ChefHat,
     Salad,
 } from 'lucide-react';
 import {
@@ -105,7 +104,7 @@ const Dashboard: React.FC = () => {
             {/* 2. STATS CARDS (KPIs) - Phong cách Clean */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {/* Card 1: Users */}
-                <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate('/users')}>
+                <div className="bg-white p-6 rounded-2xl shadow-lg shadow-black/5 border border-gray-100 hover:shadow-[0_8px_30px_-4px_rgba(0,0,0,0.1)] transition-all duration-300 cursor-pointer transform hover:-translate-y-1" onClick={() => navigate('/users')}>
                     <div className="flex justify-between items-start">
                         <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
                             <Users size={24} />
@@ -124,7 +123,7 @@ const Dashboard: React.FC = () => {
                 </div>
 
                 {/* Card 2: Foods */}
-                <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate('/foods')}>
+                <div className="bg-white p-6 rounded-2xl shadow-lg shadow-black/5 border border-gray-100 hover:shadow-[0_8px_30px_-4px_rgba(0,0,0,0.1)] transition-all duration-300 cursor-pointer transform hover:-translate-y-1" onClick={() => navigate('/foods')}>
                     <div className="flex justify-between items-start">
                         <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
                             <Utensils size={24} />
@@ -143,7 +142,7 @@ const Dashboard: React.FC = () => {
                 </div>
 
                 {/* Card 3: Calories Logged Today */}
-                <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                <div className="bg-white p-6 rounded-2xl shadow-lg shadow-black/5 border border-gray-100 hover:shadow-[0_8px_30px_-4px_rgba(0,0,0,0.1)] transition-all duration-300 transform hover:-translate-y-1">
                     <div className="flex justify-between items-start">
                         <div className="p-3 bg-orange-50 text-orange-600 rounded-xl">
                             <Flame size={24} />
@@ -159,7 +158,7 @@ const Dashboard: React.FC = () => {
                 </div>
 
                 {/* Card 4: System Health / Raw Material */}
-                <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow" onClick={() => navigate('/raw-foods')}>
+                <div className="bg-white p-6 rounded-2xl shadow-lg shadow-black/5 border border-gray-100 hover:shadow-[0_8px_30px_-4px_rgba(0,0,0,0.1)] transition-all duration-300 transform hover:-translate-y-1" onClick={() => navigate('/raw-foods')}>
                     <div className="flex justify-between items-start">
                         <div className="p-3 bg-purple-50 text-purple-600 rounded-xl">
                             <Leaf size={24} />
@@ -168,7 +167,7 @@ const Dashboard: React.FC = () => {
                     </div>
                     <div className="mt-4">
                         <h3 className="text-3xl font-bold text-gray-900">{stats?.ingredients?.toLocaleString() || 0}</h3>
-                        <p className="text-sm text-gray-500 font-medium">Nguyên liệu thô</p>
+                        <p className="text-sm text-gray-500 font-medium">Nguyên liệu</p>
                     </div>
                 </div>
             </div>
@@ -177,7 +176,7 @@ const Dashboard: React.FC = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
                 {/* Main Chart: User Activity (Real Data - AreaChart) */}
-                <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-lg shadow-black/5 border border-gray-100">
                     <div className="flex justify-between items-center mb-6">
                         <div>
                             <h3 className="text-lg font-bold text-gray-900">Hoạt động User</h3>
@@ -189,7 +188,7 @@ const Dashboard: React.FC = () => {
                         </div>
                     </div>
                     <div className="h-72 w-full">
-                        <ResponsiveContainer width="100%" height="100%">
+                        <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                             <AreaChart data={activityStats} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                                 <defs>
                                     <linearGradient id="colorLogs" x1="0" y1="0" x2="0" y2="1">
@@ -211,12 +210,12 @@ const Dashboard: React.FC = () => {
                 </div>
 
                 {/* Secondary Chart: Macro Distribution (Real Data) */}
-                <div className="lg:col-span-1 bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col">
+                <div className="lg:col-span-1 bg-white p-6 rounded-2xl shadow-lg shadow-black/5 border border-gray-100 flex flex-col">
                     <h3 className="text-lg font-bold text-gray-900 mb-2">Phân bổ Dinh dưỡng</h3>
                     <p className="text-sm text-gray-400 mb-6">Tỷ lệ Macro trung bình các món ăn</p>
 
-                    <div className="flex-1 min-h-[200px] relative">
-                        <ResponsiveContainer width="100%" height="100%">
+                    <div className="h-64 relative">
+                        <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                             <PieChart>
                                 <Pie
                                     data={macroStats}
@@ -264,14 +263,18 @@ const Dashboard: React.FC = () => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
                 {/* Top Trending Foods */}
-                <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                <div className="bg-white p-6 rounded-2xl shadow-lg shadow-black/5 border border-gray-100">
                     <div className="flex justify-between items-center mb-6">
                         <h3 className="text-lg font-bold text-gray-900">Món ăn phổ biến</h3>
                         <button className="text-sm text-emerald-600 font-semibold hover:text-emerald-700">Xem tất cả</button>
                     </div>
                     <div className="space-y-4">
                         {topFoods.length > 0 ? topFoods.slice(0, 4).map((food, index) => (
-                            <div key={index} className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-xl transition-colors group cursor-pointer">
+                            <div
+                                key={index}
+                                onClick={() => food.id && navigate(`/foods/${food.id}`)}
+                                className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-xl transition-colors group cursor-pointer"
+                            >
                                 <div className="flex items-center gap-4">
                                     <div className="w-12 h-12 rounded-lg flex items-center justify-center overflow-hidden shrink-0">
                                         <FoodImage src={food.image} alt={food.name} />
@@ -290,7 +293,7 @@ const Dashboard: React.FC = () => {
                 </div>
 
                 {/* Recent Activity Feed */}
-                <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                <div className="bg-white p-6 rounded-2xl shadow-lg shadow-black/5 border border-gray-100">
                     <div className="flex justify-between items-center mb-6">
                         <h3 className="text-lg font-bold text-gray-900">Hoạt động gần đây</h3>
                         <MoreHorizontal className="text-gray-400 cursor-pointer" />

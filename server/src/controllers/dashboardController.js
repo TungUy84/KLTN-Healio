@@ -201,7 +201,7 @@ exports.getTopFoods = async (req, res) => {
             include: [{
                 model: Food,
                 as: 'food', // Alias must match association
-                attributes: ['name', 'image', 'calories', 'protein'] // Added image, calories, protein
+                attributes: ['id', 'name', 'image', 'calories']
             }],
             group: ['food_id', 'food.id', 'food.name', 'food.image', 'food.calories'], // Group by included columns too
             order: [[sequelize.literal('count'), 'DESC']],
@@ -210,10 +210,10 @@ exports.getTopFoods = async (req, res) => {
 
         // Format result
         const result = logs.map(log => ({
+            id: log.food ? log.food.id : null,
             name: log.food ? log.food.name : 'Unknown',
             image: log.food ? log.food.image : null,
             calories: log.food ? parseFloat(log.food.calories) : 0,
-            protein: log.food ? parseFloat(log.food.protein) : 0,
             count: parseInt(log.get('count'))
         }));
 

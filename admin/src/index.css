@@ -13,6 +13,7 @@
   body {
     font-family: var(--font-sans);
     background-color: var(--color-bg-body);
+    overflow-x: hidden;
     /* Dùng màu gray-800 mặc định của Tailwind */
     @apply text-gray-800;
   }

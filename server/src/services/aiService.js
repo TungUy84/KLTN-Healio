@@ -121,7 +121,53 @@ const suggestMealPlan = async (userProfile, nutritionTarget, availableFoods) => 
     }
 };
 
+const generateRawFoodInfo = async (foodName) => {
+    try {
+        if (!process.env.GEMINI_API_KEY) {
+            throw new Error("Missing GEMINI_API_KEY");
+        }
+        console.log(`[AI] Generating raw food info for: ${foodName}`);
+
+        const prompt = `
+            Bạn là chuyên gia dinh dưỡng. Hãy cung cấp thông tin dinh dưỡng cho nguyên liệu THÔ (RAW): "${foodName}".
+            
+            Yêu cầu:
+            1. Tính toán dinh dưỡng trên 100g phần ăn được (edible portion).
+            2. Trả về JSON duy nhất.
+            
+            Format JSON:
+            {
+                "name": "Tên chuẩn hóa (VD: Ức gà, Cà rốt...)",
+                "calories": 165, // Kcal
+                "protein": 31, // Gram
+                "fat": 3.6, // Gram
+                "carb": 0, // Gram
+                "fiber": 0, // Gram (Chất xơ)
+                "micronutrients": { // Các vi chất nổi bật và chỉ sử dụng đơn vị mg ví dụ
+                    "Vitamin A": "12.5", 
+                    "Vitamin C": "0.5",
+                    "Calcium": "...",
+                    "Iron": "..."
+                },
+                "description": "Mô tả ngắn gọn về đặc điểm dinh dưỡng (dưới 30 từ)."
+            }
+        `;
+
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        let text = response.text();
+
+        text = text.replace(/```json/g, '').replace(/```/g, '').trim();
+        return JSON.parse(text);
+
+    } catch (error) {
+        console.error("AI Generate Raw Food Error:", error);
+        throw error;
+    }
+};
+
 module.exports = {
     generateRecipeFromText,
-    suggestMealPlan
+    suggestMealPlan,
+    generateRawFoodInfo
 };

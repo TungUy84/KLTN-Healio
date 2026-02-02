@@ -14,6 +14,8 @@ import UserDetail from './pages/users/UserDetail';
 import Statistics from './pages/Statistics';
 import AdminLayout from './layouts/AdminLayout';
 import { authService } from './services/authService';
+import { Toaster } from 'react-hot-toast';
+import { GlobalConfirmDialog } from './utils/toastUtils';
 import './App.css';
 
 // Protected Route Component
@@ -24,6 +26,8 @@ const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
 function App() {
     return (
         <BrowserRouter>
+            <Toaster position="top-center" reverseOrder={false} />
+            <GlobalConfirmDialog />
             <Routes>
                 <Route path="/login" element={<Login />} />
 

@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { adminUserService, type AdminUserDetail } from '../../services/adminUserService';
 import { FaArrowLeft, FaLock, FaUnlock } from 'react-icons/fa';
+import toast from 'react-hot-toast';
+import { confirmToast } from '../../utils/toastUtils';
 
 const UserDetail: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -25,47 +27,59 @@ const UserDetail: React.FC = () => {
         if (id) fetchDetail(id);
     }, [id]);
 
-    const handleBan = async () => {
+    const handleBan = () => {
         if (!user) return;
 
         // PB_60: Popup cảnh báo đỏ cho Admin
         if (user.role === 'admin') {
-            const confirmed = window.confirm(
-                '⚠️ CẢNH BÁO NGHIÊM TRỌNG ⚠️\n\n' +
-                'Bạn đang cố gắng khóa tài khoản Admin!\n' +
-                'Hành động này có thể gây ảnh hưởng nghiêm trọng đến hệ thống.\n\n' +
-                'Bạn có chắc chắn muốn tiếp tục?'
-            );
-            if (!confirmed) return;
-            // Backend sẽ chặn, nhưng vẫn hiện popup cảnh báo
-            alert('Không được khóa tài khoản Admin. Hành động đã bị từ chối.');
+            confirmToast({
+                type: 'danger',
+                message: '⚠️ CẢNH BÁO NGHIÊM TRỌNG ⚠️\nBạn đang cố gắng khóa tài khoản Admin! Hành động này có thể gây ảnh hưởng nghiêm trọng.',
+                confirmText: 'Tiếp tục',
+                onConfirm: () => {
+                    toast.error('Không được khóa tài khoản Admin. Hành động đã bị từ chối.');
+                }
+            });
             return;
         }
 
-        if (!window.confirm('Bạn có chắc muốn khóa tài khoản này?')) return;
-        try {
-            setActionLoading(true);
-            await adminUserService.ban(user.id);
-            fetchDetail(id!);
-        } catch (e: any) {
-            alert(e?.response?.data?.message || 'Không thể khóa tài khoản.');
-        } finally {
-            setActionLoading(false);
-        }
+        confirmToast({
+            message: 'Bạn có chắc muốn khóa tài khoản này?',
+            onConfirm: async () => {
+                try {
+                    setActionLoading(true);
+                    await adminUserService.ban(user.id);
+                    toast.success('Đã khóa tài khoản thành công');
+                    fetchDetail(id!);
+                } catch (e: any) {
+                    toast.error(e?.response?.data?.message || 'Không thể khóa tài khoản.');
+                } finally {
+                    setActionLoading(false);
+                }
+            }
+        });
     };
 
-    const handleUnban = async () => {
+    const handleUnban = () => {
         if (!user) return;
-        if (!window.confirm('Bạn có chắc muốn mở khóa tài khoản này?')) return;
-        try {
-            setActionLoading(true);
-            await adminUserService.unban(user.id);
-            fetchDetail(id!);
-        } catch (e: any) {
-            alert(e?.response?.data?.message || 'Không thể mở khóa.');
-        } finally {
-            setActionLoading(false);
-        }
+
+        confirmToast({
+            type: 'warning',
+            message: 'Bạn có chắc muốn mở khóa tài khoản này?',
+            confirmText: 'Mở khóa',
+            onConfirm: async () => {
+                try {
+                    setActionLoading(true);
+                    await adminUserService.unban(user.id);
+                    toast.success('Đã mở khóa tài khoản thành công');
+                    fetchDetail(id!);
+                } catch (e: any) {
+                    toast.error(e?.response?.data?.message || 'Không thể mở khóa.');
+                } finally {
+                    setActionLoading(false);
+                }
+            }
+        });
     };
 
     const genderLabel = (g: string | null) => (g === 'male' ? 'Nam' : g === 'female' ? 'Nữ' : '—');

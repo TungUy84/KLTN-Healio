@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { foodService, type Food } from '../../services/foodService';
 import { FaPlus, FaSearch, FaEdit, FaTrash, FaEye, FaFilter } from 'react-icons/fa';
+import toast from 'react-hot-toast';
+import { confirmToast } from '../../utils/toastUtils';
 
 const FoodList: React.FC = () => {
     const [foods, setFoods] = useState<Food[]>([]);
@@ -12,7 +14,7 @@ const FoodList: React.FC = () => {
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const LIMIT = 10;
-    
+
     // AC2: Filter states
     const [mealCategoryFilter, setMealCategoryFilter] = useState<string>('');
     const [dietTagFilter, setDietTagFilter] = useState<string>('');
@@ -60,16 +62,20 @@ const FoodList: React.FC = () => {
         fetchFoods();
     };
 
-    const handleDelete = async (id: number) => {
-        if (window.confirm('Bạn có chắc muốn xóa món này? Hành động này sẽ ẩn món ăn khỏi ứng dụng.')) {
-            try {
-                await foodService.delete(id);
-                fetchFoods();
-            } catch (error) {
-                console.error('Error deleting food', error);
-                alert('Không thể xóa món ăn.');
+    const handleDelete = (id: number) => {
+        confirmToast({
+            message: 'Bạn có chắc muốn xóa món này? Hành động này sẽ ẩn món ăn khỏi ứng dụng.',
+            onConfirm: async () => {
+                try {
+                    await foodService.delete(id);
+                    toast.success('Đã xóa món ăn thành công');
+                    fetchFoods();
+                } catch (error) {
+                    console.error('Error deleting food', error);
+                    toast.error('Không thể xóa món ăn.');
+                }
             }
-        }
+        });
     };
 
     const getCategoryLabel = (category: string) => {
@@ -128,7 +134,7 @@ const FoodList: React.FC = () => {
                         />
                     </form>
                 </div>
-                
+
                 <div className="flex items-center gap-3">
                     <button
                         onClick={() => setShowFilters(!showFilters)}
@@ -137,8 +143,8 @@ const FoodList: React.FC = () => {
                         <FaFilter /> {showFilters ? 'Ẩn' : 'Hiện'} Bộ lọc
                     </button>
                     <span className="text-sm text-gray-600 dark:text-gray-300 font-medium">Sắp xếp theo:</span>
-                    <select 
-                        value={sort} 
+                    <select
+                        value={sort}
                         onChange={(e) => {
                             setSort(e.target.value);
                             setPage(1);
@@ -149,7 +155,7 @@ const FoodList: React.FC = () => {
                         <option value="name">Tên</option>
                         <option value="calories">Tổng Calo</option>
                     </select>
-                    <button 
+                    <button
                         onClick={() => setOrder(order === 'ASC' ? 'DESC' : 'ASC')}
                         className="p-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:hover:bg-gray-600 bg-white hover:bg-gray-50 text-gray-600 dark:text-gray-300 transition-colors font-bold"
                         title={order === 'ASC' ? 'Tăng dần' : 'Giảm dần'}
@@ -324,11 +330,10 @@ const FoodList: React.FC = () => {
                                         )}
                                     </td>
                                     <td className="px-4 py-4 text-sm text-gray-700 dark:text-gray-300 align-middle">
-                                        <span className={`px-2 py-1 rounded text-xs font-medium ${
-                                            food.status === 'active' 
-                                                ? 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300' 
+                                        <span className={`px-2 py-1 rounded text-xs font-medium ${food.status === 'active'
+                                                ? 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300'
                                                 : 'bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300'
-                                        }`}>
+                                            }`}>
                                             {food.status === 'active' ? 'Active' : 'Inactive'}
                                         </span>
                                     </td>
@@ -350,10 +355,10 @@ const FoodList: React.FC = () => {
                         )}
                     </tbody>
                 </table>
-                
+
                 {/* AC4: Pagination */}
                 <div className="flex justify-end items-center p-4 gap-3 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
-                    <button 
+                    <button
                         disabled={page === 1}
                         onClick={() => setPage(p => p - 1)}
                         className={`px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors ${page === 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50 dark:hover:bg-gray-600 cursor-pointer'}`}
@@ -361,7 +366,7 @@ const FoodList: React.FC = () => {
                         Trước
                     </button>
                     <span className="text-sm text-gray-600 dark:text-gray-400">Trang {page} / {totalPages}</span>
-                    <button 
+                    <button
                         disabled={page === totalPages}
                         onClick={() => setPage(p => p + 1)}
                         className={`px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors ${page === totalPages ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50 dark:hover:bg-gray-600 cursor-pointer'}`}

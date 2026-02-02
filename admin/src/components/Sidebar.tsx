@@ -33,7 +33,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
     return (
         <aside className={`${isOpen ? 'w-64' : 'w-20'} h-screen bg-white border-r border-gray-100 flex flex-col fixed left-0 top-0 z-50 transition-all duration-300 font-sans`}>
             {/* 1. LOGO SECTION */}
-            <div className="h-24 flex items-center justify-center px-6">
+            <div className="h-20 flex items-center justify-center ">
                 <div className="flex items-center gap-3">
                     <div className="relative flex items-center justify-center">
                         <div className={`absolute inset-0 bg-emerald-200 blur-lg opacity-40 rounded-full transition-all ${!isOpen && 'w-10 h-10'}`}></div>
@@ -47,7 +47,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
             </div>
 
             {/* 2. NAVIGATION MENU */}
-            <nav className="flex-1 px-4 py-6 overflow-y-auto space-y-1.5 custom-scrollbar">
+            <nav className="flex-1 px-4 py-4 overflow-y-auto space-y-1.5 custom-scrollbar">
                 {navItems.map((item) => {
                     const isActive = location.pathname.startsWith(item.path);
                     const Icon = item.icon;

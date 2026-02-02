@@ -120,7 +120,24 @@ const suggestMealPlan = async (req, res) => {
     }
 };
 
+const generateRawFoodInfo = async (req, res) => {
+    try {
+        const { foodName } = req.body;
+        if (!foodName) {
+            return res.status(400).json({ message: 'Vui lòng nhập tên nguyên liệu' });
+        }
+
+        const data = await aiService.generateRawFoodInfo(foodName);
+        res.json({ success: true, data });
+
+    } catch (error) {
+        console.error("Generate Raw Food Info Error:", error);
+        res.status(500).json({ message: 'Lỗi khi tạo thông tin nguyên liệu', error: error.message });
+    }
+};
+
 module.exports = {
     generateRecipe,
-    suggestMealPlan
+    suggestMealPlan,
+    generateRawFoodInfo
 };
