@@ -43,6 +43,8 @@ const generateRecipe = async (req, res) => {
                     protein_g: item.protein || 0,
                     fat_g: item.fat || 0,
                     carb_g: item.carb || 0,
+                    fiber_g: item.fiber || 0,
+                    micronutrients: item.micronutrients || {},
                     description: `Tạo tự động bởi AI từ món: ${foodName}`
                 });
                 newCount++;
@@ -72,11 +74,12 @@ const generateRecipe = async (req, res) => {
 
         res.json({
             success: true,
-            name: foodName, // Explicitly return the name
+            name: foodName,
             description,
             serving_unit,
             meal_categories,
             diet_tags,
+            micronutrients: aiResult.micronutrients || {},
             ingredients: finalIngredients,
             total_calories: Math.round(totals.calories),
             total_protein: Math.round(totals.protein * 10) / 10,

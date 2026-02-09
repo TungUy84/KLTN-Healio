@@ -3,7 +3,6 @@ import {
     Sparkles,
     Loader2,
     Plus,
-    Edit3,
     X,
     Search,
     Flame,

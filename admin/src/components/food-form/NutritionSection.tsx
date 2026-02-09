@@ -26,7 +26,8 @@ const NutritionSection: React.FC<NutritionSectionProps> = ({
         { value: 'low_carb', label: 'Low Carb' },
         { value: 'high_protein', label: 'High Protein' },
         { value: 'low_fat', label: 'Low Fat' },
-        { value: 'balanced', label: 'Balanced' }
+        { value: 'balanced', label: 'Balanced' },
+        { value: 'vegetarian', label: 'Vegetarian' }
     ];
 
     const MacroCard = ({ icon: Icon, label, value, unit, color, bg }: any) => (
@@ -106,8 +107,8 @@ const NutritionSection: React.FC<NutritionSectionProps> = ({
                             <label
                                 key={tag.value}
                                 className={`cursor-pointer inline-flex items-center px-3 py-1.5 rounded-lg border text-xs font-semibold uppercase tracking-wide transition-all select-none ${isSelected
-                                        ? 'bg-emerald-600 border-emerald-600 text-white shadow-sm'
-                                        : 'bg-white border-gray-200 text-gray-500 hover:border-gray-300'
+                                    ? 'bg-emerald-600 border-emerald-600 text-white shadow-sm'
+                                    : 'bg-white border-gray-200 text-gray-500 hover:border-gray-300'
                                     }`}
                             >
                                 <input

@@ -150,24 +150,24 @@ exports.createFood = async (req, res) => {
             parsedIngredients = ingredients;
         }
 
+        let parsedMicronutrients = micronutrients || {};
+        if (typeof micronutrients === 'string') {
+            try {
+                parsedMicronutrients = JSON.parse(micronutrients);
+                console.log('Micronutrients Parsed Successfully:', parsedMicronutrients);
+            } catch (e) {
+                console.error('Failed to parse micronutrients:', e.message);
+                parsedMicronutrients = {};
+            }
+        } else {
+            console.log('Micronutrients is already an object/null:', parsedMicronutrients);
+        }
+
         const validCategories = ['breakfast', 'lunch', 'dinner', 'snack'];
         if (!Array.isArray(parsedCategories)) {
             parsedCategories = [];
         }
         parsedCategories = parsedCategories.filter(cat => validCategories.includes(cat));
-
-        let parsedMicronutrients = {};
-        if (micronutrients) {
-            if (typeof micronutrients === 'string') {
-                try {
-                    parsedMicronutrients = JSON.parse(micronutrients);
-                } catch (e) {
-                    parsedMicronutrients = {};
-                }
-            } else if (typeof micronutrients === 'object' && micronutrients !== null) {
-                parsedMicronutrients = micronutrients;
-            }
-        }
 
         const newFood = await Food.create({
             name,
@@ -354,6 +354,7 @@ exports.deleteFood = async (req, res) => {
 exports.getStats = async (req, res) => {
     try {
         const total = await Food.count({ where: { status: 'active' } });
+        const inactive = await Food.count({ where: { status: 'inactive' } });
 
         const avgCaloriesResult = await Food.findAll({
             where: { status: 'active' },
@@ -368,7 +369,8 @@ exports.getStats = async (req, res) => {
             low_carb: await Food.count({ where: { status: 'active', diet_tags: { [Op.contains]: ['low_carb'] } } }),
             high_protein: await Food.count({ where: { status: 'active', diet_tags: { [Op.contains]: ['high_protein'] } } }),
             low_fat: await Food.count({ where: { status: 'active', diet_tags: { [Op.contains]: ['low_fat'] } } }),
-            balanced: await Food.count({ where: { status: 'active', diet_tags: { [Op.contains]: ['balanced'] } } })
+            balanced: await Food.count({ where: { status: 'active', diet_tags: { [Op.contains]: ['balanced'] } } }),
+            vegetarian: await Food.count({ where: { status: 'active', diet_tags: { [Op.contains]: ['vegetarian'] } } })
         };
 
         // Count by Meal Categories
@@ -381,6 +383,7 @@ exports.getStats = async (req, res) => {
 
         res.json({
             total,
+            inactive,
             avgCalories,
             diets,
             meals

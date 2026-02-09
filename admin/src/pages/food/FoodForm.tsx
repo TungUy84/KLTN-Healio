@@ -98,6 +98,8 @@ const FoodForm: React.FC = () => {
     useEffect(() => {
         if (location.state?.aiData && !isEditMode) {
             const aiData = location.state.aiData;
+            console.log("🔥 AI Data Received in Form:", aiData);
+            console.log("🔥 AI Micronutrients:", aiData.micronutrients);
 
             // Populate basic info
             setFormData(prev => ({
@@ -131,11 +133,19 @@ const FoodForm: React.FC = () => {
                         fat_g: ing.fat || 0,
                         carb_g: ing.carb || 0,
                         code: 'AI_Generated',
-                        unit: 'g'
+                        unit: 'g',
+                        micronutrients: ing.micronutrients || {}
                     } as RawFood);
                 });
                 setRawFoodCache(newCache);
             }
+
+            if (aiData.micronutrients) {
+                setMicronutrients(aiData.micronutrients);
+            }
+
+            // Block auto-calculation effect from overwriting our loaded data
+            ignoreNextCalculation.current = true;
 
             // Clear state so it doesn't re-apply on refresh if state persists
             window.history.replaceState({}, document.title)
@@ -476,6 +486,13 @@ const FoodForm: React.FC = () => {
                     });
                     setRawFoodCache(newCache);
                 }
+
+                if (result.micronutrients) {
+                    setMicronutrients(result.micronutrients);
+                    // Block auto-calculation to preserve AI's top-level data
+                    ignoreNextCalculation.current = true;
+                }
+
                 toast.success(`AI đã tạo công thức cho "${formData.name}"!`);
             }
         } catch (error: any) {

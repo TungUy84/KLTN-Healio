@@ -94,6 +94,9 @@ const FoodGeneratorModal: React.FC<FoodGeneratorModalProps> = ({ isOpen, onClose
                 status: 'active'
             };
 
+            console.log('Quick Add Submitting:', submitData);
+            console.log('Micronutrients to save:', submitData.micronutrients);
+
             const formData = new FormData();
             formData.append('name', submitData.name);
             formData.append('description', submitData.description);

@@ -15,20 +15,12 @@ import {
     Utensils,
     Flame,
     Sparkles,
-    XCircle,
-    Zap,
-    Sunrise,
-    Sun,
-    Moon,
-    Coffee,
-    Wheat,
-    Dumbbell,
-    Droplet,
-    Scale
+    XCircle
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { confirmToast } from '../../utils/toastUtils';
 import FoodGeneratorModal from '../../components/FoodGeneratorModal';
+import FoodStatsOverview from '../../components/FoodStatsOverview';
 
 const FoodList: React.FC = () => {
     const navigate = useNavigate();
@@ -134,7 +126,8 @@ const FoodList: React.FC = () => {
             'low_carb': 'Low Carb',
             'high_protein': 'High Protein',
             'low_fat': 'Low Fat',
-            'balanced': 'Cân bằng'
+            'balanced': 'Cân bằng',
+            'vegetarian': 'Chay'
         };
         return labels[tag] || tag;
     };
@@ -183,121 +176,7 @@ const FoodList: React.FC = () => {
             </div>
 
             {/* Stats Overview */}
-            {stats && (
-                <div className="space-y-4">
-                    {/* Main Stats */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4 hover:shadow-md transition-shadow">
-                            <div className="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
-                                <Utensils size={24} />
-                            </div>
-                            <div>
-                                <p className="text-sm text-gray-500 font-medium">Tổng món ăn</p>
-                                <h3 className="text-2xl font-bold text-gray-900">{stats.total}</h3>
-                            </div>
-                        </div>
-
-                        <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4 hover:shadow-md transition-shadow">
-                            <div className="w-12 h-12 rounded-xl bg-orange-50 text-orange-500 flex items-center justify-center">
-                                <Zap size={24} />
-                            </div>
-                            <div>
-                                <p className="text-sm text-gray-500 font-medium">Calo trung bình</p>
-                                <h3 className="text-2xl font-bold text-gray-900">{stats.avgCalories} <span className="text-sm font-normal text-gray-400">kcal</span></h3>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Meal Stats */}
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center gap-3 hover:shadow-md transition-shadow">
-                            <div className="p-2 rounded-lg bg-yellow-50 text-yellow-600">
-                                <Sunrise size={20} />
-                            </div>
-                            <div>
-                                <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Sáng</p>
-                                <h4 className="text-xl font-bold text-gray-900">{stats.meals.breakfast}</h4>
-                            </div>
-                        </div>
-                        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center gap-3 hover:shadow-md transition-shadow">
-                            <div className="p-2 rounded-lg bg-amber-50 text-amber-600">
-                                <Sun size={20} />
-                            </div>
-                            <div>
-                                <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Trưa</p>
-                                <h4 className="text-xl font-bold text-gray-900">{stats.meals.lunch}</h4>
-                            </div>
-                        </div>
-                        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center gap-3 hover:shadow-md transition-shadow">
-                            <div className="p-2 rounded-lg bg-indigo-50 text-indigo-600">
-                                <Moon size={20} />
-                            </div>
-                            <div>
-                                <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Tối</p>
-                                <h4 className="text-xl font-bold text-gray-900">{stats.meals.dinner}</h4>
-                            </div>
-                        </div>
-                        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center gap-3 hover:shadow-md transition-shadow">
-                            <div className="p-2 rounded-lg bg-pink-50 text-pink-600">
-                                <Coffee size={20} />
-                            </div>
-                            <div>
-                                <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Ăn vặt</p>
-                                <h4 className="text-xl font-bold text-gray-900">{stats.meals.snack}</h4>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Diet Stats */}
-                    <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-5 gap-4">
-                        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center gap-3 hover:shadow-md transition-shadow">
-                            <div className="p-2 rounded-lg bg-rose-50 text-rose-500">
-                                <Flame size={20} />
-                            </div>
-                            <div>
-                                <p className="text-xs text-gray-500 font-medium">Keto</p>
-                                <h4 className="text-lg font-bold text-gray-900">{stats.diets.keto}</h4>
-                            </div>
-                        </div>
-                        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center gap-3 hover:shadow-md transition-shadow">
-                            <div className="p-2 rounded-lg bg-amber-50 text-amber-500">
-                                <Wheat size={20} />
-                            </div>
-                            <div>
-                                <p className="text-xs text-gray-500 font-medium">Low Carb</p>
-                                <h4 className="text-lg font-bold text-gray-900">{stats.diets.low_carb}</h4>
-                            </div>
-                        </div>
-                        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center gap-3 hover:shadow-md transition-shadow">
-                            <div className="p-2 rounded-lg bg-blue-50 text-blue-500">
-                                <Dumbbell size={20} />
-                            </div>
-                            <div>
-                                <p className="text-xs text-gray-500 font-medium">High Protein</p>
-                                <h4 className="text-lg font-bold text-gray-900">{stats.diets.high_protein}</h4>
-                            </div>
-                        </div>
-                        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center gap-3 hover:shadow-md transition-shadow">
-                            <div className="p-2 rounded-lg bg-cyan-50 text-cyan-500">
-                                <Droplet size={20} />
-                            </div>
-                            <div>
-                                <p className="text-xs text-gray-500 font-medium">Low Fat</p>
-                                <h4 className="text-lg font-bold text-gray-900">{stats.diets.low_fat}</h4>
-                            </div>
-                        </div>
-                        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center gap-3 hover:shadow-md transition-shadow">
-                            <div className="p-2 rounded-lg bg-emerald-50 text-emerald-500">
-                                <Scale size={20} />
-                            </div>
-                            <div>
-                                <p className="text-xs text-gray-500 font-medium">Balanced</p>
-                                <h4 className="text-lg font-bold text-gray-900">{stats.diets.balanced}</h4>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
+            {stats && <FoodStatsOverview stats={stats} />}
 
             {/* Filters & Search */}
             <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 space-y-4">
@@ -372,6 +251,7 @@ const FoodList: React.FC = () => {
                                 <option value="high_protein">High Protein</option>
                                 <option value="low_fat">Low Fat</option>
                                 <option value="balanced">Cân bằng</option>
+                                <option value="vegetarian">Chay</option>
                             </select>
                         </div>
 
@@ -425,7 +305,7 @@ const FoodList: React.FC = () => {
                                         Dinh dưỡng {renderSortIcon('calories')}
                                     </div>
                                 </th>
-                                <th className="p-4 font-semibold">Tags</th>
+                                <th className="p-4 font-semibold">Chế độ</th>
                                 <th className="p-4 font-semibold text-center">Trạng thái</th>
                                 <th className="p-4 font-semibold text-center">Hành động</th>
                             </tr>
@@ -580,10 +460,6 @@ const FoodList: React.FC = () => {
                 }}
                 onEdit={(data) => {
                     setIsAIModalOpen(false);
-                    // Pass AI data via navigation state or URL params to FoodForm
-                    // Here using URL params for simplicity as implemented in FoodForm's initial plan
-                    // But passing large object via URL is bad. 
-                    // Better to use state.
                     navigate('/foods/new', { state: { aiData: data } });
                 }}
             />

@@ -39,6 +39,7 @@ export interface FoodListResponse {
 
 export interface FoodStats {
     total: number;
+    inactive: number;
     avgCalories: number;
     diets: {
         keto: number;
@@ -46,6 +47,7 @@ export interface FoodStats {
         high_protein: number;
         low_fat: number;
         balanced: number;
+        vegetarian: number;
     };
     meals: {
         breakfast: number;
@@ -124,6 +126,7 @@ export const foodService = {
             serving_unit: string;
             meal_categories: string[];
             diet_tags: string[];
+            micronutrients?: Record<string, number>;
         }>('/ai/generate-recipe', { foodName });
         return response.data;
     }
