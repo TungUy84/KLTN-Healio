@@ -50,7 +50,18 @@ exports.list = async (req, res) => {
                 {
                     model: UserProfile,
                     required: false,
-                    attributes: ['goal_type']
+                    attributes: ['goal_type', 'activity_level']
+                },
+                {
+                    model: UserNutritionTarget,
+                    required: false,
+                    include: [
+                        {
+                            model: DietPreset,
+                            required: false,
+                            attributes: ['name']
+                        }
+                    ]
                 }
             ],
             order: orderClause,
@@ -58,12 +69,14 @@ exports.list = async (req, res) => {
             offset
         });
 
-        // Map rows to include goal_type from profile
+        // Map rows to include goal_type, activity_level, and diet_mode
         const mappedRows = rows.map(user => {
             const userData = user.toJSON();
             return {
                 ...userData,
-                goal_type: user.UserProfile?.goal_type || null
+                goal_type: user.UserProfile?.goal_type || null,
+                activity_level: user.UserProfile?.activity_level || null,
+                diet_mode: user.UserNutritionTarget?.DietPreset?.name || null
             };
         });
 

@@ -14,10 +14,10 @@ import {
     Check,
     Lock,
     XCircle,
-    UserX,
+    Activity,
+    Utensils,
     Target,
-    Globe,
-    Mail
+    UserX
 } from 'lucide-react';
 import UserStatsOverview from '../../components/UserStatsOverview';
 
@@ -214,7 +214,8 @@ const UserList: React.FC = () => {
                                 </th>
                                 <th className="p-4 font-semibold">Người dùng</th>
                                 <th className="p-4 font-semibold">Mục tiêu</th>
-                                <th className="p-4 font-semibold text-center">Liên kết</th>
+                                <th className="p-4 font-semibold text-center">Chế độ ăn</th>
+                                <th className="p-4 font-semibold text-center">Vận động</th>
                                 <th
                                     className="p-4 font-semibold cursor-pointer hover:text-emerald-600 transition-colors select-none text-center"
                                     onClick={() => handleSort('role')}
@@ -284,6 +285,17 @@ const UserList: React.FC = () => {
                                         return type ? (map[type] || type) : '—';
                                     };
 
+                                    const getActivityLabel = (level: string | null) => {
+                                        const map: Record<string, string> = {
+                                            'sedentary': 'Ít vận động',
+                                            'lightly_active': 'Nhẹ nhàng',
+                                            'moderately_active': 'Vừa phải',
+                                            'very_active': 'Năng động',
+                                            'extra_active': 'Rất năng động'
+                                        };
+                                        return level ? (map[level] || level) : '—';
+                                    };
+
                                     return (
                                         <tr key={u.id} className="hover:bg-gray-50/80 transition-colors group">
                                             <td className="p-4 text-center text-gray-500 font-mono text-sm">#{u.id}</td>
@@ -320,14 +332,23 @@ const UserList: React.FC = () => {
                                                 )}
                                             </td>
                                             <td className="p-4 text-center">
-                                                {u.auth_provider === 'google' ? (
-                                                    <span title="Google" className="inline-flex p-1.5 bg-white border border-gray-100 shadow-sm rounded-full text-red-500">
-                                                        <Globe size={14} />
+                                                {u.diet_mode ? (
+                                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 text-xs font-medium border border-emerald-100">
+                                                        <Utensils size={12} />
+                                                        {u.diet_mode}
                                                     </span>
                                                 ) : (
-                                                    <span title="Email" className="inline-flex p-1.5 bg-white border border-gray-100 shadow-sm rounded-full text-indigo-500">
-                                                        <Mail size={14} />
+                                                    <span className="text-gray-400 text-xs italic">—</span>
+                                                )}
+                                            </td>
+                                            <td className="p-4 text-center">
+                                                {u.activity_level ? (
+                                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 text-xs font-medium border border-blue-100">
+                                                        <Activity size={12} />
+                                                        {getActivityLabel(u.activity_level)}
                                                     </span>
+                                                ) : (
+                                                    <span className="text-gray-400 text-xs italic">—</span>
                                                 )}
                                             </td>
                                             <td className="p-4 text-center">

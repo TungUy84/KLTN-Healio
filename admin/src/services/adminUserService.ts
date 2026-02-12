@@ -11,6 +11,8 @@ export interface AdminUser {
     created_at: string;
     updated_at: string;
     goal_type: string | null; // PB_57: Mục tiêu hiện tại
+    activity_level: string | null;
+    diet_mode: string | null;
 }
 
 export interface AdminUserDetail extends AdminUser {

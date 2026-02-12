@@ -113,7 +113,7 @@ export default function FoodDetailScreen() {
             if (conflicts.length > 0) {
                 const conflictNames = conflicts.map(c => c.name).join(', ');
                 Alert.alert(
-                    'Cảnh báo Dị ứng ⚠️',
+                    'Cảnh báo Dị ứng',
                     `Món ăn này có chứa: ${conflictNames}\nĐây là nguyên liệu nằm trong danh sách dị ứng/kiêng kỵ của bạn.\n\nBạn có chắc chắn muốn thêm không?`,
                     [
                         { text: 'Hủy', style: 'cancel' },
