@@ -1,7 +1,9 @@
 const Food = require('../models/Food');
 const RawFood = require('../models/RawFood');
 const FoodIngredient = require('../models/FoodIngredient');
+
 const UserFavoriteFood = require('../models/UserFavoriteFood');
+const DietPreset = require('../models/DietPreset');
 const sequelize = require('../config/database');
 const { Op } = require('sequelize');
 const jwt = require('jsonwebtoken');
@@ -33,8 +35,26 @@ exports.getFoods = async (req, res) => {
             where.meal_categories = { [Op.contains]: [mealCategory] };
         }
 
+        const include = [];
+
+        // Updated Filter logic using Association
         if (dietTag) {
-            where.diet_tags = { [Op.contains]: [dietTag] };
+            // Find foods that have this diet preset
+            include.push({
+                model: DietPreset,
+                as: 'dietPresets',
+                where: { code: dietTag },
+                attributes: ['id', 'code', 'name'],
+                through: { attributes: [] } // Don't include join table data
+            });
+        } else {
+            // Include diet presets anyway for display
+            include.push({
+                model: DietPreset,
+                as: 'dietPresets',
+                attributes: ['id', 'code', 'name'],
+                through: { attributes: [] }
+            });
         }
 
         if (calorieMin !== null || calorieMax !== null) {
@@ -59,7 +79,9 @@ exports.getFoods = async (req, res) => {
 
         const { count, rows } = await Food.findAndCountAll({
             where,
+            include,
             order: orderClause,
+            distinct: true, // Important for correct count with includes
             limit,
             offset
         });
@@ -92,6 +114,11 @@ exports.getFoodById = async (req, res) => {
                 through: {
                     attributes: ['amount_in_grams']
                 }
+            }, {
+                model: DietPreset,
+                as: 'dietPresets',
+                attributes: ['id', 'code', 'name'],
+                through: { attributes: [] }
             }]
         });
         if (!food) {
@@ -182,8 +209,24 @@ exports.createFood = async (req, res) => {
             diet_tags: Array.isArray(parsedDietTags) ? parsedDietTags : [],
             micronutrients: parsedMicronutrients,
             image: req.file ? `/uploads/${req.file.filename}` : null,
+
             created_by_user_id: req.user?.id || null
         }, { transaction });
+
+        // Handle Diet Presets (new logic)
+        if (parsedDietTags.length > 0) {
+            // Find IDs for these codes
+            const presets = await DietPreset.findAll({
+                where: {
+                    code: { [Op.in]: parsedDietTags }
+                },
+                attributes: ['id']
+            });
+            const presetIds = presets.map(p => p.id);
+            if (presetIds.length > 0) {
+                await newFood.setDietPresets(presetIds, { transaction });
+            }
+        }
 
         if (parsedIngredients.length > 0) {
             const ingredientsToCreate = parsedIngredients.map(ing => ({
@@ -254,7 +297,21 @@ exports.updateFood = async (req, res) => {
                     parsedDietTags = [];
                 }
             }
-            updateData.diet_tags = Array.isArray(parsedDietTags) ? parsedDietTags : [];
+            const cleanTags = Array.isArray(parsedDietTags) ? parsedDietTags : [];
+            updateData.diet_tags = cleanTags; // Still update old column for now
+
+            // Update Association
+            const presets = await DietPreset.findAll({
+                where: {
+                    code: { [Op.in]: cleanTags }
+                },
+                attributes: ['id']
+            });
+            const presetIds = presets.map(p => p.id);
+            const food = await Food.findByPk(id);
+            if (food) {
+                await food.setDietPresets(presetIds, { transaction });
+            }
         }
 
         if (total_calories !== undefined) {
@@ -364,13 +421,26 @@ exports.getStats = async (req, res) => {
         const avgCalories = avgCaloriesResult[0]?.avgCalories ? Math.round(avgCaloriesResult[0].avgCalories) : 0;
 
         // Count by Diet Tags
+        // Helper to count by diet code via association
+        const countDiet = async (code) => {
+            return await Food.count({
+                where: { status: 'active' },
+                include: [{
+                    model: DietPreset,
+                    as: 'dietPresets',
+                    where: { code: code }
+                }]
+            });
+        };
+
+        // Count by Diet Tags (New approach)
         const diets = {
-            keto: await Food.count({ where: { status: 'active', diet_tags: { [Op.contains]: ['keto'] } } }),
-            low_carb: await Food.count({ where: { status: 'active', diet_tags: { [Op.contains]: ['low_carb'] } } }),
-            high_protein: await Food.count({ where: { status: 'active', diet_tags: { [Op.contains]: ['high_protein'] } } }),
-            low_fat: await Food.count({ where: { status: 'active', diet_tags: { [Op.contains]: ['low_fat'] } } }),
-            balanced: await Food.count({ where: { status: 'active', diet_tags: { [Op.contains]: ['balanced'] } } }),
-            vegetarian: await Food.count({ where: { status: 'active', diet_tags: { [Op.contains]: ['vegetarian'] } } })
+            keto: await countDiet('keto'),
+            low_carb: await countDiet('low_carb'),
+            high_protein: await countDiet('high_protein'),
+            low_fat: await countDiet('low_fat'),
+            balanced: await countDiet('balanced'),
+            vegetarian: await countDiet('vegetarian')
         };
 
         // Count by Meal Categories
