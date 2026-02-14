@@ -51,17 +51,7 @@ const FoodDetail: React.FC = () => {
         return labels[category] || category;
     };
 
-    const getDietTagLabel = (tag: string) => {
-        const labels: Record<string, string> = {
-            'keto': 'Keto',
-            'low_carb': 'Low Carb',
-            'high_protein': 'High Protein',
-            'low_fat': 'Low Fat',
-            'balanced': 'Cân bằng',
-            'vegetarian': 'Chay'
-        };
-        return labels[tag] || tag;
-    };
+
 
     if (loading) return (
         <div className="flex items-center justify-center min-h-[400px]">
@@ -175,10 +165,10 @@ const FoodDetail: React.FC = () => {
                                     <Tag size={16} /> Chế độ ăn
                                 </span>
                                 <div className="flex flex-wrap gap-1.5 pl-6">
-                                    {food.diet_tags && food.diet_tags.length > 0 ? (
-                                        food.diet_tags.map((tag, idx) => (
-                                            <span key={idx} className="px-2.5 py-1 bg-emerald-50 text-emerald-700 rounded-lg text-xs font-bold border border-emerald-100">
-                                                {getDietTagLabel(tag)}
+                                    {food.dietPresets && food.dietPresets.length > 0 ? (
+                                        food.dietPresets.map((preset) => (
+                                            <span key={preset.id} className="px-2.5 py-1 bg-emerald-50 text-emerald-700 rounded-lg text-xs font-bold border border-emerald-100">
+                                                {preset.name}
                                             </span>
                                         ))
                                     ) : (
@@ -204,7 +194,7 @@ const FoodDetail: React.FC = () => {
                     {/* 1. Macro Nutrients - Hero Cards */}
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         {/* Calories */}
-                        <div className="bg-gradient-to-br from-orange-50 to-white p-4 rounded-2xl border border-orange-100 shadow-sm relative overflow-hidden group hover:shadow-md transition-shadow">
+                        <div className="bg-linear-to-br from-orange-50 to-white p-4 rounded-2xl border border-orange-100 shadow-sm relative overflow-hidden group hover:shadow-md transition-shadow">
                             <div className="absolute top-0 right-0 w-16 h-16 bg-orange-100 rounded-full blur-xl -mr-6 -mt-6"></div>
                             <div className="relative z-10 flex flex-col h-full justify-between">
                                 <div className="p-2 bg-white rounded-xl w-fit shadow-sm text-orange-500 mb-3 border border-orange-50">
@@ -218,7 +208,7 @@ const FoodDetail: React.FC = () => {
                         </div>
 
                         {/* Protein */}
-                        <div className="bg-gradient-to-br from-blue-50 to-white p-4 rounded-2xl border border-blue-100 shadow-sm relative overflow-hidden group hover:shadow-md transition-shadow">
+                        <div className="bg-linear-to-br from-blue-50 to-white p-4 rounded-2xl border border-blue-100 shadow-sm relative overflow-hidden group hover:shadow-md transition-shadow">
                             <div className="absolute top-0 right-0 w-16 h-16 bg-blue-100 rounded-full blur-xl -mr-6 -mt-6"></div>
                             <div className="relative z-10 flex flex-col h-full justify-between">
                                 <div className="p-2 bg-white rounded-xl w-fit shadow-sm text-blue-500 mb-3 border border-blue-50">
@@ -232,7 +222,7 @@ const FoodDetail: React.FC = () => {
                         </div>
 
                         {/* Fat */}
-                        <div className="bg-gradient-to-br from-yellow-50 to-white p-4 rounded-2xl border border-yellow-100 shadow-sm relative overflow-hidden group hover:shadow-md transition-shadow">
+                        <div className="bg-linear-to-br from-yellow-50 to-white p-4 rounded-2xl border border-yellow-100 shadow-sm relative overflow-hidden group hover:shadow-md transition-shadow">
                             <div className="absolute top-0 right-0 w-16 h-16 bg-yellow-100 rounded-full blur-xl -mr-6 -mt-6"></div>
                             <div className="relative z-10 flex flex-col h-full justify-between">
                                 <div className="p-2 bg-white rounded-xl w-fit shadow-sm text-yellow-500 mb-3 border border-yellow-50">
@@ -246,7 +236,7 @@ const FoodDetail: React.FC = () => {
                         </div>
 
                         {/* Carb */}
-                        <div className="bg-gradient-to-br from-green-50 to-white p-4 rounded-2xl border border-green-100 shadow-sm relative overflow-hidden group hover:shadow-md transition-shadow">
+                        <div className="bg-linear-to-br from-green-50 to-white p-4 rounded-2xl border border-green-100 shadow-sm relative overflow-hidden group hover:shadow-md transition-shadow">
                             <div className="absolute top-0 right-0 w-16 h-16 bg-green-100 rounded-full blur-xl -mr-6 -mt-6"></div>
                             <div className="relative z-10 flex flex-col h-full justify-between">
                                 <div className="p-2 bg-white rounded-xl w-fit shadow-sm text-green-500 mb-3 border border-green-50">

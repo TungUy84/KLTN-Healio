@@ -29,8 +29,6 @@ const CHART_CONFIG = {
     bg: '#f8fafc'       // slate-50
 };
 
-const PIE_COLORS = [CHART_CONFIG.emerald, CHART_CONFIG.blue, CHART_CONFIG.amber, CHART_CONFIG.red];
-
 const UserDetail: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const [data, setData] = useState<ComprehensiveUserDetail | null>(null);
@@ -561,7 +559,7 @@ const UserDetail: React.FC = () => {
                 <div className="p-6 bg-slate-50/50 min-h-[300px] rounded-b-3xl">
                     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
                         {/* HERO CARD: Summary (Always Visible) */}
-                        <div className="relative z-30 rounded-2xl bg-gradient-to-br from-emerald-500 via-emerald-600 to-teal-600 text-white shadow-lg shadow-emerald-200/50 p-4 sm:px-6 sm:py-3 group transition-all duration-300 hover:shadow-xl hover:shadow-emerald-200/60 hover:-translate-y-0.5">
+                        <div className="relative z-30 rounded-2xl bg-linear-to-br from-emerald-500 via-emerald-600 to-teal-600 text-white shadow-lg shadow-emerald-200/50 p-4 sm:px-6 sm:py-3 group transition-all duration-300 hover:shadow-xl hover:shadow-emerald-200/60 hover:-translate-y-0.5">
                             {/* Decor Container */}
                             <div className="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none z-0">
                                 <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -mr-8 -mt-8"></div>
@@ -731,7 +729,7 @@ const UserDetail: React.FC = () => {
 
             {/* Modal đặt lại mật khẩu */}
             {newPassword && (
-                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+                <div className="fixed inset-0 z-60 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
                     <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden border border-slate-100 transform scale-100 transition-all">
                         <div className="p-8 text-center">
                             <div className="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-emerald-100">

@@ -207,34 +207,34 @@ const UserList: React.FC = () => {
                         <thead>
                             <tr className="bg-gray-50/50 border-b border-gray-100 text-xs uppercase text-gray-500 tracking-wider">
                                 <th
-                                    className="p-4 font-semibold text-center w-20 cursor-pointer hover:text-emerald-600 transition-colors select-none"
+                                    className="p-4 font-semibold text-center w-20 cursor-pointer hover:text-emerald-600 transition-colors select-none whitespace-nowrap"
                                     onClick={() => handleSort('id')}
                                 >
                                     <div className="flex items-center justify-center gap-1">ID {renderSortIcon('id')}</div>
                                 </th>
-                                <th className="p-4 font-semibold">Người dùng</th>
-                                <th className="p-4 font-semibold">Mục tiêu</th>
-                                <th className="p-4 font-semibold text-center">Chế độ ăn</th>
-                                <th className="p-4 font-semibold text-center">Vận động</th>
+                                <th className="p-4 font-semibold whitespace-nowrap">Người dùng</th>
+                                <th className="p-4 font-semibold whitespace-nowrap">Mục tiêu</th>
+                                <th className="p-4 font-semibold text-center whitespace-nowrap">Chế độ ăn</th>
+                                <th className="p-4 font-semibold text-center whitespace-nowrap">Vận động</th>
                                 <th
-                                    className="p-4 font-semibold cursor-pointer hover:text-emerald-600 transition-colors select-none text-center"
+                                    className="p-4 font-semibold cursor-pointer hover:text-emerald-600 transition-colors select-none text-center whitespace-nowrap"
                                     onClick={() => handleSort('role')}
                                 >
                                     <div className="flex items-center justify-center gap-1">Vai trò {renderSortIcon('role')}</div>
                                 </th>
                                 <th
-                                    className="p-4 font-semibold cursor-pointer hover:text-emerald-600 transition-colors select-none text-center"
+                                    className="p-4 font-semibold cursor-pointer hover:text-emerald-600 transition-colors select-none text-center whitespace-nowrap"
                                     onClick={() => handleSort('status')}
                                 >
                                     <div className="flex items-center justify-center gap-1">Trạng thái {renderSortIcon('status')}</div>
                                 </th>
                                 <th
-                                    className="p-4 font-semibold cursor-pointer hover:text-emerald-600 transition-colors select-none text-center"
+                                    className="p-4 font-semibold cursor-pointer hover:text-emerald-600 transition-colors select-none text-center whitespace-nowrap"
                                     onClick={() => handleSort('created_at')}
                                 >
                                     <div className="flex items-center justify-center gap-1">Ngày tham gia {renderSortIcon('created_at')}</div>
                                 </th>
-                                <th className="p-4 font-semibold text-center">Thao tác</th>
+                                <th className="p-4 font-semibold text-center whitespace-nowrap">Thao tác</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
@@ -298,10 +298,10 @@ const UserList: React.FC = () => {
 
                                     return (
                                         <tr key={u.id} className="hover:bg-gray-50/80 transition-colors group">
-                                            <td className="p-4 text-center text-gray-500 font-mono text-sm">#{u.id}</td>
+                                            <td className="p-4 text-center text-gray-500 font-mono text-sm whitespace-nowrap">#{u.id}</td>
                                             <td className="p-4">
                                                 <div className="flex items-center gap-4">
-                                                    <div className="relative">
+                                                    <div className="relative shrink-0">
                                                         {u.avatar ? (
                                                             <img
                                                                 src={u.avatar.startsWith('http') ? u.avatar : `http://localhost:3000${u.avatar}`}
@@ -309,21 +309,21 @@ const UserList: React.FC = () => {
                                                                 className="w-10 h-10 rounded-full object-cover ring-2 ring-white shadow-sm border border-gray-100"
                                                             />
                                                         ) : (
-                                                            <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-indigo-100 to-purple-100 text-indigo-600 flex items-center justify-center font-bold text-sm ring-2 ring-white shadow-sm border border-gray-100">
+                                                            <div className="w-10 h-10 rounded-full bg-linear-to-tr from-indigo-100 to-purple-100 text-indigo-600 flex items-center justify-center font-bold text-sm ring-2 ring-white shadow-sm border border-gray-100">
                                                                 {(u.full_name || 'U').charAt(0).toUpperCase()}
                                                             </div>
                                                         )}
                                                         <div className={`absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full border-2 border-white ${u.status === 'active' ? 'bg-green-500' : 'bg-gray-300'}`}></div>
                                                     </div>
-                                                    <div>
-                                                        <div className="font-semibold text-gray-900">{u.full_name}</div>
-                                                        <div className="text-xs text-gray-500">{u.email}</div>
+                                                    <div className="min-w-[150px]">
+                                                        <div className="font-semibold text-gray-900 whitespace-nowrap">{u.full_name}</div>
+                                                        <div className="text-xs text-gray-500 whitespace-nowrap">{u.email}</div>
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td className="p-4">
+                                            <td className="p-4 whitespace-nowrap">
                                                 {u.goal_type ? (
-                                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-orange-50 text-orange-700 text-xs font-medium border border-orange-100">
+                                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-orange-50 text-orange-700 text-xs font-medium border border-orange-100 whitespace-nowrap">
                                                         <Target size={12} />
                                                         {getGoalLabel(u.goal_type)}
                                                     </span>
@@ -331,9 +331,9 @@ const UserList: React.FC = () => {
                                                     <span className="text-gray-400 text-xs italic">—</span>
                                                 )}
                                             </td>
-                                            <td className="p-4 text-center">
+                                            <td className="p-4 text-center whitespace-nowrap">
                                                 {u.diet_mode ? (
-                                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 text-xs font-medium border border-emerald-100">
+                                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 text-xs font-medium border border-emerald-100 whitespace-nowrap">
                                                         <Utensils size={12} />
                                                         {u.diet_mode}
                                                     </span>
@@ -341,9 +341,9 @@ const UserList: React.FC = () => {
                                                     <span className="text-gray-400 text-xs italic">—</span>
                                                 )}
                                             </td>
-                                            <td className="p-4 text-center">
+                                            <td className="p-4 text-center whitespace-nowrap">
                                                 {u.activity_level ? (
-                                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 text-xs font-medium border border-blue-100">
+                                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 text-xs font-medium border border-blue-100 whitespace-nowrap">
                                                         <Activity size={12} />
                                                         {getActivityLabel(u.activity_level)}
                                                     </span>
@@ -351,21 +351,21 @@ const UserList: React.FC = () => {
                                                     <span className="text-gray-400 text-xs italic">—</span>
                                                 )}
                                             </td>
-                                            <td className="p-4 text-center">
+                                            <td className="p-4 text-center whitespace-nowrap">
                                                 <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border ${u.role === 'admin' ? 'bg-indigo-50 text-indigo-700 border-indigo-100' : 'bg-gray-50 text-gray-600 border-gray-100'}`}>
                                                     {u.role === 'admin' ? <Shield size={12} /> : <User size={12} />}
                                                     {roleLabel(u.role)}
                                                 </span>
                                             </td>
-                                            <td className="p-4 text-center">
+                                            <td className="p-4 text-center whitespace-nowrap">
                                                 <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold ${statusStyle.color}`}>
                                                     {statusStyle.label}
                                                 </span>
                                             </td>
-                                            <td className="p-4 text-center text-sm text-gray-600">
+                                            <td className="p-4 text-center text-sm text-gray-600 whitespace-nowrap">
                                                 {formatDate(u.created_at)}
                                             </td>
-                                            <td className="p-4 text-center">
+                                            <td className="p-4 text-center whitespace-nowrap">
                                                 <Link
                                                     to={`/users/${u.id}`}
                                                     className="inline-flex items-center justify-center p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"

@@ -67,11 +67,7 @@ const Food = sequelize.define('Food', {
         type: DataTypes.ENUM('active', 'inactive', 'deleted'),
         defaultValue: 'active'
     },
-    // Diet tags: Auto tag based on macro ratios (e.g., 'keto', 'low_carb', 'high_protein')
-    diet_tags: {
-        type: DataTypes.ARRAY(DataTypes.STRING), // PostgreSQL ARRAY
-        defaultValue: []
-    }
+
 }, {
     timestamps: true,
     createdAt: 'created_at',

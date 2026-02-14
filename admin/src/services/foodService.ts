@@ -16,7 +16,8 @@ export interface Food {
     fat?: number;
     micronutrients?: Record<string, number>; // JSONB object for micronutrients
     status: 'active' | 'inactive';
-    diet_tags: string[]; // ['keto', 'low_carb', 'high_protein', etc.]
+    dietPresets?: { id: number; code: string; name: string }[];
+    // diet_tags: string[]; // Deprecated
     createdAt: string;
     updatedAt: string;
     // PB_52: Ingredients (only included when fetching by ID)
@@ -128,6 +129,11 @@ export const foodService = {
             diet_tags: string[];
             micronutrients?: Record<string, number>;
         }>('/ai/generate-recipe', { foodName });
+        return response.data;
+    },
+
+    getDietPresets: async () => {
+        const response = await api.get<{ id: number, code: string, name: string, description?: string }[]>('/users/diet-presets');
         return response.data;
     }
 };

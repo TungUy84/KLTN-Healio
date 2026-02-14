@@ -41,9 +41,9 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between border-b border-gray-100 pb-4">
-                <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                    <span className="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center text-sm font-bold">1</span>
+            <div className="flex items-center justify-between pb-4 border-b border-gray-100">
+                <h3 className="text-lg font-bold text-gray-800 flex items-center gap-3">
+                    <span className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-lg font-bold shadow-sm border border-indigo-100">1</span>
                     Thông tin cơ bản
                 </h3>
                 {onGenerateAI && (
@@ -51,7 +51,7 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({
                         type="button"
                         onClick={onGenerateAI}
                         disabled={aiLoading || !formData.name}
-                        className="flex items-center gap-1.5 text-sm font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="flex items-center gap-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded-xl transition-all shadow-md shadow-indigo-200 disabled:opacity-50 disabled:shadow-none active:scale-95"
                     >
                         <Sparkles size={16} />
                         {aiLoading ? 'Đang tạo...' : 'Tạo bằng AI'}
@@ -129,16 +129,17 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({
                                 <select
                                     value={status}
                                     onChange={(e) => onStatusSelect(e.target.value as 'active' | 'inactive')}
-                                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none transition-all text-sm appearance-none bg-white cursor-pointer"
+                                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all text-sm appearance-none cursor-pointer font-medium"
                                     style={{
-                                        color: status === 'active' ? '#047857' : '#B91C1C',
-                                        backgroundColor: status === 'active' ? '#ECFDF5' : '#FEF2F2'
+                                        color: status === 'active' ? '#059669' : '#DC2626',
+                                        backgroundColor: status === 'active' ? '#ECFDF5' : '#FEF2F2',
+                                        borderColor: status === 'active' ? '#A7F3D0' : '#FECACA'
                                     }}
                                 >
                                     <option value="active">Active (Hoạt động)</option>
                                     <option value="inactive">Inactive (Tạm ngưng)</option>
                                 </select>
-                                <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none opacity-50" />
+                                <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none opacity-50 text-gray-600" />
                             </div>
                         </div>
                     </div>
@@ -151,9 +152,9 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({
                                 return (
                                     <label
                                         key={category.value}
-                                        className={`cursor-pointer flex items-center justify-center px-3 py-2.5 rounded-xl border text-sm font-medium transition-all ${isSelected
-                                            ? 'bg-indigo-600 border-indigo-600 text-white shadow-md shadow-indigo-200'
-                                            : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300'
+                                        className={`cursor-pointer flex items-center justify-center px-3 py-3 rounded-xl border text-sm font-medium transition-all duration-200 ${isSelected
+                                            ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-200 transform -translate-y-0.5'
+                                            : 'bg-white border-gray-200 text-gray-500 hover:bg-gray-50 hover:border-gray-300'
                                             }`}
                                     >
                                         <input

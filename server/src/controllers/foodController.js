@@ -206,7 +206,6 @@ exports.createFood = async (req, res) => {
             carb: total_carb ? parseFloat(total_carb) : 0,
             fat: total_fat ? parseFloat(total_fat) : 0,
             status: status || 'active',
-            diet_tags: Array.isArray(parsedDietTags) ? parsedDietTags : [],
             micronutrients: parsedMicronutrients,
             image: req.file ? `/uploads/${req.file.filename}` : null,
 
@@ -298,7 +297,6 @@ exports.updateFood = async (req, res) => {
                 }
             }
             const cleanTags = Array.isArray(parsedDietTags) ? parsedDietTags : [];
-            updateData.diet_tags = cleanTags; // Still update old column for now
 
             // Update Association
             const presets = await DietPreset.findAll({

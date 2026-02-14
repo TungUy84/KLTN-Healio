@@ -41,6 +41,7 @@ const FoodList: React.FC = () => {
     const [calorieMax, setCalorieMax] = useState<string>('');
     const [statusFilter, setStatusFilter] = useState<string>('');
     const [showFilters, setShowFilters] = useState(false);
+    const [availableDietPresets, setAvailableDietPresets] = useState<{ id: number; code: string; name: string }[]>([]);
 
     // Modal
     const [isAIModalOpen, setIsAIModalOpen] = useState(false);
@@ -51,6 +52,15 @@ const FoodList: React.FC = () => {
             setStats(data);
         } catch (error) {
             console.error('Error fetching stats:', error);
+        }
+    };
+
+    const fetchDietPresets = async () => {
+        try {
+            const presets = await foodService.getDietPresets();
+            setAvailableDietPresets(presets);
+        } catch (error) {
+            console.error('Error fetching diet presets:', error);
         }
     };
 
@@ -77,6 +87,7 @@ const FoodList: React.FC = () => {
 
     useEffect(() => {
         fetchStats();
+        fetchDietPresets();
     }, []);
 
     useEffect(() => {
@@ -120,17 +131,7 @@ const FoodList: React.FC = () => {
         return labels[category] || category;
     };
 
-    const getDietTagLabel = (tag: string) => {
-        const labels: Record<string, string> = {
-            'keto': 'Keto',
-            'low_carb': 'Low Carb',
-            'high_protein': 'High Protein',
-            'low_fat': 'Low Fat',
-            'balanced': 'Cân bằng',
-            'vegetarian': 'Chay'
-        };
-        return labels[tag] || tag;
-    };
+
 
     const clearFilters = () => {
         setMealCategoryFilter('');
@@ -246,12 +247,9 @@ const FoodList: React.FC = () => {
                                 onChange={(e) => { setDietTagFilter(e.target.value); setPage(1); }}
                             >
                                 <option value="">Tất cả</option>
-                                <option value="keto">Keto</option>
-                                <option value="low_carb">Low Carb</option>
-                                <option value="high_protein">High Protein</option>
-                                <option value="low_fat">Low Fat</option>
-                                <option value="balanced">Cân bằng</option>
-                                <option value="vegetarian">Chay</option>
+                                {availableDietPresets.map(preset => (
+                                    <option key={preset.id} value={preset.code}>{preset.name}</option>
+                                ))}
                             </select>
                         </div>
 
@@ -369,18 +367,20 @@ const FoodList: React.FC = () => {
                                         </td>
                                         <td className="p-4">
                                             <div className="flex flex-wrap gap-1">
-                                                {food.diet_tags && food.diet_tags.length > 0 ? (
-                                                    food.diet_tags.slice(0, 2).map((tag, idx) => (
-                                                        <span key={idx} className="px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded text-[10px] font-medium border border-emerald-100">
-                                                            {getDietTagLabel(tag)}
-                                                        </span>
-                                                    ))
-                                                ) : (
-                                                    <span className="text-gray-400 text-xs italic">--</span>
-                                                )}
-                                                {food.diet_tags && food.diet_tags.length > 2 && (
-                                                    <span className="px-1.5 py-0.5 bg-gray-50 text-gray-500 rounded text-[10px] font-medium border border-gray-100">+{food.diet_tags.length - 2}</span>
-                                                )}
+                                                <div className="flex flex-wrap gap-1">
+                                                    {food.dietPresets && food.dietPresets.length > 0 ? (
+                                                        food.dietPresets.slice(0, 2).map((preset, idx) => (
+                                                            <span key={idx} className="px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded text-[10px] font-medium border border-emerald-100">
+                                                                {preset.name}
+                                                            </span>
+                                                        ))
+                                                    ) : (
+                                                        <span className="text-gray-400 text-xs italic">--</span>
+                                                    )}
+                                                    {food.dietPresets && food.dietPresets.length > 2 && (
+                                                        <span className="px-1.5 py-0.5 bg-gray-50 text-gray-500 rounded text-[10px] font-medium border border-gray-100">+{food.dietPresets.length - 2}</span>
+                                                    )}
+                                                </div>
                                             </div>
                                         </td>
                                         <td className="p-4 text-center">

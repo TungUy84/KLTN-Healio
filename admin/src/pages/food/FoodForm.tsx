@@ -9,7 +9,14 @@ import NutritionSection from '../../components/food-form/NutritionSection';
 import toast from 'react-hot-toast';
 
 // Helper: Calculate diet tags (PB_53) - Pure function, moved outside component
-const calculateDietTags = (totalCalories: number, totalProtein: number, totalCarb: number, totalFat: number): string[] => {
+// Helper: Calculate diet tags (PB_53) - Dynamic version
+const calculateDietTags = (
+    totalCalories: number,
+    totalProtein: number,
+    totalCarb: number,
+    totalFat: number,
+    presets: { code: string; carb_ratio: number; protein_ratio: number; fat_ratio: number }[]
+): string[] => {
     if (totalCalories === 0) return [];
 
     const tags: string[] = [];
@@ -17,32 +24,52 @@ const calculateDietTags = (totalCalories: number, totalProtein: number, totalCar
     const proteinPercent = (totalProtein * 4 / totalCalories) * 100;
     const fatPercent = (totalFat * 9 / totalCalories) * 100;
 
-    // Keto: Fat > 70%, Carb < 10%
-    if (fatPercent > 70 && carbPercent < 10) {
-        tags.push('keto');
-    }
+    // Tolerance for matching (e.g., +/- 5% or 10%)
+    // But simplistic rules for now:
+    // Keto: Fat > 65%, Carb < 10% (Flexible than strict 70/5/25)
 
-    // Low Carb: Carb < 25%
-    if (carbPercent < 25) {
-        tags.push('low_carb');
-    }
+    // We need to map DB logic to checks.
+    // For now, let's keep it simple relative to standard definitions or use the preset values as "targets"
 
-    // High Protein: Protein > 30%
-    if (proteinPercent > 30) {
-        tags.push('high_protein');
-    }
+    // Actually, user wants dynamic adding. If I add "Mediterranean", how do I calculate?
+    // The DB has ratios. We can check if the food matches those ratios within a variance.
+    // Let's use a variance of +/- 10% for Balanced, etc.
+    // For Keto/Low Carb, usually it's about thresholds.
 
-    // Low Fat: Fat < 20%
-    if (fatPercent < 20) {
-        tags.push('low_fat');
-    }
+    // Let's implement a verify function based on rules derived from preset name or generally just check closeness.
+    // However, specifically for the request "thêm chế độ ăn khác thì ... vẫn hiển thị", 
+    // it implies we should use the `carb_ratio`, `protein_ratio` from DB to check.
 
-    // Balanced: 40-50% Carb, 25-30% Protein, 20-30% Fat
-    if (carbPercent >= 40 && carbPercent <= 50 &&
-        proteinPercent >= 25 && proteinPercent <= 30 &&
-        fatPercent >= 20 && fatPercent <= 30) {
-        tags.push('balanced');
-    }
+    presets.forEach(preset => {
+        if (preset.code === 'vegetarian') return; // Cannot auto-tag vegetarian by macros
+
+        const cDiff = Math.abs(carbPercent - preset.carb_ratio);
+        const pDiff = Math.abs(proteinPercent - preset.protein_ratio);
+        const fDiff = Math.abs(fatPercent - preset.fat_ratio);
+
+        // Special hardcoded overrides for standard types to ensure accuracy match legacy logic
+        if (preset.code === 'keto') {
+            if (fatPercent > 65 && carbPercent < 10) tags.push(preset.code);
+            return;
+        }
+        if (preset.code === 'low_carb') {
+            if (carbPercent < 25) tags.push(preset.code);
+            return;
+        }
+        if (preset.code === 'high_protein') {
+            if (proteinPercent > 30) tags.push(preset.code);
+            return;
+        }
+        if (preset.code === 'low_fat') {
+            if (fatPercent < 20) tags.push(preset.code);
+            return;
+        }
+
+        // For others (balanced, mediterranean, etc), use ratio matching
+        if (cDiff < 15 && pDiff < 15 && fDiff < 15) {
+            tags.push(preset.code);
+        }
+    });
 
     return tags;
 };
@@ -90,6 +117,19 @@ const FoodForm: React.FC = () => {
 
     // PB_53: Diet Tags
     const [dietTags, setDietTags] = useState<string[]>([]);
+    const [availablePresets, setAvailablePresets] = useState<any[]>([]);
+
+    useEffect(() => {
+        const loadPresets = async () => {
+            try {
+                const data = await foodService.getDietPresets();
+                setAvailablePresets(data);
+            } catch (e) {
+                console.error('Failed to load diet presets', e);
+            }
+        };
+        loadPresets();
+    }, []);
 
     // Micronutrients: Store calculated micronutrients from ingredients
     const [micronutrients, setMicronutrients] = useState<Record<string, number>>({});
@@ -268,7 +308,8 @@ const FoodForm: React.FC = () => {
             setMicronutrients(roundedMicronutrients);
 
             // AUTO TAG LOGIC:
-            const tags = calculateDietTags(totalCal, totalProtein, totalCarb, totalFat);
+            // AUTO TAG LOGIC:
+            const tags = calculateDietTags(totalCal, totalProtein, totalCarb, totalFat, availablePresets);
             setDietTags(tags);
         };
 
@@ -316,8 +357,10 @@ const FoodForm: React.FC = () => {
                 total_fat: data.fat || 0
             });
 
-            if (data.diet_tags) {
-                setDietTags(data.diet_tags);
+            if (data.dietPresets && Array.isArray(data.dietPresets)) {
+                setDietTags(data.dietPresets.map(p => p.code));
+            } else {
+                setDietTags([]);
             }
 
             if (data.micronutrients && typeof data.micronutrients === 'object') {
@@ -504,7 +547,7 @@ const FoodForm: React.FC = () => {
     };
 
     return (
-        <div className="w-full max-w-5xl mx-auto space-y-6">
+        <div className="w-full max-w-7xl mx-auto space-y-6">
             <div className="flex items-center gap-4">
                 <Link
                     to="/foods"
@@ -554,6 +597,7 @@ const FoodForm: React.FC = () => {
                         <NutritionSection
                             nutrition={nutrition}
                             dietTags={dietTags}
+                            availableDietTags={availablePresets.map(p => ({ value: p.code, label: p.name }))}
                             onResetCalculation={handleResetCalculation}
                             onDietTagToggle={handleDietTagToggle}
                         />
@@ -564,10 +608,10 @@ const FoodForm: React.FC = () => {
                     <button
                         type="submit"
                         disabled={loading}
-                        className="flex items-center gap-2 bg-emerald-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-200 active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed"
+                        className="flex items-center gap-2 bg-emerald-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-200 hover:-translate-y-0.5 active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none"
                     >
                         <Save size={20} />
-                        {loading ? 'Đang lưu...' : 'Lưu Món Ăn'}
+                        {loading ? 'Đang lưu...' : isEditMode ? 'Cập nhật Món ăn' : 'Tạo Món ăn mới'}
                     </button>
                 </div>
             </form>

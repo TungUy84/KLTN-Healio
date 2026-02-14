@@ -11,6 +11,7 @@ interface Nutrition {
 interface NutritionSectionProps {
     nutrition: Nutrition;
     dietTags: string[];
+    availableDietTags: { value: string; label: string }[]; // New Prop
     onResetCalculation: () => void;
     onDietTagToggle: (tag: string) => void;
 }
@@ -18,27 +19,24 @@ interface NutritionSectionProps {
 const NutritionSection: React.FC<NutritionSectionProps> = ({
     nutrition,
     dietTags,
+    availableDietTags, // Destructure
     onResetCalculation,
     onDietTagToggle
 }) => {
-    const availableDietTags = [
-        { value: 'keto', label: 'Keto' },
-        { value: 'low_carb', label: 'Low Carb' },
-        { value: 'high_protein', label: 'High Protein' },
-        { value: 'low_fat', label: 'Low Fat' },
-        { value: 'balanced', label: 'Balanced' },
-        { value: 'vegetarian', label: 'Vegetarian' }
-    ];
+    // Moved hardcoded list to parent
 
-    const MacroCard = ({ icon: Icon, label, value, unit, color, bg }: any) => (
-        <div className="flex items-center gap-3 p-4 rounded-xl border border-gray-100 bg-white hover:border-gray-200 hover:shadow-sm transition-all">
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${bg} ${color}`}>
-                <Icon size={18} strokeWidth={2.5} />
-            </div>
-            <div>
-                <div className="text-xs font-bold text-gray-400 uppercase tracking-wide">{label}</div>
-                <div className={`text-lg font-bold ${color}`}>
-                    {value || 0}<span className="text-sm font-medium text-gray-400 ml-0.5">{unit}</span>
+    const MacroCard = ({ icon: Icon, label, value, unit, color, bg, fromColor, borderColor }: any) => (
+        <div className={`bg-linear-to-br ${fromColor} to-white p-4 rounded-2xl border ${borderColor} shadow-sm relative overflow-hidden group hover:shadow-md transition-shadow`}>
+            <div className={`absolute top-0 right-0 w-16 h-16 ${bg} rounded-full blur-xl -mr-6 -mt-6`}></div>
+            <div className="relative z-10 flex flex-col h-full justify-between gap-3">
+                <div className={`p-2 bg-white rounded-xl w-fit shadow-sm ${color} border ${borderColor} bg-opacity-80`}>
+                    <Icon size={20} strokeWidth={2} />
+                </div>
+                <div>
+                    <div className="text-gray-500 text-xs font-medium mb-1">{label}</div>
+                    <div className="text-2xl font-bold text-gray-900">
+                        {value || 0} <span className="text-sm font-medium text-gray-400">{unit}</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -65,11 +63,13 @@ const NutritionSection: React.FC<NutritionSectionProps> = ({
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <MacroCard
                     icon={Flame}
-                    label="Calories"
+                    label="Năng lượng"
                     value={Math.round(nutrition.total_calories * 10) / 10}
                     unit="kcal"
                     color="text-orange-500"
-                    bg="bg-orange-50"
+                    bg="bg-orange-100"
+                    fromColor="from-orange-50"
+                    borderColor="border-orange-100"
                 />
                 <MacroCard
                     icon={Dna}
@@ -77,23 +77,29 @@ const NutritionSection: React.FC<NutritionSectionProps> = ({
                     value={Math.round(nutrition.total_protein * 10) / 10}
                     unit="g"
                     color="text-emerald-500"
-                    bg="bg-emerald-50"
+                    bg="bg-emerald-100"
+                    fromColor="from-emerald-50"
+                    borderColor="border-emerald-100"
                 />
                 <MacroCard
                     icon={Droplet}
-                    label="Fat"
+                    label="Fat (Béo)"
                     value={Math.round(nutrition.total_fat * 10) / 10}
                     unit="g"
                     color="text-amber-500"
-                    bg="bg-amber-50"
+                    bg="bg-amber-100"
+                    fromColor="from-amber-50"
+                    borderColor="border-amber-100"
                 />
                 <MacroCard
                     icon={Wheat}
-                    label="Carbs"
+                    label="Carb (Đường)"
                     value={Math.round(nutrition.total_carb * 10) / 10}
                     unit="g"
                     color="text-blue-500"
-                    bg="bg-blue-50"
+                    bg="bg-blue-100"
+                    fromColor="from-blue-50"
+                    borderColor="border-blue-100"
                 />
             </div>
 

@@ -33,12 +33,12 @@ const IngredientSection: React.FC<IngredientSectionProps> = ({
 }) => {
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between border-b border-gray-100 pb-4">
-                <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                    <span className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center text-sm font-bold">2</span>
+            <div className="flex items-center justify-between pb-4 border-b border-gray-100">
+                <h3 className="text-lg font-bold text-gray-800 flex items-center gap-3">
+                    <span className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg font-bold shadow-sm border border-emerald-100">2</span>
                     Thành phần nguyên liệu
                 </h3>
-                <span className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full font-medium">
+                <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-100">
                     {ingredients.length} nguyên liệu
                 </span>
             </div>
