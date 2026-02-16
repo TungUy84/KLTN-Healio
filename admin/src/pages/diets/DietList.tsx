@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Edit2, Trash2, PieChart } from 'lucide-react';
+import { Trash2, Edit, Plus } from 'lucide-react';
 import { dietService, type DietPreset } from '../../services/dietService';
 import DietModal from './DietModal';
 import toast from 'react-hot-toast';
@@ -115,7 +115,7 @@ const DietList: React.FC = () => {
                                             onClick={() => handleEdit(diet)}
                                             className="p-1.5 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
                                         >
-                                            <Edit2 size={16} />
+                                            <Edit size={16} />
                                         </button>
                                         <button
                                             onClick={() => handleDelete(diet.id)}

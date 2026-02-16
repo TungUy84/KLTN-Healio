@@ -1,41 +1,71 @@
-import { useEffect, useState } from 'react';
-import {
-    LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
-    BarChart, Bar, PieChart, Pie, Cell, Legend
-} from 'recharts';
-import api from '../services/api';
-import { FaUserPlus, FaUtensils, FaChartPie, FaDownload, FaLeaf } from 'react-icons/fa';
 
-const Statistics = () => {
+import React, { useEffect, useState } from 'react';
+import { Calendar, Download, PieChart as PieChartIcon, Activity, User, Utensils } from 'lucide-react';
+import { statsService } from '../services/statsService';
+import toast from 'react-hot-toast';
+import { BarChart, Bar, PieChart, Pie, Cell, Tooltip, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Legend } from 'recharts';
+
+// Import New Sections
+import SectionSystem from '../components/stats/SectionSystem';
+import SectionNutrition from '../components/stats/SectionNutrition';
+import SectionGoals from '../components/stats/SectionGoals';
+import SectionAdvanced from '../components/stats/SectionAdvanced';
+
+const Statistics: React.FC = () => {
+    // State for all data
+    const [systemData, setSystemData] = useState<any>({});
+    const [nutritionData, setNutritionData] = useState<any>({});
+    const [goalData, setGoalData] = useState<any>({});
+    const [insightsData, setInsightsData] = useState<any>({});
+    const [foodData, setFoodData] = useState<any>({});
+    const [peakData, setPeakData] = useState<any>([]);
+
+    // Legacy state for compatibility or specific reused charts
     const [growthData, setGrowthData] = useState([]);
-    const [trendingFoods, setTrendingFoods] = useState([]);
-    const [demographics, setDemographics] = useState({ goals: [], gender: [] });
-    const [dietStats, setDietStats] = useState([]);
+
     const [timeRange, setTimeRange] = useState('7d');
     const [loading, setLoading] = useState(true);
 
-    const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
+    const COLORS = ['#10B981', '#3B82F6', '#EF4444', '#F59E0B', '#8B5CF6'];
 
     useEffect(() => {
         fetchAllData();
     }, [timeRange]);
 
     const fetchAllData = async () => {
-        setLoading(true);
         try {
-            const [growth, trending, demo, diets] = await Promise.all([
-                api.get(`/stats/growth?range=${timeRange}`).then((res: any) => res.data),
-                api.get(`/stats/trending-foods?days=${timeRange === '7d' ? 7 : 30}`).then((res: any) => res.data),
-                api.get('/stats/demographics').then((res: any) => res.data),
-                api.get('/stats/diets').then((res: any) => res.data)
+            setLoading(true);
+
+            // Parallel Requests
+            const [
+                growthRes,
+                systemRes,
+                nutritionRes,
+                goalRes,
+                insightsRes,
+                foodRes,
+                peakRes
+            ] = await Promise.all([
+                statsService.getUserGrowth(timeRange),
+                statsService.getSystemStats(),
+                statsService.getNutritionStats(),
+                statsService.getGoalStats(),
+                statsService.getUserInsights(),
+                statsService.getFoodStats(),
+                statsService.getActivityPeak()
             ]);
 
-            setGrowthData(growth);
-            setTrendingFoods(trending);
-            setDemographics(demo);
-            setDietStats(diets);
+            setGrowthData(growthRes);
+            setSystemData(systemRes || {});
+            setNutritionData(nutritionRes || {});
+            setGoalData(goalRes || {});
+            setInsightsData(insightsRes || {});
+            setFoodData(foodRes || {});
+            setPeakData(peakRes || []);
+
         } catch (error) {
-            console.error("Failed to fetch stats", error);
+            console.error('Error fetching dashboard stats:', error);
+            // toast.error('Lỗi tải dữ liệu thống kê');
         } finally {
             setLoading(false);
         }
@@ -43,219 +73,162 @@ const Statistics = () => {
 
     const handleExport = async () => {
         try {
-            // Need to handle blob response
-            const response = await api.get('/stats/export', { responseType: 'blob' });
-
-            // Create Blob link to download
-            const url = window.URL.createObjectURL(new Blob([response.data]));
-            const link = document.createElement('a');
-            link.href = url;
-            link.setAttribute('download', 'Healio_Report.xlsx'); // or any other extension
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
+            toast.loading('Đang xuất báo cáo...');
+            await statsService.exportReport();
+            toast.dismiss();
+            toast.success('Xuất báo cáo thành công!');
         } catch (error) {
-            console.error("Export Failed", error);
-            alert("Xuất báo cáo thất bại");
+            console.error(error);
+            toast.dismiss();
+            toast.error('Có lỗi khi xuất file');
         }
     };
 
-    if (loading) return <div className="p-10 text-center text-gray-500 dark:text-gray-400">Đang tải dữ liệu...</div>;
-
-    // Process Pie Data
-    const goalData = demographics.goals.map((g: any) => ({ name: g.goal_type, value: parseInt(g.count) }));
-    const genderData = demographics.gender.map((g: any) => ({ name: g.gender === 'male' ? 'Nam' : 'Nữ', value: parseInt(g.count) }));
+    if (loading) {
+        return (
+            <div className="flex h-96 items-center justify-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600"></div>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-8 pb-10">
             {/* Header */}
-            <div className="flex justify-between items-center bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
+            <div className="flex flex-col md:flex-row justify-between items-end gap-4 bg-white p-6 rounded-2xl shadow-lg shadow-black/5 border border-gray-100">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2 flex items-center gap-2">
-                        <FaChartPie className="text-indigo-600 dark:text-indigo-400" />
+                    <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                        <PieChartIcon className="text-emerald-600" />
                         Thống kê & Báo cáo
                     </h1>
-                    <p className="text-base text-gray-500 dark:text-gray-400">Tổng quan về người dùng, xu hướng và dinh dưỡng</p>
+                    <p className="text-sm text-gray-500 mt-1">Tổng quan toàn diện hệ thống (V3 Mega Dashboard)</p>
                 </div>
-                <div className="flex items-center gap-4">
-                    <select
-                        className="border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-200 text-sm font-medium focus:ring-2 focus:ring-blue-500 outline-none"
-                        value={timeRange}
-                        onChange={(e) => setTimeRange(e.target.value)}
-                    >
-                        <option value="7d">7 ngày qua</option>
-                        <option value="30d">30 ngày qua</option>
-                        <option value="month">Tháng này</option>
-                        <option value="year">Năm nay</option>
-                    </select>
+                <div className="flex items-center gap-3">
+                    <div className="relative">
+                        <select
+                            className="appearance-none border border-gray-200 rounded-xl px-4 py-2.5 bg-gray-50 text-gray-700 text-sm font-medium focus:ring-2 focus:ring-emerald-500 outline-none pr-10 cursor-pointer hover:bg-gray-100 transition-colors"
+                            value={timeRange}
+                            onChange={(e) => setTimeRange(e.target.value)}
+                        >
+                            <option value="7d">7 ngày qua</option>
+                            <option value="30d">30 ngày qua</option>
+                            <option value="month">Tháng này</option>
+                            <option value="year">Năm nay</option>
+                        </select>
+                        <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
+                    </div>
 
                     <button
                         onClick={handleExport}
-                        className="bg-green-600 hover:bg-green-700 text-white px-4 py-2.5 rounded-lg flex items-center gap-2 text-sm font-bold shadow-sm transition-all"
+                        className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white px-5 py-2.5 rounded-xl flex items-center gap-2 text-sm font-bold shadow-md shadow-emerald-200 transition-all transform hover:-translate-y-0.5"
                     >
-                        <FaDownload /> Xuất Báo Cáo
+                        <Download size={18} /> Xuất Báo Cáo
                     </button>
                 </div>
             </div>
 
-            {/* 1. User Growth (Line Chart) */}
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
-                <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 mb-6 flex items-center gap-2">
-                    <FaUserPlus className="text-indigo-500 dark:text-indigo-400" /> Tăng trưởng người dùng
-                </h3>
-                <div className="h-[300px] w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={growthData}>
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
-                            <XAxis dataKey="date" stroke="#9CA3AF" fontSize={12} tickLine={false} axisLine={false} />
-                            <YAxis stroke="#9CA3AF" fontSize={12} tickLine={false} axisLine={false} />
-                            <RechartsTooltip
-                                contentStyle={{ borderRadius: 12, border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
-                            />
-                            <Line
-                                type="monotone"
-                                dataKey="count"
-                                name="User mới"
-                                stroke="#4F46E5"
-                                strokeWidth={3}
-                                dot={{ fill: '#4F46E5', strokeWidth: 2 }}
-                                activeDot={{ r: 6 }}
-                            />
-                        </LineChart>
-                    </ResponsiveContainer>
+            {/* I. SYSTEM OVERVIEW */}
+            <SectionSystem data={systemData} growthData={growthData} />
+
+            {/* II. NUTRITION BEHAVIOR */}
+            <SectionNutrition data={nutritionData} />
+
+            {/* III. GOALS & EFFECTIVENESS */}
+            <SectionGoals data={goalData} />
+
+            {/* IV. USER INSIGHTS */}
+            <div className="space-y-6">
+                <h2 className="text-xl font-bold text-gray-800 border-l-4 border-indigo-500 pl-3">IV. USER INSIGHTS</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* 13. User Segmentation */}
+                    <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+                        <h3 className="font-semibold text-gray-700 mb-4 flex items-center gap-2">
+                            <User size={18} className="text-indigo-500" /> Phân khúc người dùng (BMI)
+                        </h3>
+                        <div className="h-[250px] flex justify-center">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <PieChart>
+                                    <Pie data={insightsData?.bmiDist || []} cx="50%" cy="50%" innerRadius={60} outerRadius={80} dataKey="value" paddingAngle={5}>
+                                        {insightsData?.bmiDist?.map((_: any, index: number) => (
+                                            <Cell key={`cell - ${index} `} fill={COLORS[index % COLORS.length]} />
+                                        ))}
+                                    </Pie>
+                                    <Tooltip />
+                                    <Legend verticalAlign="bottom" />
+                                </PieChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
+
+                    {/* 15. Retention Rate */}
+                    <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+                        <h3 className="font-semibold text-gray-700 mb-4 flex items-center gap-2">
+                            <Activity size={18} className="text-purple-500" /> Tỷ lệ giữ chân người dùng
+                        </h3>
+                        <div className="h-[250px]">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={insightsData?.retention || []}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                    <XAxis dataKey="name" fontSize={11} />
+                                    <YAxis />
+                                    <Tooltip />
+                                    <Bar dataKey="value" fill="#8B5CF6" radius={[4, 4, 0, 0]} barSize={40} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            {/* 2. Demographics (Pie Charts) */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {/* Goal Distribution */}
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
-                    <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 mb-4">Phân bổ Mục tiêu</h3>
-                    <div className="h-[250px] flex items-center justify-center">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <PieChart>
-                                <Pie
-                                    data={goalData}
-                                    cx="50%"
-                                    cy="50%"
-                                    innerRadius={60}
-                                    outerRadius={80}
-                                    fill="#8884d8"
-                                    paddingAngle={5}
-                                    dataKey="value"
-                                >
-                                    {goalData.map((_, index) => (
-                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                    ))}
-                                </Pie>
-                                <RechartsTooltip />
-                                <Legend verticalAlign="bottom" height={36} />
-                            </PieChart>
-                        </ResponsiveContainer>
-                    </div>
-                </div>
-
-                {/* Gender Distribution */}
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
-                    <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 mb-4">Phân bổ Giới tính</h3>
-                    <div className="h-[250px] flex items-center justify-center">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <PieChart>
-                                <Pie
-                                    data={genderData}
-                                    cx="50%"
-                                    cy="50%"
-                                    outerRadius={80}
-                                    fill="#8884d8"
-                                    dataKey="value"
-                                    label
-                                >
-                                    {genderData.map((_, index) => (
-                                        <Cell key={`cell-${index}`} fill={['#3B82F6', '#EC4899'][index % 2]} />
-                                    ))}
-                                </Pie>
-                                <RechartsTooltip />
-                                <Legend />
-                            </PieChart>
-                        </ResponsiveContainer>
-                    </div>
-                    {/* Fallback if no data */}
-                    {genderData.length === 0 && <p className="text-center text-gray-400 dark:text-gray-500">Chưa có dữ liệu</p>}
-                </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {/* 3. Trending Foods (Table) */}
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
-                    <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 mb-6 flex items-center gap-2">
-                        <FaUtensils className="text-orange-500 dark:text-orange-400" /> Xu hướng Món ăn
+            {/* V. FOOD STATS */}
+            <div className="space-y-6">
+                <h2 className="text-xl font-bold text-gray-800 border-l-4 border-emerald-500 pl-3">V. THỐNG KÊ THỰC PHẨM</h2>
+                <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                    <h3 className="font-semibold text-gray-700 mb-6 flex items-center gap-2">
+                        <Utensils size={18} className="text-emerald-500" /> Top Thực phẩm phổ biến
                     </h3>
                     <div className="overflow-x-auto">
-                        <table className="w-full text-left">
+                        <table className="w-full">
                             <thead>
-                                <tr className="border-b border-gray-100 dark:border-gray-600 text-gray-500 dark:text-gray-400 text-xs uppercase font-semibold">
-                                    <th className="pb-3 pl-2">Tên món</th>
-                                    <th className="pb-3 text-right">Số lần chọn</th>
+                                <tr className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-100">
+                                    <th className="pb-3 pl-4">#</th>
+                                    <th className="pb-3">Tên thực phẩm</th>
+                                    <th className="pb-3 text-right">Số lần dùng</th>
                                     <th className="pb-3 text-right">Tổng Calo</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-50 dark:divide-gray-600">
-                                {trendingFoods.map((item: any, idx) => (
-                                    <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                                        <td className="py-3 pl-2 flex items-center gap-3">
-                                            <span className="text-gray-400 dark:text-gray-500 font-bold w-4">{idx + 1}</span>
-                                            {item.image ? (
-                                                <img
-                                                    src={item.image.startsWith('http') ? item.image : `${import.meta.env.VITE_API_URL?.replace('/api', '')}${item.image}`}
-                                                    className="w-10 h-10 rounded-lg object-cover bg-gray-100 dark:bg-gray-700"
-                                                />
-                                            ) : (
-                                                <div className="w-10 h-10 rounded-lg bg-orange-100 dark:bg-orange-900/50 flex items-center justify-center text-orange-500 dark:text-orange-400">
-                                                    <FaUtensils size={14} />
-                                                </div>
-                                            )}
-                                            <span className="font-medium text-gray-800 dark:text-gray-200 text-sm">{item.name}</span>
+                            <tbody className="divide-y divide-gray-50">
+                                {foodData?.topFoods?.map((item: any, idx: number) => (
+                                    <tr key={idx} className="hover:bg-gray-50 transition-colors group">
+                                        <td className="py-3 pl-4 w-12">
+                                            <div className="bg-gray-100 w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold text-gray-500 group-hover:bg-emerald-100 group-hover:text-emerald-600">
+                                                {idx + 1}
+                                            </div>
                                         </td>
-                                        <td className="py-3 text-right font-bold text-gray-700 dark:text-gray-300">{item.count}</td>
-                                        <td className="py-3 text-right text-sm text-gray-500 dark:text-gray-400">{parseInt(item.total_calories).toLocaleString()}</td>
+                                        <td className="py-3">
+                                            <span className="block font-bold text-gray-800 text-sm group-hover:text-emerald-600 transition-colors">{item.name}</span>
+                                        </td>
+                                        <td className="py-3 text-right">
+                                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-700">
+                                                {item.count}
+                                            </span>
+                                        </td>
+                                        <td className="py-3 text-right text-sm font-medium text-gray-500">
+                                            {parseInt(item.total_calories || 0).toLocaleString()}
+                                        </td>
                                     </tr>
                                 ))}
                             </tbody>
                         </table>
                     </div>
                 </div>
-
-                {/* 4. Diet Stats (Bar Chart) */}
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
-                    <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 mb-6 flex items-center gap-2">
-                        <FaLeaf className="text-green-500 dark:text-green-400" /> Chế độ Dinh dưỡng
-                    </h3>
-                    <div className="h-[300px] w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart
-                                layout="vertical"
-                                data={dietStats}
-                                margin={{ top: 5, right: 30, left: 40, bottom: 5 }}
-                            >
-                                <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#E5E7EB" />
-                                <XAxis type="number" hide />
-                                <YAxis
-                                    dataKey="name"
-                                    type="category"
-                                    width={100}
-                                    tick={{ fontSize: 12, fill: '#4B5563' }}
-                                    tickLine={false}
-                                    axisLine={false}
-                                />
-                                <RechartsTooltip cursor={{ fill: 'transparent' }} />
-                                <Bar dataKey="count" fill="#10B981" radius={[0, 4, 4, 0]} barSize={20} />
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </div>
-                </div>
             </div>
+
+            {/* VI. ADVANCED */}
+            <SectionAdvanced peakData={peakData} />
         </div>
     );
 };
 
 export default Statistics;
+

@@ -1,5 +1,6 @@
+
 import React, { useState } from 'react';
-import { X, Save, Shield, Mail, User, Key } from 'lucide-react';
+import { X, Mail, User, Shield, Key } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface CreateAdminModalProps {
