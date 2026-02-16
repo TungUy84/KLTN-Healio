@@ -105,6 +105,16 @@ export const adminUserService = {
         return res.data;
     },
 
+    async create(data: any) {
+        const res = await api.post('/admin/users', data);
+        return res.data;
+    },
+
+    async delete(id: number) {
+        const res = await api.delete(`/admin/users/${id}`);
+        return res.data;
+    },
+
     async getComprehensiveUserDetail(id: string): Promise<any> {
         const response = await api.get(`/admin/users/${id}/comprehensive`);
         return response.data;

@@ -11,6 +11,7 @@ const dashboardRoutes = require('./src/routes/dashboard');
 const adminUsersRoutes = require('./src/routes/adminUsers');
 const statsRoutes = require('./src/routes/stats');
 const aiRoutes = require('./src/routes/ai');
+const dietRoutes = require('./src/routes/diet');
 const { seedDietPresets } = require('./src/controllers/userController');
 
 // Require models để đảm bảo chúng được sync
@@ -39,6 +40,7 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/admin/users', adminUsersRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/diets', dietRoutes);
 
 // Sync DB & Start Server
 // Use alter: true to update tables if models change (add columns)

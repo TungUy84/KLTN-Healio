@@ -17,9 +17,14 @@ import {
     Activity,
     Utensils,
     Target,
-    UserX
+    UserX,
+    Trash2
 } from 'lucide-react';
 import UserStatsOverview from '../../components/UserStatsOverview';
+
+import CreateAdminModal from './CreateAdminModal';
+import toast from 'react-hot-toast';
+import { confirmToast } from '../../utils/toastUtils';
 
 const UserList: React.FC = () => {
     const [users, setUsers] = useState<AdminUser[]>([]);
@@ -32,6 +37,7 @@ const UserList: React.FC = () => {
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [showFilters, setShowFilters] = useState(false);
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const LIMIT = 20;
 
     const fetchUsers = async () => {
@@ -58,6 +64,36 @@ const UserList: React.FC = () => {
     useEffect(() => {
         fetchUsers();
     }, [page, search, roleFilter, statusFilter, sort, order]);
+
+    const handleCreateAdmin = async (data: any) => {
+        try {
+            await adminUserService.create(data);
+            toast.success('Tạo tài khoản quản trị viên thành công');
+            fetchUsers();
+        } catch (error: any) {
+            console.error(error);
+            // Error handled in modal
+            throw error;
+        }
+    };
+
+    const handleDelete = (id: number) => {
+        confirmToast({
+            message: 'Bạn có chắc chắn muốn xóa tài khoản này không? Hành động này không thể hoàn tác.',
+            type: 'danger',
+            confirmText: 'Xóa tài khoản',
+            onConfirm: async () => {
+                try {
+                    await adminUserService.delete(id);
+                    toast.success('Xóa tài khoản thành công');
+                    fetchUsers();
+                } catch (error: any) {
+                    console.error('Error deleting user:', error);
+                    toast.error(error.response?.data?.message || 'Xóa tài khoản thất bại');
+                }
+            }
+        });
+    };
 
     const handleSort = (field: string) => {
         if (sort === field) {
@@ -111,6 +147,13 @@ const UserList: React.FC = () => {
                     <h1 className="text-2xl font-bold text-gray-900">Quản lý Tài khoản</h1>
                     <p className="text-gray-500 mt-1">Xem và quản lý tất cả người dùng trong hệ thống.</p>
                 </div>
+                <button
+                    onClick={() => setIsCreateModalOpen(true)}
+                    className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-xl font-medium hover:bg-emerald-700 transition-colors shadow-lg shadow-emerald-200"
+                >
+                    <Shield size={20} />
+                    Thêm Quản trị viên
+                </button>
             </div>
 
             {/* Stats Overview */}
@@ -373,6 +416,13 @@ const UserList: React.FC = () => {
                                                 >
                                                     <Eye size={18} />
                                                 </Link>
+                                                <button
+                                                    onClick={() => handleDelete(u.id)}
+                                                    className="inline-flex items-center justify-center p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all ml-1"
+                                                    title="Xóa tài khoản"
+                                                >
+                                                    <Trash2 size={18} />
+                                                </button>
                                             </td>
                                         </tr>
                                     );
@@ -405,6 +455,12 @@ const UserList: React.FC = () => {
                     </div>
                 )}
             </div>
+
+            <CreateAdminModal
+                isOpen={isCreateModalOpen}
+                onClose={() => setIsCreateModalOpen(false)}
+                onSubmit={handleCreateAdmin}
+            />
         </div>
     );
 };

@@ -26,6 +26,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
         { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
         { path: '/raw-foods', label: 'Kho Nguyên Liệu', icon: Leaf },
         { path: '/foods', label: 'Quản lý Món ăn', icon: UtensilsCrossed },
+        { path: '/diets', label: 'Chế độ ăn', icon: Leaf },
         { path: '/users', label: 'Người dùng', icon: Users },
         { path: '/statistics', label: 'Thống kê', icon: TrendingUp },
     ];

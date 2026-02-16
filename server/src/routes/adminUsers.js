@@ -10,8 +10,10 @@ router.get('/stats', adminUserController.getStats);
 
 // PB_57: List accounts
 router.get('/', adminUserController.list);
+router.post('/', adminUserController.create);
 // PB_58, PB_59: User detail
 router.get('/:id', adminUserController.getById);
+router.delete('/:id', adminUserController.delete);
 router.get('/:id/comprehensive', adminUserController.getComprehensiveUserDetail);
 // PB_60: Ban / Unban
 router.patch('/:id/ban', adminUserController.ban);

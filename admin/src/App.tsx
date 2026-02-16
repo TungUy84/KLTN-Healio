@@ -8,6 +8,7 @@ import RawFoodImport from './pages/raw-food/RawFoodImport';
 import RawFoodDetail from './pages/raw-food/RawFoodDetail';
 import FoodList from './pages/food/FoodList';
 import FoodForm from './pages/food/FoodForm';
+import DietList from './pages/diets/DietList';
 import FoodDetail from './pages/food/FoodDetail';
 import UserList from './pages/users/UserList';
 import UserDetail from './pages/users/UserDetail';
@@ -141,6 +142,9 @@ function App() {
                 <Route path="/users" element={<PrivateRoute><AdminLayout><UserList /></AdminLayout></PrivateRoute>} />
                 <Route path="/users/:id" element={<PrivateRoute><AdminLayout><UserDetail /></AdminLayout></PrivateRoute>} />
                 <Route path="/statistics" element={<PrivateRoute><AdminLayout><Statistics /></AdminLayout></PrivateRoute>} />
+
+                {/* Diet Management */}
+                <Route path="/diets" element={<PrivateRoute><AdminLayout><DietList /></AdminLayout></PrivateRoute>} />
 
                 {/* Default redirect */}
                 <Route path="*" element={<Navigate to="/dashboard" />} />

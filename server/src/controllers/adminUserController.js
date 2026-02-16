@@ -6,7 +6,7 @@ const UserWeightLog = require('../models/UserWeightLog');
 const UserDailyLog = require('../models/UserDailyLog');
 const UserFavoriteFood = require('../models/UserFavoriteFood');
 const Food = require('../models/Food');
-const OTP = require('../models/OTP');
+const OTP = require('../models/Otp');
 const { Op, Sequelize } = require('sequelize');
 const bcrypt = require('bcryptjs');
 const sequelize = require('../config/database');
@@ -95,6 +95,65 @@ exports.list = async (req, res) => {
     }
 };
 
+// PB_NEW: Create User (Admin only)
+exports.create = async (req, res) => {
+    try {
+        const { email, password, full_name, role } = req.body;
+
+        // Validation
+        if (!email || !password || !full_name || !role) {
+            return res.status(400).json({ message: 'Vui lòng điền đầy đủ thông tin' });
+        }
+
+        if (!['user', 'admin'].includes(role)) {
+            return res.status(400).json({ message: 'Vai trò không hợp lệ' });
+        }
+
+        // Check if email exists
+        const existingUser = await User.findOne({ where: { email } });
+        if (existingUser) {
+            return res.status(400).json({ message: 'Email đã được sử dụng' });
+        }
+
+        // Hash password
+        const salt = await bcrypt.genSalt(10);
+        const password_hash = await bcrypt.hash(password, salt);
+
+        // Create user
+        const newUser = await User.create({
+            email,
+            password_hash,
+            full_name,
+            role,
+            status: 'active',
+            auth_provider: 'local'
+        });
+
+        // Create empty profile if user
+        if (role === 'user') {
+            await UserProfile.create({ user_id: newUser.id });
+            await UserNutritionTarget.create({ user_id: newUser.id });
+        }
+
+        res.status(201).json({
+            success: true,
+            message: 'Tạo tài khoản thành công',
+            data: {
+                id: newUser.id,
+                email: newUser.email,
+                full_name: newUser.full_name,
+                role: newUser.role,
+                status: newUser.status,
+                created_at: newUser.created_at
+            }
+        });
+
+    } catch (err) {
+        console.error('Admin create user error:', err);
+        res.status(500).json({ message: 'Lỗi khi tạo tài khoản' });
+    }
+};
+
 // PB_58, PB_59: User detail (identify info, body metrics, diet & nutrition)
 exports.getById = async (req, res) => {
     try {
@@ -153,6 +212,37 @@ exports.getById = async (req, res) => {
     } catch (err) {
         console.error('Admin get user:', err);
         res.status(500).json({ message: 'Lỗi khi lấy chi tiết tài khoản' });
+    }
+};
+
+// PB_NEW: Delete User
+exports.delete = async (req, res) => {
+    try {
+        const id = parseInt(req.params.id);
+
+        // Prevent self-deletion
+        if (req.user && req.user.id === id) {
+            return res.status(400).json({ message: 'Không thể xóa tài khoản hiện tại của bạn' });
+        }
+
+        const user = await User.findByPk(id);
+        if (!user) {
+            return res.status(404).json({ message: 'Không tìm thấy tài khoản' });
+        }
+
+        // Optional: Prevent deleting other admins if needed, but usually admin can delete admin
+        // if (user.role === 'admin') ...
+
+        // Hard delete (cascade should handle related data if configured in associations)
+        // If not, we might need to delete related data manually first
+        // Assuming models are set up with ON DELETE CASCADE
+        await user.destroy();
+
+        res.json({ success: true, message: 'Đã xóa tài khoản thành công' });
+
+    } catch (err) {
+        console.error('Admin delete user error:', err);
+        res.status(500).json({ message: 'Lỗi khi xóa tài khoản' });
     }
 };
 
