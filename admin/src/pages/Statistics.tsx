@@ -120,7 +120,7 @@ const Statistics: React.FC = () => {
 
                     <button
                         onClick={handleExport}
-                        className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white px-5 py-2.5 rounded-xl flex items-center gap-2 text-sm font-bold shadow-md shadow-emerald-200 transition-all transform hover:-translate-y-0.5"
+                        className="bg-linear-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white px-5 py-2.5 rounded-xl flex items-center gap-2 text-sm font-bold shadow-md shadow-emerald-200 transition-all transform hover:-translate-y-0.5"
                     >
                         <Download size={18} /> Xuất Báo Cáo
                     </button>

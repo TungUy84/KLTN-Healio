@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StatusBar, RefreshControl, Image, Dimensions, Modal, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StatusBar, RefreshControl, Image, Dimensions, Modal, ActivityIndicator, Alert, DeviceEventEmitter } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Feather, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -24,8 +24,8 @@ import { aiService, MealPlanSuggestion } from '../../services/aiService';
 const AnimatedView = Animated.createAnimatedComponent(View);
 const { width } = Dimensions.get('window');
 
-// 1. Modern Header
-const Header = ({ userProfile, selectedDate, onPrevDate, onNextDate, onDatePress, handleSuggestMeal }: any) => {
+// 1. Modern Glass Header & Calendar
+const GlassHeader = ({ userProfile, selectedDate, onPrevDate, onNextDate, onDatePress, handleSuggestMeal }: any) => {
   const insets = useSafeAreaInsets();
 
   const getGreeting = () => {
@@ -36,174 +36,137 @@ const Header = ({ userProfile, selectedDate, onPrevDate, onNextDate, onDatePress
     return 'Chào buổi tối';
   };
 
-  const greeting = getGreeting();
-  const titleName = userProfile?.full_name;
-  const avatarUri = userProfile?.avatar;
-
-  const formatDate = (date: Date) => {
-    const today = new Date();
-    if (date.toDateString() === today.toDateString()) return 'Hôm nay';
-    return `${date.getDate()} thg ${date.getMonth() + 1}`;
+  const getDays = () => {
+    const days = [];
+    for (let i = -2; i <= 2; i++) {
+      const d = new Date(selectedDate);
+      d.setDate(d.getDate() + i);
+      days.push(d);
+    }
+    return days;
   };
 
+  const dayNames = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+
   return (
-    <View style={{ paddingTop: insets.top + 10 }} className="px-6 pb-4 bg-white z-20">
+    <View style={{ paddingTop: insets.top + 10 }} className="px-6 pb-2 z-20">
       {/* Top Row */}
-      <View className="flex-row justify-between items-center mb-6">
+      <View className="flex-row justify-between items-center mb-8">
         <View className="flex-row items-center gap-3">
-          <View className="p-0.5 bg-gradient-to-tr from-teal-400 to-emerald-500 rounded-full shadow-sm">
+          <View className="w-12 h-12 rounded-full overflow-hidden border-2 border-white/50">
             <Image
-              source={{ uri: avatarUri }}
-              className="w-12 h-12 rounded-full border-2 border-white"
+              source={{ uri: userProfile?.avatar || 'https://ui-avatars.com/api/?background=10B981&color=fff' }}
+              className="w-full h-full object-cover"
             />
           </View>
           <View>
-            <Text className="text-slate-400 text-xs font-medium uppercase tracking-wider mb-0.5">{greeting}</Text>
-            <View className="flex-row items-center gap-2">
-              <Text className="text-slate-800 font-bold text-xl">{titleName} 👋</Text>
-              <TouchableOpacity onPress={handleSuggestMeal} className="bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-100 flex-row items-center gap-1 active:bg-indigo-100">
-                <Ionicons name="sparkles" size={12} color="#6366F1" />
-                <Text className="text-indigo-600 text-[10px] font-bold">Gợi ý AI</Text>
-              </TouchableOpacity>
+            <Text className="text-white/80 text-xs font-medium">{getGreeting()}</Text>
+            <View className="flex-row items-center gap-1">
+              <Text className="text-white font-bold text-lg">{userProfile?.full_name?.split(' ')[userProfile?.full_name?.split(' ').length - 1] || 'Bạn'}</Text>
+              <Ionicons name="hand-right" size={18} color="#FBBF24" />
             </View>
           </View>
         </View>
 
-        <TouchableOpacity className="w-11 h-11 bg-slate-50 rounded-full items-center justify-center border border-slate-100 shadow-sm active:bg-slate-100">
-          <Feather name="bell" size={22} color="#64748B" />
-          {/* Notification Dot */}
-          <View className="absolute top-2.5 right-3 w-2.5 h-2.5 bg-rose-500 rounded-full border-2 border-white" />
+        <TouchableOpacity className="w-10 h-10 rounded-full border border-white/40 items-center justify-center active:bg-white/10">
+          <Feather name="bell" size={20} color="white" />
         </TouchableOpacity>
       </View>
 
-      {/* Date Navigator - Capsule Style */}
-      <View className="flex-row items-center justify-between bg-slate-50 p-1.5 rounded-full border border-slate-100/80">
-        <TouchableOpacity onPress={onPrevDate} className="w-10 h-10 items-center justify-center rounded-full bg-white shadow-sm border border-slate-50 active:scale-95">
-          <Feather name="chevron-left" size={20} color="#64748B" />
-        </TouchableOpacity>
-
-        <TouchableOpacity onPress={onDatePress} className="flex-1 h-10 flex-row items-center justify-center gap-2 active:opacity-60">
-          <Feather name="calendar" size={16} color="#0D9488" />
-          <Text className="text-slate-700 font-bold text-base">{formatDate(selectedDate)}</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity onPress={onNextDate} className="w-10 h-10 items-center justify-center rounded-full bg-white shadow-sm border border-slate-50 active:scale-95">
-          <Feather name="chevron-right" size={20} color="#64748B" />
-        </TouchableOpacity>
+      {/* Calendar Strip */}
+      <View className="flex-row justify-between items-center px-2">
+        {getDays().map((date, idx) => {
+          const isSelected = idx === 2; // Center date
+          return (
+            <TouchableOpacity
+              key={idx}
+              onPress={idx < 2 ? onPrevDate : idx > 2 ? onNextDate : onDatePress}
+              className={`w-[50px] h-[76px] rounded-full items-center justify-center ${isSelected ? 'bg-white shadow-lg shadow-teal-900/20' : 'bg-white/20'}`}
+              style={!isSelected ? { backgroundColor: 'rgba(255,255,255,0.2)' } : undefined} // Force glass effect
+            >
+              <Text className={`text-xs mb-1 ${isSelected ? 'text-slate-500 font-medium' : 'text-white/80'}`}>{dayNames[date.getDay()]}</Text>
+              <Text className={`text-lg ${isSelected ? 'text-slate-900 font-bold' : 'text-white font-semibold'}`}>{date.getDate()}</Text>
+            </TouchableOpacity>
+          );
+        })}
       </View>
     </View>
   );
 };
 
-// 2. Premium Liquid Hero Card (Redesigned)
-const LiquidHero = ({ target, eaten, dailyLog, tCarb, tProt, tFat }: any) => {
-  const percent = Math.min(Math.max(eaten / (target || 2000), 0), 1.5); // Allow overflow for color logic
-  const waveAnim = useSharedValue(0);
-  const progress = useSharedValue(0);
-
-  useEffect(() => {
-    waveAnim.value = withRepeat(
-      withTiming(1, { duration: 2000, easing: Easing.linear }),
-      -1,
-      false
-    );
-    progress.value = withTiming(percent, { duration: 1000 });
-  }, [percent]);
-
-  const animatedStyle = useAnimatedStyle(() => {
-    const heightPercent = Math.min(progress.value, 1.1) * 100; // Cap visual height at 110%
-    return {
-      height: `${heightPercent}%`,
-      backgroundColor: interpolateColor(
-        progress.value,
-        [0, 0.8, 1, 1.1], // Orange -> Green -> Green -> Red
-        ['#F97316', '#10B981', '#10B981', '#EF4444']
-      )
-    };
-  });
-
-  const buttonAnimatedStyle = useAnimatedStyle(() => {
-    return {
-      backgroundColor: interpolateColor(
-        progress.value,
-        [0, 1, 1.1],
-        ['#F97316', '#0F766E', '#DC2626'] // Match button to liquid theme
-      )
-    };
-  });
+// 2. Calories Hero & Summary Cards
+const CaloriesHero = ({ target, eaten, dailyLog, tCarb, tProt, tFat }: any) => {
+  const percent = Math.min((eaten / target) * 100, 100) || 0;
+  const left = Math.max(target - eaten, 0);
 
   return (
-    <AnimatedView entering={FadeInUp.delay(100).springify()} className="px-5 mt-4">
-      {/* Container Chính */}
-      <View className="bg-white rounded-[40px] p-6 shadow-xl shadow-slate-200/60 border border-slate-50 overflow-hidden relative">
-
-        {/* Decorative Background Blur */}
-        <View className="absolute -top-10 -right-10 w-40 h-40 bg-teal-50 rounded-full blur-3xl opacity-50" />
-        <View className="absolute -bottom-10 -left-10 w-40 h-40 bg-orange-50 rounded-full blur-3xl opacity-50" />
-
-        <View className="flex-row justify-between items-start mb-6">
-          <View>
-            <Text className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1">Mục tiêu hôm nay</Text>
-            <Text className="text-slate-800 text-2xl font-bold">{target} <Text className="text-sm font-medium text-slate-400">kcal</Text></Text>
-          </View>
-          <View className="bg-slate-50 px-3 py-1 rounded-full border border-slate-100">
-            <Text className="text-slate-600 font-bold text-xs">{Math.round(percent * 100)}%</Text>
-          </View>
+    <View className="px-6 mt-8">
+      {/* Calories Massive Typography */}
+      <View>
+        <Text className="text-white/80 text-sm font-medium">Hôm nay</Text>
+        <View className="flex-row items-baseline gap-2 mt-1">
+          <Text className="text-white text-7xl font-light tracking-tight">{Math.round(eaten).toLocaleString()}</Text>
+          <Text className="text-white/80 text-2xl font-light">kcal</Text>
         </View>
 
-        {/* Main Circle Container */}
-        <View className="items-center justify-center py-2 mb-6">
-          <View className="w-56 h-56 rounded-full border-[8px] border-slate-50 shadow-inner bg-white overflow-hidden relative justify-center items-center">
-            {/* Background Circle */}
-            <View className="absolute inset-0 bg-slate-50/50" />
-
-            {/* The Liquid */}
-            <Animated.View className="absolute bottom-0 left-0 right-0 opacity-90 w-full z-10" style={animatedStyle}>
-              <View className="w-full h-4 bg-white/20 absolute top-0" />
-            </Animated.View>
-
-            {/* Content Inside Water */}
-            <View className="z-20 items-center justify-center">
-              <Text className="text-slate-500 font-bold text-[10px] uppercase tracking-widest mb-1 shadow-sm opacity-80">Đã nạp</Text>
-              <Text className="text-slate-800 font-bold text-5xl tracking-tighter shadow-sm">{Math.round(eaten)}</Text>
-              <Text className="text-slate-500 font-medium text-xs mt-1 shadow-sm">kcal</Text>
+        {/* Progress Bar */}
+        <View className="mt-8">
+          <View className="flex-row justify-between text-xs font-medium mb-2">
+            <Text className="text-white/70">Còn lại</Text>
+            <Text className="text-white/70">{Math.round(left).toLocaleString()} kcal</Text>
+          </View>
+          <View className="h-4 w-full bg-white/20 rounded-full relative p-0.5">
+            <View className="h-full bg-[#F59E0B] rounded-full relative" style={{ width: `${percent}%` }}>
+              <View className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-4 h-4 bg-white rounded-full shadow-md border-2 border-orange-400" />
             </View>
           </View>
-
-          {/* Quick Add Button Floating - Color Sync */}
-          <AnimatedView className="absolute -bottom-4 px-5 py-2.5 rounded-full flex-row items-center shadow-lg shadow-gray-400/30 active:scale-95 z-30 border-4 border-white" style={buttonAnimatedStyle}>
-            <Feather name="plus" size={16} color="white" />
-            <Text className="text-white font-bold text-xs ml-2">Nạp nhanh</Text>
-          </AnimatedView>
-        </View>
-
-        {/* Macros Bars - Clean Style */}
-        <View className="mt-4 gap-3 bg-slate-50/50 p-4 rounded-3xl border border-slate-100">
-          <DetailedMacroBar label="Carbs" value={dailyLog.carbs} max={tCarb} color="#10b981" />
-          <DetailedMacroBar label="Protein" value={dailyLog.protein} max={tProt} color="#f97316" />
-          <DetailedMacroBar label="Fat" value={dailyLog.fat} max={tFat} color="#3b82f6" />
         </View>
       </View>
-    </AnimatedView>
-  )
-}
 
-const DetailedMacroBar = ({ label, value, max, color }: any) => {
-  const p = Math.min((value / max) * 100, 100);
-  return (
-    <View className="flex-row items-center gap-3">
-      <View className="w-16">
-        <Text className="text-slate-500 font-bold text-[11px] uppercase">{label}</Text>
-      </View>
-      <View className="flex-1 h-2.5 bg-slate-200 rounded-full overflow-hidden">
-        <View style={{ width: `${p}%`, backgroundColor: color }} className="h-full rounded-full" />
-      </View>
-      <View className="w-16 items-end">
-        <Text className="text-slate-700 font-bold text-xs">{Math.round(value)}<Text className="text-slate-400 text-[10px]">/{max}g</Text></Text>
+      {/* Summary Cards (Goal, Food, Exercise - Adapted to Macros for health app) */}
+      <View className="mt-8 flex-row gap-3">
+        <View className="flex-1 bg-white rounded-3xl p-4 shadow-sm">
+          <View className="flex-row justify-between items-start mb-2">
+            <Text className="text-slate-500 text-[10px] font-bold uppercase tracking-wider">Carbs</Text>
+            <View className="w-6 h-6 rounded-full bg-emerald-50 items-center justify-center">
+              <Feather name="pie-chart" size={12} color="#10B981" />
+            </View>
+          </View>
+          <View className="flex-row items-baseline gap-1">
+            <Text className="text-slate-800 font-bold text-base">{Math.round(dailyLog?.carbs || 0)}</Text>
+            <Text className="text-slate-400 text-[10px]">/{Math.round(tCarb)}g</Text>
+          </View>
+        </View>
+
+        <View className="flex-1 bg-white rounded-3xl p-4 shadow-sm">
+          <View className="flex-row justify-between items-start mb-2">
+            <Text className="text-slate-500 text-[10px] font-bold uppercase tracking-wider">Protein</Text>
+            <View className="w-6 h-6 rounded-full bg-orange-50 items-center justify-center">
+              <MaterialCommunityIcons name="food-steak" size={12} color="#F97316" />
+            </View>
+          </View>
+          <View className="flex-row items-baseline gap-1">
+            <Text className="text-slate-800 font-bold text-base">{Math.round(dailyLog?.protein || 0)}</Text>
+            <Text className="text-slate-400 text-[10px]">/{Math.round(tProt)}g</Text>
+          </View>
+        </View>
+
+        <View className="flex-1 bg-white rounded-3xl p-4 shadow-sm">
+          <View className="flex-row justify-between items-start mb-2">
+            <Text className="text-slate-500 text-[10px] font-bold uppercase tracking-wider">Fat</Text>
+            <View className="w-6 h-6 rounded-full bg-blue-50 items-center justify-center">
+              <MaterialCommunityIcons name="water" size={14} color="#3B82F6" />
+            </View>
+          </View>
+          <View className="flex-row items-baseline gap-1">
+            <Text className="text-slate-800 font-bold text-base">{Math.round(dailyLog?.fat || 0)}</Text>
+            <Text className="text-slate-400 text-[10px]">/{Math.round(tFat)}g</Text>
+          </View>
+        </View>
       </View>
     </View>
-  )
-}
+  );
+};
 
 // 3. Metrics Section - Sync with Result Screen (Centered & Styled)
 const MetricSection = ({ metrics }: any) => {
@@ -254,42 +217,31 @@ const MetricSection = ({ metrics }: any) => {
   )
 }
 
-// 4. Meal Grid - Colorful & Vibrancy
+// 4. Next Habit / Meal Grid
 const MealItem = ({ title, calories, icon, checkDelay, onPress, colorTheme }: any) => {
-  // Extract base color from Tailwind class (simplified mapping)
-  let bgSoft = 'bg-slate-50';
-  let border = 'border-slate-100';
+  let iconBg = 'bg-slate-100';
+  let iconColor = 'text-slate-500';
 
-  if (colorTheme?.includes('orange')) { bgSoft = 'bg-orange-50'; border = 'border-orange-100'; }
-  else if (colorTheme?.includes('blue')) { bgSoft = 'bg-blue-50'; border = 'border-blue-100'; }
-  else if (colorTheme?.includes('indigo')) { bgSoft = 'bg-indigo-50'; border = 'border-indigo-100'; }
-  else if (colorTheme?.includes('rose')) { bgSoft = 'bg-rose-50'; border = 'border-rose-100'; }
+  if (colorTheme?.includes('orange')) { iconBg = 'bg-orange-100'; iconColor = '#F97316'; }
+  else if (colorTheme?.includes('blue')) { iconBg = 'bg-blue-100'; iconColor = '#3B82F6'; }
+  else if (colorTheme?.includes('indigo')) { iconBg = 'bg-indigo-100'; iconColor = '#6366F1'; }
+  else if (colorTheme?.includes('rose')) { iconBg = 'bg-rose-100'; iconColor = '#F43F5E'; }
 
   return (
     <AnimatedView entering={FadeInDown.delay(checkDelay).duration(500)} className="w-[48%] mb-4">
       <TouchableOpacity
         onPress={onPress}
         activeOpacity={0.7}
-        className={`rounded-[28px] p-5 border ${border} ${bgSoft} shadow-sm relative overflow-hidden h-36 justify-between active:scale-[0.98]`}
+        className="bg-white rounded-3xl p-5 shadow-sm active:scale-[0.98]"
       >
-        {/* Decorative Blob */}
-        <View className={`absolute -right-4 -top-4 w-20 h-20 rounded-full opacity-10 bg-white`} />
-
-        <View className="flex-row justify-between items-start">
-          <View className={`w-12 h-12 bg-white rounded-2xl items-center justify-center shadow-sm`}>
-            <Image source={{ uri: icon }} className="w-7 h-7" resizeMode="contain" />
-          </View>
-          <View className="w-8 h-8 rounded-full bg-white/60 items-center justify-center">
-            <Feather name="plus" size={18} color="#64748B" />
-          </View>
+        <View className={`w-12 h-12 rounded-full ${iconBg} bg-opacity-30 flex items-center justify-center mb-4`}>
+          <Image source={{ uri: icon }} className="w-6 h-6" style={{ tintColor: iconColor }} resizeMode="contain" />
         </View>
-
-        <View>
-          <Text className="text-slate-800 font-bold text-lg leading-tight mb-1">{title}</Text>
-          <View className="bg-white/80 self-start px-2.5 py-1 rounded-lg overflow-hidden">
-            <Text className="text-slate-600 font-bold text-xs">
-              {calories} <Text className="text-[10px] font-normal text-slate-400">kcal</Text>
-            </Text>
+        <Text className="font-bold text-slate-900 text-lg">{title}</Text>
+        <View className="mt-2 space-y-0.5">
+          <View className="flex-row items-center gap-1">
+            <MaterialCommunityIcons name="fire" size={14} color="#94A3B8" />
+            <Text className="text-slate-400 text-xs">{calories} kcal</Text>
           </View>
         </View>
       </TouchableOpacity>
@@ -389,6 +341,14 @@ export default function DiaryScreen() {
   };
 
   useFocusEffect(useCallback(() => { fetchMetrics(); }, [selectedDate]));
+
+  useEffect(() => {
+    const subscription = DeviceEventEmitter.addListener('triggerAISuggestion', () => {
+      handleSuggestMeal();
+    });
+    return () => subscription.remove();
+  }, []);
+
   const onRefresh = async () => { setRefreshing(true); await fetchMetrics(); setRefreshing(false); };
 
   const target = metrics?.target_calories || 2000;
@@ -398,15 +358,17 @@ export default function DiaryScreen() {
 
   return (
     <View className="flex-1 bg-[#F8FAFC]">
-      <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
-      {/* Background Gradient Mesh (Optional - Adds subtle depth) */}
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+
       <LinearGradient
-        colors={['#F0FDFA', '#F8FAFC', '#F8FAFC']}
-        className="absolute top-0 left-0 right-0 h-96"
+        colors={['#059669', '#F8FAFC']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 0.7 }}
+        style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 800 }}
       />
 
-      {/* 1. Header */}
-      <Header
+      {/* 1. Glass Header */}
+      <GlassHeader
         userProfile={userProfile}
         selectedDate={selectedDate}
         onPrevDate={() => { const d = new Date(selectedDate); d.setDate(d.getDate() - 1); setSelectedDate(d); }}
@@ -418,28 +380,20 @@ export default function DiaryScreen() {
       <ScrollView
         className="flex-1"
         contentContainerStyle={{ paddingBottom: 110 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={'#0D9488'} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={'#ffffff'} />}
         showsVerticalScrollIndicator={false}
       >
 
-        {/* 2. Liquid Hero & Macros */}
-        <LiquidHero
+        {/* 2. Hero & Cards */}
+        <CaloriesHero
           target={target} eaten={dailyLog.eaten}
           dailyLog={dailyLog} tCarb={tCarb} tProt={tProt} tFat={tFat}
         />
 
-        {/* 3. Reordered Metrics */}
-        <MetricSection metrics={metrics} />
-
-        {/* 4. Compact Meal List */}
-        <View className="px-6 mt-8">
-          <View className="flex-row justify-between items-center mb-5 px-1">
-            <View>
-              <Text className="text-slate-800 font-extrabold text-xl">Nhật ký hôm nay</Text>
-            </View>
-            <TouchableOpacity className="bg-slate-100 p-2 rounded-full">
-              <MaterialCommunityIcons name="dots-horizontal" size={20} color="#64748B" />
-            </TouchableOpacity>
+        {/* 3. Next Habit (Meals Grid) */}
+        <View className="px-6 mt-10">
+          <View className="flex-row justify-between items-center mb-4">
+            <Text className="text-slate-800 font-bold text-lg">Nhật ký hôm nay</Text>
           </View>
 
           <View className="flex-row flex-wrap justify-between">
@@ -477,88 +431,88 @@ export default function DiaryScreen() {
         />
       )}
 
-          {/* AI Meal Plan Modal */}
-          <Modal visible={showAiModal} animationType="slide" transparent>
-            <View className="flex-1 bg-black/50 justify-end">
-              <View className="bg-white rounded-t-[32px] h-[85%] overflow-hidden">
-                <View className="p-5 border-b border-slate-100 flex-row justify-between items-center bg-white z-10">
+      {/* AI Meal Plan Modal */}
+      <Modal visible={showAiModal} animationType="slide" transparent>
+        <View className="flex-1 bg-black/50 justify-end">
+          <View className="bg-white rounded-t-[32px] h-[85%] overflow-hidden">
+            <View className="p-5 border-b border-slate-100 flex-row justify-between items-center bg-white z-10">
+              <View>
+                <Text className="text-xl font-bold text-slate-800">Thực đơn AI 🤖</Text>
+                <Text className="text-xs text-slate-400 font-medium">Được thiết kế riêng cho bạn</Text>
+              </View>
+              <TouchableOpacity onPress={() => setShowAiModal(false)} className="w-8 h-8 bg-slate-100 rounded-full items-center justify-center">
+                <Feather name="x" size={18} color="#64748B" />
+              </TouchableOpacity>
+            </View>
+
+            {aiLoading ? (
+              <View className="flex-1 justify-center items-center">
+                <ActivityIndicator size="large" color="#0D9488" />
+                <Text className="mt-4 text-slate-500 font-medium text-sm animate-pulse">Đang phân tích dinh dưỡng...</Text>
+              </View>
+            ) : mealPlan ? (
+              <ScrollView className="flex-1 p-5" showsVerticalScrollIndicator={false}>
+                {/* Summary Card */}
+                <View className="bg-emerald-50 p-4 rounded-2xl border border-emerald-100 mb-6 flex-row justify-between items-center">
                   <View>
-                    <Text className="text-xl font-bold text-slate-800">Thực đơn AI 🤖</Text>
-                    <Text className="text-xs text-slate-400 font-medium">Được thiết kế riêng cho bạn</Text>
+                    <Text className="text-emerald-800 font-bold text-lg">Tổng Calo dự kiến</Text>
+                    <Text className="text-emerald-600 text-xs">Phù hợp mục tiêu của bạn</Text>
                   </View>
-                  <TouchableOpacity onPress={() => setShowAiModal(false)} className="w-8 h-8 bg-slate-100 rounded-full items-center justify-center">
-                    <Feather name="x" size={18} color="#64748B" />
-                  </TouchableOpacity>
+                  <View className="bg-white px-3 py-1.5 rounded-lg shadow-sm">
+                    <Text className="text-emerald-700 font-bold text-xl">{mealPlan.total_calories} <Text className="text-xs">kcal</Text></Text>
+                  </View>
                 </View>
 
-                {aiLoading ? (
-                  <View className="flex-1 justify-center items-center">
-                    <ActivityIndicator size="large" color="#0D9488" />
-                    <Text className="mt-4 text-slate-500 font-medium text-sm animate-pulse">Đang phân tích dinh dưỡng...</Text>
-                  </View>
-                ) : mealPlan ? (
-                  <ScrollView className="flex-1 p-5" showsVerticalScrollIndicator={false}>
-                    {/* Summary Card */}
-                    <View className="bg-emerald-50 p-4 rounded-2xl border border-emerald-100 mb-6 flex-row justify-between items-center">
-                      <View>
-                        <Text className="text-emerald-800 font-bold text-lg">Tổng Calo dự kiến</Text>
-                        <Text className="text-emerald-600 text-xs">Phù hợp mục tiêu của bạn</Text>
-                      </View>
-                      <View className="bg-white px-3 py-1.5 rounded-lg shadow-sm">
-                        <Text className="text-emerald-700 font-bold text-xl">{mealPlan.total_calories} <Text className="text-xs">kcal</Text></Text>
-                      </View>
-                    </View>
-
-                    {/* Meals */}
-                    <View className="gap-4">
-                      {[
-                        { title: 'Sữa Sáng', data: mealPlan.breakfast, icon: '☀️', color: 'bg-orange-50 border-orange-100' },
-                        { title: 'Bữa Trưa', data: mealPlan.lunch, icon: '🌤️', color: 'bg-blue-50 border-blue-100' },
-                        { title: 'Bữa Tối', data: mealPlan.dinner, icon: '🌙', color: 'bg-indigo-50 border-indigo-100' }
-                      ].map((meal, index) => (
-                        <View key={index} className={`p-4 rounded-2xl border ${meal.color}`}>
-                          <View className="flex-row justify-between items-start mb-2">
-                            <View className="flex-row gap-2 items-center">
-                              <Text className="text-xl">{meal.icon}</Text>
-                              <Text className="font-bold text-slate-700 text-base">{meal.title}</Text>
-                            </View>
-                            <View className="bg-white/60 px-2 py-1 rounded text-xs">
-                              <Text className="text-slate-500 font-bold text-xs">{meal.data.amount} {meal.data.detail?.serving_unit || 'suất'}</Text>
-                            </View>
-                          </View>
-
-                          <Text className="text-slate-800 font-bold text-lg mb-1">{meal.data.detail?.name || 'Món ăn gợi ý'}</Text>
-                          <Text className="text-slate-500 text-xs italic mb-3">"{meal.data.reason}"</Text>
-
-                          {/* Mini Macros */}
-                          <View className="flex-row gap-2">
-                            <View className="bg-white px-2 py-1 rounded border border-slate-100">
-                              <Text className="text-[10px] text-slate-500 font-bold">🔥 {Math.round((meal.data.detail?.calories || 0) * meal.data.amount)} kcal</Text>
-                            </View>
-                            <View className="bg-white px-2 py-1 rounded border border-slate-100">
-                              <Text className="text-[10px] text-slate-500 font-bold">🥩 {Math.round((meal.data.detail?.protein || 0) * meal.data.amount)}g Pro</Text>
-                            </View>
-                          </View>
+                {/* Meals */}
+                <View className="gap-4">
+                  {[
+                    { title: 'Sữa Sáng', data: mealPlan.breakfast, icon: '☀️', color: 'bg-orange-50 border-orange-100' },
+                    { title: 'Bữa Trưa', data: mealPlan.lunch, icon: '🌤️', color: 'bg-blue-50 border-blue-100' },
+                    { title: 'Bữa Tối', data: mealPlan.dinner, icon: '🌙', color: 'bg-indigo-50 border-indigo-100' }
+                  ].map((meal, index) => (
+                    <View key={index} className={`p-4 rounded-2xl border ${meal.color}`}>
+                      <View className="flex-row justify-between items-start mb-2">
+                        <View className="flex-row gap-2 items-center">
+                          <Text className="text-xl">{meal.icon}</Text>
+                          <Text className="font-bold text-slate-700 text-base">{meal.title}</Text>
                         </View>
-                      ))}
+                        <View className="bg-white/60 px-2 py-1 rounded text-xs">
+                          <Text className="text-slate-500 font-bold text-xs">{meal.data.amount} {meal.data.detail?.serving_unit || 'suất'}</Text>
+                        </View>
+                      </View>
+
+                      <Text className="text-slate-800 font-bold text-lg mb-1">{meal.data.detail?.name || 'Món ăn gợi ý'}</Text>
+                      <Text className="text-slate-500 text-xs italic mb-3">"{meal.data.reason}"</Text>
+
+                      {/* Mini Macros */}
+                      <View className="flex-row gap-2">
+                        <View className="bg-white px-2 py-1 rounded border border-slate-100">
+                          <Text className="text-[10px] text-slate-500 font-bold">🔥 {Math.round((meal.data.detail?.calories || 0) * meal.data.amount)} kcal</Text>
+                        </View>
+                        <View className="bg-white px-2 py-1 rounded border border-slate-100">
+                          <Text className="text-[10px] text-slate-500 font-bold">🥩 {Math.round((meal.data.detail?.protein || 0) * meal.data.amount)}g Pro</Text>
+                        </View>
+                      </View>
                     </View>
+                  ))}
+                </View>
 
-                    <View className="h-24" />
-                  </ScrollView>
-                ) : null}
+                <View className="h-24" />
+              </ScrollView>
+            ) : null}
 
-                {/* Bottom Button */}
-                {!aiLoading && mealPlan && (
-                  <View className="p-5 border-t border-slate-100 bg-white absolute bottom-0 left-0 right-0">
-                    <TouchableOpacity onPress={handleApplyMealPlan} className="bg-black py-4 rounded-2xl flex-row justify-center items-center shadow-lg shadow-slate-300">
-                      <Ionicons name="checkmark-circle" size={20} color="white" />
-                      <Text className="text-white font-bold text-base ml-2">Áp dụng ngay</Text>
-                    </TouchableOpacity>
-                  </View>
-                )}
+            {/* Bottom Button */}
+            {!aiLoading && mealPlan && (
+              <View className="p-5 border-t border-slate-100 bg-white absolute bottom-0 left-0 right-0">
+                <TouchableOpacity onPress={handleApplyMealPlan} className="bg-black py-4 rounded-2xl flex-row justify-center items-center shadow-lg shadow-slate-300">
+                  <Ionicons name="checkmark-circle" size={20} color="white" />
+                  <Text className="text-white font-bold text-base ml-2">Áp dụng ngay</Text>
+                </TouchableOpacity>
               </View>
-            </View>
-          </Modal>
+            )}
+          </View>
         </View>
-        );
+      </Modal>
+    </View>
+  );
 }

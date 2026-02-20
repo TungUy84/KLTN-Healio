@@ -428,7 +428,10 @@ const ensureDietPreset = async (code) => {
 // Seed function to run on startup
 exports.seedDietPresets = async () => {
     try {
-        console.log('Seeding Diet Presets...');
+        const count = await DietPreset.count();
+        if (count > 0) return; // chỉ seed 1 lần khi database mới tạo
+
+        console.log('Seeding initial Diet Presets...');
         for (const preset of DEFAULT_PRESETS) {
             await ensureDietPreset(preset.code);
         }
@@ -691,11 +694,6 @@ exports.completeOnboarding = async (req, res) => {
 exports.getDietPresets = async (req, res) => {
     try {
         let presets = await DietPreset.findAll();
-        // Nếu chưa có DB thì seed data
-        if (presets.length === 0) {
-            await DietPreset.bulkCreate(DEFAULT_PRESETS);
-            presets = await DietPreset.findAll();
-        }
         res.json(presets);
     } catch (err) {
         res.status(500).json({ message: err.message });

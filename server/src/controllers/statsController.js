@@ -6,6 +6,7 @@ const UserNutritionTarget = require('../models/UserNutritionTarget');
 const DietPreset = require('../models/DietPreset');
 const Food = require('../models/Food');
 const UserDailyLog = require('../models/UserDailyLog');
+const UserWeightLog = require('../models/UserWeightLog');
 const XLSX = require('xlsx');
 
 // PB_61: Thống kê Tổng quan (System Overview)
@@ -76,14 +77,14 @@ exports.getRecentActivities = async (req, res) => {
             limit: 10,
             order: [['createdAt', 'DESC']],
             include: [
-                { model: User, attributes: ['full_name'] },
+                { model: User, as: 'user', attributes: ['full_name'] },
                 { model: Food, as: 'food', attributes: ['name'] }
             ]
         });
 
         const activities = logs.map(log => ({
             id: log.id,
-            user: log.User ? log.User.full_name : 'Unknown',
+            user: log.user ? log.user.full_name : 'Unknown',
             action: `đã ăn ${log.food ? log.food.name : 'món ăn'} (${Math.round(log.calories)} kcal)`,
             time: new Date(log.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
         }));

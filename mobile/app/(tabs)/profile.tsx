@@ -21,13 +21,17 @@ const ACTIVITY_LEVELS = [
   { id: 'very_active', label: 'Rất năng động', sub: 'Vận động cường độ cao', icon: 'activity' },
 ];
 
-const DIET_MODES_UI: Record<string, { name: string, icon: any, color: string, colorBg: string, borderColor: string }> = {
-  'weight_loss': { name: 'Giảm cân', icon: 'trending-down', color: '#10B981', colorBg: 'bg-emerald-50', borderColor: 'border-emerald-200' },
-  'balanced': { name: 'Cân bằng', icon: 'layers', color: '#3B82F6', colorBg: 'bg-blue-50', borderColor: 'border-blue-200' },
-  'muscle_gain': { name: 'Tăng cơ', icon: 'zap', color: '#F59E0B', colorBg: 'bg-amber-50', borderColor: 'border-amber-200' },
-  'keto': { name: 'Keto', icon: 'battery-charging', color: '#EF4444', colorBg: 'bg-red-50', borderColor: 'border-red-200' },
-  'low_carb': { name: 'Low Carb', icon: 'slash', color: '#8B5CF6', colorBg: 'bg-violet-50', borderColor: 'border-violet-200' },
-};
+const PRESET_COLORS = [
+  { color: '#10B981', bg: 'bg-emerald-50', border: 'border-emerald-200' },
+  { color: '#3B82F6', bg: 'bg-blue-50', border: 'border-blue-200' },
+  { color: '#F59E0B', bg: 'bg-amber-50', border: 'border-amber-200' },
+  { color: '#EF4444', bg: 'bg-red-50', border: 'border-red-200' },
+  { color: '#8B5CF6', bg: 'bg-violet-50', border: 'border-violet-200' },
+  { color: '#84CC16', bg: 'bg-lime-50', border: 'border-lime-200' },
+  { color: '#EC4899', bg: 'bg-pink-50', border: 'border-pink-200' },
+];
+
+const PRESET_ICONS = ['activity', 'layers', 'zap', 'target', 'heart', 'star', 'sun'];
 
 const getBMI = (height: number, weight: number) => {
   if (!height || !weight) return { value: 0, label: '—', color: 'text-slate-400', bg: 'bg-slate-100' };
@@ -199,18 +203,19 @@ export default function ProfileScreen() {
         <View className="mb-8">
           <Text className="px-5 text-base font-bold text-slate-800 mb-3">Chế độ dinh dưỡng</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20 }}>
-            {(dietPresets.length > 0 ? dietPresets : Object.keys(DIET_MODES_UI).map(k => ({ code: k, ...DIET_MODES_UI[k] }))).map((preset: any) => {
-              const ui = DIET_MODES_UI[preset.code.toLowerCase()] || DIET_MODES_UI['balanced'];
+            {dietPresets.map((preset: any, index: number) => {
+              const theme = PRESET_COLORS[index % PRESET_COLORS.length];
+              const iconName = PRESET_ICONS[index % PRESET_ICONS.length];
               const isActive = profile?.UserNutritionTarget?.DietPreset?.code === preset.code;
               return (
                 <TouchableOpacity
                   key={preset.code} onPress={() => updateDietMode(preset.code)}
                   className={`mr-3 w-32 p-4 rounded-2xl border bg-white ${isActive ? `border-teal-500 shadow-sm shadow-teal-500/20` : 'border-slate-100'}`}
                 >
-                  <View className={`w-10 h-10 rounded-full items-center justify-center mb-3 ${ui.colorBg}`}>
-                    <Feather name={ui.icon} size={18} color={ui.color} />
+                  <View className={`w-10 h-10 rounded-full items-center justify-center mb-3 ${theme.bg}`}>
+                    <Feather name={iconName as any} size={18} color={theme.color} />
                   </View>
-                  <Text className={`font-bold mb-1 ${isActive ? 'text-teal-700' : 'text-slate-700'}`}>{ui.name || preset.name}</Text>
+                  <Text className={`font-bold mb-1 ${isActive ? 'text-teal-700' : 'text-slate-700'}`}>{preset.name}</Text>
                   {isActive && <View className="absolute top-3 right-3 w-2 h-2 rounded-full bg-teal-500" />}
                 </TouchableOpacity>
               );
