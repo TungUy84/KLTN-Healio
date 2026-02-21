@@ -1,10 +1,31 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { foodService, type Food } from '../../services/foodService';
-import { FaPlus, FaSearch, FaEdit, FaTrash, FaEye, FaFilter } from 'react-icons/fa';
+import { Link, useNavigate } from 'react-router-dom';
+import { foodService, type Food, type FoodStats } from '../../services/foodService';
+import {
+    Plus,
+    Search,
+    Edit3,
+    Trash2,
+    Eye,
+    Filter,
+    ArrowUpDown,
+    ArrowUp,
+    ArrowDown,
+    ChefHat,
+    Utensils,
+    Flame,
+    Sparkles,
+    XCircle
+} from 'lucide-react';
+import toast from 'react-hot-toast';
+import { confirmToast } from '../../utils/toastUtils';
+import FoodGeneratorModal from '../../components/FoodGeneratorModal';
+import FoodStatsOverview from '../../components/FoodStatsOverview';
 
 const FoodList: React.FC = () => {
+    const navigate = useNavigate();
     const [foods, setFoods] = useState<Food[]>([]);
+    const [stats, setStats] = useState<FoodStats | null>(null);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
     const [sort, setSort] = useState('created_at');
@@ -12,14 +33,36 @@ const FoodList: React.FC = () => {
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const LIMIT = 10;
-    
-    // AC2: Filter states
+
+    // Filters
     const [mealCategoryFilter, setMealCategoryFilter] = useState<string>('');
     const [dietTagFilter, setDietTagFilter] = useState<string>('');
     const [calorieMin, setCalorieMin] = useState<string>('');
     const [calorieMax, setCalorieMax] = useState<string>('');
     const [statusFilter, setStatusFilter] = useState<string>('');
     const [showFilters, setShowFilters] = useState(false);
+    const [availableDietPresets, setAvailableDietPresets] = useState<{ id: number; code: string; name: string }[]>([]);
+
+    // Modal
+    const [isAIModalOpen, setIsAIModalOpen] = useState(false);
+
+    const fetchStats = async () => {
+        try {
+            const data = await foodService.getStats();
+            setStats(data);
+        } catch (error) {
+            console.error('Error fetching stats:', error);
+        }
+    };
+
+    const fetchDietPresets = async () => {
+        try {
+            const presets = await foodService.getDietPresets();
+            setAvailableDietPresets(presets);
+        } catch (error) {
+            console.error('Error fetching diet presets:', error);
+        }
+    };
 
     const fetchFoods = async () => {
         try {
@@ -36,10 +79,16 @@ const FoodList: React.FC = () => {
             setTotalPages(response.pagination.totalPages);
         } catch (error) {
             console.error('Error fetching foods', error);
+            toast.error('Không thể tải danh sách món ăn');
         } finally {
             setLoading(false);
         }
     };
+
+    useEffect(() => {
+        fetchStats();
+        fetchDietPresets();
+    }, []);
 
     useEffect(() => {
         fetchFoods();
@@ -54,22 +103,22 @@ const FoodList: React.FC = () => {
         }
     };
 
-    const handleSearch = (e: React.FormEvent) => {
-        e.preventDefault();
-        setPage(1);
-        fetchFoods();
-    };
-
-    const handleDelete = async (id: number) => {
-        if (window.confirm('Bạn có chắc muốn xóa món này? Hành động này sẽ ẩn món ăn khỏi ứng dụng.')) {
-            try {
-                await foodService.delete(id);
-                fetchFoods();
-            } catch (error) {
-                console.error('Error deleting food', error);
-                alert('Không thể xóa món ăn.');
+    const handleDelete = (id: number) => {
+        confirmToast({
+            message: 'Bạn có chắc muốn xóa món này? Hành động này sẽ ẩn món ăn khỏi ứng dụng.',
+            confirmText: 'Xóa món ăn',
+            onConfirm: async () => {
+                try {
+                    await foodService.delete(id);
+                    toast.success('Đã xóa món ăn thành công');
+                    fetchFoods();
+                    fetchStats();
+                } catch (error) {
+                    console.error('Error deleting food', error);
+                    toast.error('Không thể xóa món ăn.');
+                }
             }
-        }
+        });
     };
 
     const getCategoryLabel = (category: string) => {
@@ -82,16 +131,7 @@ const FoodList: React.FC = () => {
         return labels[category] || category;
     };
 
-    const getDietTagLabel = (tag: string) => {
-        const labels: Record<string, string> = {
-            'keto': 'Keto',
-            'low_carb': 'Low Carb',
-            'high_protein': 'High Protein',
-            'low_fat': 'Low Fat',
-            'balanced': 'Cân bằng'
-        };
-        return labels[tag] || tag;
-    };
+
 
     const clearFilters = () => {
         setMealCategoryFilter('');
@@ -100,85 +140,96 @@ const FoodList: React.FC = () => {
         setCalorieMax('');
         setStatusFilter('');
         setPage(1);
+        setShowFilters(false);
+    };
+
+    const renderSortIcon = (column: string) => {
+        if (sort !== column) return <ArrowUpDown size={14} className="text-gray-400" />;
+        return order === 'ASC'
+            ? <ArrowUp size={14} className="text-emerald-500" />
+            : <ArrowDown size={14} className="text-emerald-500" />;
     };
 
     return (
-        <div className="w-full">
-            <div className="flex justify-between items-center mb-6">
-                <h1 className="text-2xl font-bold text-gray-900">Quản lý Món ăn</h1>
-                <Link to="/foods/new" className="flex items-center bg-indigo-600 text-white px-4 py-2.5 rounded-lg hover:bg-indigo-700 transition-colors font-medium text-sm">
-                    <FaPlus className="mr-2" /> Thêm mới
-                </Link>
+        <div className="space-y-6">
+            {/* Header Section */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h1 className="text-2xl font-bold text-gray-900">Quản lý Thực Đơn</h1>
+                    <p className="text-gray-500 mt-1">Quản lý danh sách món ăn và công thức nấu nướng</p>
+                </div>
+                <div className="flex gap-3">
+                    <button
+                        onClick={() => setIsAIModalOpen(true)}
+                        className="flex items-center gap-2 px-4 py-2 text-indigo-700 bg-indigo-50 rounded-xl hover:bg-indigo-100 transition-colors font-medium border border-indigo-100"
+                    >
+                        <Sparkles size={18} />
+                        🗣👨‍🍳🔥Let Him Cook!
+                    </button>
+                    <Link
+                        to="/foods/new"
+                        className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-colors shadow-lg shadow-emerald-200 font-medium"
+                    >
+                        <Plus size={18} />
+                        Thêm món mới
+                    </Link>
+                </div>
             </div>
 
-            {/* AC3: Search Bar */}
-            <div className="flex justify-between items-center mb-4 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-                <div className="relative max-w-md w-full">
-                    <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                    <form onSubmit={handleSearch}>
+            {/* Stats Overview */}
+            {stats && <FoodStatsOverview stats={stats} />}
+
+            {/* Filters & Search */}
+            <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 space-y-4">
+                <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+                    <div className="relative flex-1 w-full">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
                         <input
                             type="text"
-                            placeholder="Tìm kiếm theo tên món..."
+                            placeholder="Tìm kiếm món ăn..."
+                            className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all"
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            className="w-full pl-10 pr-3 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm outline-none transition-all"
                         />
-                    </form>
-                </div>
-                
-                <div className="flex items-center gap-3">
-                    <button
-                        onClick={() => setShowFilters(!showFilters)}
-                        className="flex items-center gap-2 px-4 py-2.5 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 transition-colors font-medium text-sm"
-                    >
-                        <FaFilter /> {showFilters ? 'Ẩn' : 'Hiện'} Bộ lọc
-                    </button>
-                    <span className="text-sm text-gray-600 font-medium">Sắp xếp theo:</span>
-                    <select 
-                        value={sort} 
-                        onChange={(e) => {
-                            setSort(e.target.value);
-                            setPage(1);
-                        }}
-                        className="px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-indigo-500 outline-none bg-white cursor-pointer"
-                    >
-                        <option value="created_at">Ngày tạo</option>
-                        <option value="name">Tên</option>
-                        <option value="calories">Tổng Calo</option>
-                    </select>
-                    <button 
-                        onClick={() => setOrder(order === 'ASC' ? 'DESC' : 'ASC')}
-                        className="p-2 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 text-gray-600 transition-colors font-bold"
-                        title={order === 'ASC' ? 'Tăng dần' : 'Giảm dần'}
-                    >
-                        {order === 'ASC' ? '↑' : '↓'}
-                    </button>
-                </div>
-            </div>
-
-            {/* AC2: Filter Panel */}
-            {showFilters && (
-                <div className="mb-4 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-                    <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-sm font-semibold text-gray-700">Bộ lọc</h3>
-                        <button
-                            onClick={clearFilters}
-                            className="text-xs text-indigo-600 hover:text-indigo-700 font-medium"
-                        >
-                            Xóa tất cả
-                        </button>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-                        {/* Filter by Meal Category */}
-                        <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1.5">Bữa ăn</label>
+
+                    <div className="flex items-center gap-3 w-full md:w-auto">
+                        <button
+                            onClick={() => setShowFilters(!showFilters)}
+                            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 font-medium transition-colors ${showFilters ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-white text-gray-600 hover:bg-gray-50'
+                                }`}
+                        >
+                            <Filter size={18} />
+                            Bộ lọc
+                        </button>
+
+                        <div className="flex items-center gap-2 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl min-w-[200px]">
+                            <span className="text-gray-500 text-sm whitespace-nowrap">Sắp xếp:</span>
                             <select
-                                value={mealCategoryFilter}
+                                className="bg-transparent border-none text-gray-700 font-medium focus:ring-0 cursor-pointer w-full text-sm"
+                                value={sort}
                                 onChange={(e) => {
-                                    setMealCategoryFilter(e.target.value);
+                                    setSort(e.target.value);
                                     setPage(1);
                                 }}
-                                className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-indigo-500 outline-none bg-white cursor-pointer"
+                            >
+                                <option value="created_at">Ngày tạo</option>
+                                <option value="name">Tên A-Z</option>
+                                <option value="calories">Calories</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Collapsible Filter Panel */}
+                {showFilters && (
+                    <div className="pt-4 border-t border-gray-100 grid grid-cols-1 md:grid-cols-4 gap-4 animate-in slide-in-from-top-2 duration-200">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1.5">Bữa ăn</label>
+                            <select
+                                className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none text-sm"
+                                value={mealCategoryFilter}
+                                onChange={(e) => { setMealCategoryFilter(e.target.value); setPage(1); }}
                             >
                                 <option value="">Tất cả</option>
                                 <option value="breakfast">Ăn sáng</option>
@@ -188,185 +239,230 @@ const FoodList: React.FC = () => {
                             </select>
                         </div>
 
-                        {/* Filter by Diet Tag */}
                         <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1.5">Chế độ</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1.5">Chế độ</label>
                             <select
+                                className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none text-sm"
                                 value={dietTagFilter}
-                                onChange={(e) => {
-                                    setDietTagFilter(e.target.value);
-                                    setPage(1);
-                                }}
-                                className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-indigo-500 outline-none bg-white cursor-pointer"
+                                onChange={(e) => { setDietTagFilter(e.target.value); setPage(1); }}
                             >
                                 <option value="">Tất cả</option>
-                                <option value="keto">Keto</option>
-                                <option value="low_carb">Low Carb</option>
-                                <option value="high_protein">High Protein</option>
-                                <option value="low_fat">Low Fat</option>
-                                <option value="balanced">Cân bằng</option>
+                                {availableDietPresets.map(preset => (
+                                    <option key={preset.id} value={preset.code}>{preset.name}</option>
+                                ))}
                             </select>
                         </div>
 
-                        {/* Filter by Calorie Range */}
                         <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1.5">Calo tối thiểu</label>
-                            <input
-                                type="number"
-                                placeholder="VD: 0"
-                                value={calorieMin}
-                                onChange={(e) => {
-                                    setCalorieMin(e.target.value);
-                                    setPage(1);
-                                }}
-                                className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1.5">Calo tối đa</label>
-                            <input
-                                type="number"
-                                placeholder="VD: 300"
-                                value={calorieMax}
-                                onChange={(e) => {
-                                    setCalorieMax(e.target.value);
-                                    setPage(1);
-                                }}
-                                className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
-                            />
-                        </div>
-
-                        {/* Filter by Status */}
-                        <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1.5">Trạng thái</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1.5">Trạng thái</label>
                             <select
+                                className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none text-sm"
                                 value={statusFilter}
-                                onChange={(e) => {
-                                    setStatusFilter(e.target.value);
-                                    setPage(1);
-                                }}
-                                className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-indigo-500 outline-none bg-white cursor-pointer"
+                                onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
                             >
                                 <option value="">Tất cả</option>
                                 <option value="active">Active</option>
                                 <option value="inactive">Inactive</option>
                             </select>
                         </div>
-                    </div>
-                </div>
-            )}
 
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                <table className="w-full border-collapse">
-                    <thead>
-                        <tr>
-                            <th className="bg-gray-50 px-4 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-200">Hình ảnh</th>
-                            <th className="bg-gray-50 px-4 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-200 cursor-pointer select-none hover:bg-gray-100 transition-colors" onClick={() => handleSortChange('name')}>Tên món {sort === 'name' && (order === 'ASC' ? '↑' : '↓')}</th>
-                            <th className="bg-gray-50 px-4 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-200">Nhóm bữa ăn</th>
-                            <th className="bg-gray-50 px-4 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-200 cursor-pointer select-none hover:bg-gray-100 transition-colors" onClick={() => handleSortChange('calories')}>Tổng Calo {sort === 'total_calories' && (order === 'ASC' ? '↑' : '↓')}</th>
-                            <th className="bg-gray-50 px-4 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-200">Tag Chế độ</th>
-                            <th className="bg-gray-50 px-4 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-200">Trạng thái</th>
-                            <th className="bg-gray-50 px-4 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-200">Hành động</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {loading ? (
-                            <tr>
-                                <td colSpan={7} className="text-center p-5">Đang tải...</td>
+                        <div className="flex items-end">
+                            <button
+                                onClick={clearFilters}
+                                className="flex items-center justify-center gap-2 w-full px-4 py-2 border border-red-100 text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors text-sm font-medium"
+                            >
+                                <XCircle size={16} />
+                                Xóa bộ lọc
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* Table */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                        <thead>
+                            <tr className="bg-gray-50/50 border-b border-gray-100 text-xs uppercase text-gray-500 tracking-wider">
+                                <th className="p-4 font-semibold text-center w-20">Ảnh</th>
+                                <th
+                                    className="p-4 font-semibold cursor-pointer hover:text-emerald-600 transition-colors select-none"
+                                    onClick={() => handleSortChange('name')}
+                                >
+                                    <div className="flex items-center gap-1">
+                                        Tên Món {renderSortIcon('name')}
+                                    </div>
+                                </th>
+                                <th className="p-4 font-semibold">Phân loại</th>
+                                <th
+                                    className="p-4 font-semibold cursor-pointer hover:text-emerald-600 transition-colors select-none"
+                                    onClick={() => handleSortChange('calories')}
+                                >
+                                    <div className="flex items-center gap-1">
+                                        Dinh dưỡng {renderSortIcon('calories')}
+                                    </div>
+                                </th>
+                                <th className="p-4 font-semibold">Chế độ</th>
+                                <th className="p-4 font-semibold text-center">Trạng thái</th>
+                                <th className="p-4 font-semibold text-center">Hành động</th>
                             </tr>
-                        ) : foods.length === 0 ? (
-                            <tr>
-                                <td colSpan={7} className="text-center p-5">Không có dữ liệu.</td>
-                            </tr>
-                        ) : (
-                            foods.map((food) => (
-                                <tr key={food.id} className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
-                                    <td className="px-4 py-4 text-sm text-gray-700 align-middle">
-                                        <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center text-[10px] text-gray-400 overflow-hidden border border-gray-200">
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                            {loading ? (
+                                Array.from({ length: 5 }).map((_, i) => (
+                                    <tr key={i} className="animate-pulse">
+                                        <td className="p-4"><div className="h-10 w-10 bg-gray-100 rounded-lg mx-auto"></div></td>
+                                        <td className="p-4"><div className="h-4 bg-gray-100 rounded w-48"></div></td>
+                                        <td className="p-4"><div className="h-4 bg-gray-100 rounded w-24"></div></td>
+                                        <td className="p-4"><div className="h-4 bg-gray-100 rounded w-16"></div></td>
+                                        <td className="p-4"><div className="h-4 bg-gray-100 rounded w-32"></div></td>
+                                        <td className="p-4"><div className="h-6 bg-gray-100 rounded w-20 mx-auto"></div></td>
+                                        <td className="p-4"><div className="h-8 bg-gray-100 rounded w-24 mx-auto"></div></td>
+                                    </tr>
+                                ))
+                            ) : foods.length > 0 ? (
+                                foods.map((food) => (
+                                    <tr key={food.id} className="hover:bg-gray-50/80 transition-colors group">
+                                        <td className="p-4 text-center">
                                             {food.image ? (
-                                                <img src={`http://localhost:3000${food.image}`} alt={food.name} className="w-full h-full object-cover" />
+                                                <img
+                                                    src={`http://localhost:3000${food.image}`}
+                                                    alt={food.name}
+                                                    className="w-10 h-10 object-cover rounded-lg shadow-sm border border-gray-100 mx-auto"
+                                                />
                                             ) : (
-                                                'No Image'
+                                                <div className="w-10 h-10 bg-indigo-50 text-indigo-400 rounded-lg border border-indigo-100 flex items-center justify-center mx-auto">
+                                                    <Utensils size={18} />
+                                                </div>
                                             )}
-                                        </div>
-                                    </td>
-                                    <td className="px-4 py-4 text-sm text-gray-700 align-middle font-medium">{food.name}</td>
-                                    <td className="px-4 py-4 text-sm text-gray-700 align-middle">
-                                        {food.meal_categories && food.meal_categories.length > 0 ? (
+                                        </td>
+                                        <td className="p-4">
+                                            <div className="font-semibold text-gray-900">{food.name}</div>
+                                            <div className="text-xs text-gray-500">{food.serving_unit || 'Suất'}</div>
+                                        </td>
+                                        <td className="p-4">
                                             <div className="flex flex-wrap gap-1">
-                                                {food.meal_categories.map((cat, idx) => (
-                                                    <span key={idx} className="px-2 py-1 bg-indigo-100 text-indigo-700 rounded text-xs font-medium">
-                                                        {getCategoryLabel(cat)}
-                                                    </span>
-                                                ))}
+                                                {food.meal_categories && food.meal_categories.length > 0 ? (
+                                                    food.meal_categories.map((cat, idx) => (
+                                                        <span key={idx} className="px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded text-[10px] font-bold uppercase tracking-wide border border-indigo-100">
+                                                            {getCategoryLabel(cat)}
+                                                        </span>
+                                                    ))
+                                                ) : (
+                                                    <span className="text-gray-400 text-xs italic">--</span>
+                                                )}
                                             </div>
-                                        ) : (
-                                            <span className="text-gray-400 text-xs">Chưa chọn</span>
-                                        )}
-                                    </td>
-                                    <td className="px-4 py-4 text-sm text-gray-700 align-middle font-semibold">
-                                        {food.calories ? `${Math.round(food.calories)} kcal` : '0 kcal'}
-                                    </td>
-                                    <td className="px-4 py-4 text-sm text-gray-700 align-middle">
-                                        {food.diet_tags && food.diet_tags.length > 0 ? (
+                                        </td>
+                                        <td className="p-4">
+                                            <div className="flex items-center gap-1.5 mb-1">
+                                                <Flame size={14} className="text-orange-500" />
+                                                <span className="text-sm font-bold text-gray-700">{Math.round(food.calories || 0)} <span className="text-xs font-normal text-gray-500">kcal</span></span>
+                                            </div>
+                                            <div className="text-xs text-gray-500 flex gap-2">
+                                                <span title="Protein">P: <span className="font-medium text-gray-700">{food.protein || 0}</span></span>
+                                                <span title="Carb">C: <span className="font-medium text-gray-700">{food.carb || 0}</span></span>
+                                                <span title="Fat">F: <span className="font-medium text-gray-700">{food.fat || 0}</span></span>
+                                            </div>
+                                        </td>
+                                        <td className="p-4">
                                             <div className="flex flex-wrap gap-1">
-                                                {food.diet_tags.map((tag, idx) => (
-                                                    <span key={idx} className="px-2 py-1 bg-emerald-100 text-emerald-700 rounded text-xs font-medium">
-                                                        {getDietTagLabel(tag)}
-                                                    </span>
-                                                ))}
+                                                <div className="flex flex-wrap gap-1">
+                                                    {food.dietPresets && food.dietPresets.length > 0 ? (
+                                                        food.dietPresets.slice(0, 2).map((preset, idx) => (
+                                                            <span key={idx} className="px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded text-[10px] font-medium border border-emerald-100">
+                                                                {preset.name}
+                                                            </span>
+                                                        ))
+                                                    ) : (
+                                                        <span className="text-gray-400 text-xs italic">--</span>
+                                                    )}
+                                                    {food.dietPresets && food.dietPresets.length > 2 && (
+                                                        <span className="px-1.5 py-0.5 bg-gray-50 text-gray-500 rounded text-[10px] font-medium border border-gray-100">+{food.dietPresets.length - 2}</span>
+                                                    )}
+                                                </div>
                                             </div>
-                                        ) : (
-                                            <span className="text-gray-400 text-xs">-</span>
-                                        )}
-                                    </td>
-                                    <td className="px-4 py-4 text-sm text-gray-700 align-middle">
-                                        <span className={`px-2 py-1 rounded text-xs font-medium ${
-                                            food.status === 'active' 
-                                                ? 'bg-green-100 text-green-700' 
+                                        </td>
+                                        <td className="p-4 text-center">
+                                            <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${food.status === 'active'
+                                                ? 'bg-green-100 text-green-700'
                                                 : 'bg-red-100 text-red-700'
-                                        }`}>
-                                            {food.status === 'active' ? 'Active' : 'Inactive'}
-                                        </span>
-                                    </td>
-                                    <td className="px-4 py-4 text-sm text-gray-700 align-middle">
-                                        <div className="flex gap-2">
-                                            <Link to={`/foods/${food.id}`} className="p-1.5 rounded-md text-gray-500 hover:bg-gray-100 hover:text-indigo-600 transition-colors flex items-center justify-center" title="Xem chi tiết">
-                                                <FaEye />
-                                            </Link>
-                                            <Link to={`/foods/edit/${food.id}`} className="p-1.5 rounded-md text-gray-500 hover:bg-gray-100 hover:text-indigo-600 transition-colors flex items-center justify-center" title="Sửa">
-                                                <FaEdit />
-                                            </Link>
-                                            <button onClick={() => handleDelete(food.id)} className="p-1.5 rounded-md text-red-500 hover:bg-red-50 hover:text-red-700 transition-colors flex items-center justify-center border-none bg-transparent cursor-pointer" title="Xóa">
-                                                <FaTrash />
-                                            </button>
+                                                }`}>
+                                                {food.status === 'active' ? 'Active' : 'Inactive'}
+                                            </span>
+                                        </td>
+                                        <td className="p-4 text-center">
+                                            <div className="flex items-center justify-center gap-2">
+                                                <Link to={`/foods/${food.id}`} className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all" title="Xem chi tiết">
+                                                    <Eye size={18} />
+                                                </Link>
+                                                <Link to={`/foods/edit/${food.id}`} className="p-2 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all" title="Chỉnh sửa">
+                                                    <Edit3 size={18} />
+                                                </Link>
+                                                <button
+                                                    onClick={() => handleDelete(food.id)}
+                                                    className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                                                    title="Xóa"
+                                                >
+                                                    <Trash2 size={18} />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))
+                            ) : (
+                                <tr>
+                                    <td colSpan={7} className="p-12 text-center">
+                                        <div className="flex flex-col items-center text-gray-400">
+                                            <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4">
+                                                <ChefHat size={32} className="opacity-50" />
+                                            </div>
+                                            <p className="text-lg font-medium text-gray-900">Chưa có món ăn nào</p>
+                                            <p className="text-sm">Hãy thử thêm món mới hoặc dùng AI để tạo thực đơn!</p>
                                         </div>
                                     </td>
                                 </tr>
-                            ))
-                        )}
-                    </tbody>
-                </table>
-                
-                {/* AC4: Pagination */}
-                <div className="flex justify-end items-center p-4 gap-3 bg-white border-t border-gray-200">
-                    <button 
-                        disabled={page === 1}
-                        onClick={() => setPage(p => p - 1)}
-                        className={`px-3 py-1.5 border border-gray-300 rounded-md bg-white text-sm font-medium text-gray-700 transition-colors ${page === 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50 cursor-pointer'}`}
-                    >
-                        Trước
-                    </button>
-                    <span className="text-sm text-gray-600">Trang {page} / {totalPages}</span>
-                    <button 
-                        disabled={page === totalPages}
-                        onClick={() => setPage(p => p + 1)}
-                        className={`px-3 py-1.5 border border-gray-300 rounded-md bg-white text-sm font-medium text-gray-700 transition-colors ${page === totalPages ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50 cursor-pointer'}`}
-                    >
-                        Sau
-                    </button>
+                            )}
+                        </tbody>
+                    </table>
                 </div>
+
+                {/* Pagination */}
+                {totalPages > 1 && (
+                    <div className="p-4 border-t border-gray-100 flex justify-end gap-2">
+                        <button
+                            onClick={() => setPage((p) => Math.max(1, p - 1))}
+                            disabled={page === 1}
+                            className="px-3 py-1.5 rounded-lg border border-gray-200 text-sm font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            Trước
+                        </button>
+                        <span className="px-3 py-1.5 text-sm font-medium text-gray-600">
+                            Trang {page} / {totalPages}
+                        </span>
+                        <button
+                            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                            disabled={page === totalPages}
+                            className="px-3 py-1.5 rounded-lg border border-gray-200 text-sm font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            Sau
+                        </button>
+                    </div>
+                )}
             </div>
+
+            <FoodGeneratorModal
+                isOpen={isAIModalOpen}
+                onClose={() => setIsAIModalOpen(false)}
+                onSuccess={() => {
+                    fetchFoods();
+                    setIsAIModalOpen(false);
+                }}
+                onEdit={(data) => {
+                    setIsAIModalOpen(false);
+                    navigate('/foods/new', { state: { aiData: data } });
+                }}
+            />
         </div>
     );
 };

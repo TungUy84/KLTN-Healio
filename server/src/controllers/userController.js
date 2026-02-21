@@ -409,7 +409,8 @@ const DEFAULT_PRESETS = [
     { code: 'high_protein', name: 'High Protein', carb_ratio: 40, protein_ratio: 35, fat_ratio: 25, description: 'Ăn nhiều đạm, giúp no lâu.' },
     { code: 'low_carb', name: 'Low Carb', carb_ratio: 25, protein_ratio: 35, fat_ratio: 40, description: 'Hạn chế tinh bột tối đa.' },
     { code: 'high_carb', name: 'High Carb', carb_ratio: 50, protein_ratio: 30, fat_ratio: 20, description: 'Nhiều năng lượng cho tập luyện.' },
-    { code: 'keto', name: 'Keto', carb_ratio: 5, protein_ratio: 25, fat_ratio: 70, description: 'Rất ít Carb, nhiều chất béo.' }
+    { code: 'keto', name: 'Keto', carb_ratio: 5, protein_ratio: 25, fat_ratio: 70, description: 'Rất ít Carb, nhiều chất béo.' },
+    { code: 'vegetarian', name: 'Vegetarian', carb_ratio: 50, protein_ratio: 20, fat_ratio: 30, description: 'Chế độ ăn chay, giàu chất xơ.' }
 ];
 
 // Helper: Đảm bảo Diet Preset tồn tại, nếu không thì tạo mới từ default
@@ -422,6 +423,22 @@ const ensureDietPreset = async (code) => {
         }
     }
     return preset;
+};
+
+// Seed function to run on startup
+exports.seedDietPresets = async () => {
+    try {
+        const count = await DietPreset.count();
+        if (count > 0) return; // chỉ seed 1 lần khi database mới tạo
+
+        console.log('Seeding initial Diet Presets...');
+        for (const preset of DEFAULT_PRESETS) {
+            await ensureDietPreset(preset.code);
+        }
+        console.log('Diet Presets seeded successfully.');
+    } catch (err) {
+        console.error('Error seeding Diet Presets:', err);
+    }
 };
 
 // API: Lấy thông tin User Profile
@@ -677,11 +694,6 @@ exports.completeOnboarding = async (req, res) => {
 exports.getDietPresets = async (req, res) => {
     try {
         let presets = await DietPreset.findAll();
-        // Nếu chưa có DB thì seed data
-        if (presets.length === 0) {
-            await DietPreset.bulkCreate(DEFAULT_PRESETS);
-            presets = await DietPreset.findAll();
-        }
         res.json(presets);
     } catch (err) {
         res.status(500).json({ message: err.message });

@@ -9,7 +9,10 @@ export interface AdminUser {
     auth_provider: string;
     avatar: string | null;
     created_at: string;
+    updated_at: string;
     goal_type: string | null; // PB_57: Mục tiêu hiện tại
+    activity_level: string | null;
+    diet_mode: string | null;
 }
 
 export interface AdminUserDetail extends AdminUser {
@@ -21,6 +24,7 @@ export interface AdminUserDetail extends AdminUser {
         activity_level: string | null;
         goal_type: string | null;
         goal_weight: number | null;
+        allergies: string[] | null;
     } | null;
     nutrition: {
         tdee: number;
@@ -43,7 +47,26 @@ export interface AdminUserListResponse {
     pagination: { page: number; limit: number; total: number; totalPages: number };
 }
 
+export interface AdminUserStats {
+    total: number;
+    new_this_week: number;
+    status: {
+        active: number;
+        banned: number;
+        pending: number;
+    };
+    roles: {
+        admin: number;
+        user: number;
+    };
+}
+
 export const adminUserService = {
+    getStats: async () => {
+        const response = await api.get<AdminUserStats>('/admin/users/stats');
+        return response.data;
+    },
+
     list: async (params: {
         page?: number;
         limit?: number;
@@ -71,4 +94,79 @@ export const adminUserService = {
         const response = await api.patch(`/admin/users/${id}/unban`);
         return response.data;
     },
+
+    async resetPassword(id: number) {
+        const res = await api.patch(`/admin/users/${id}/reset-password`);
+        return res.data; // Expected { message, new_password }
+    },
+
+    async changeRole(id: number, role: 'user' | 'admin') {
+        const res = await api.patch(`/admin/users/${id}/role`, { role });
+        return res.data;
+    },
+
+    async create(data: any) {
+        const res = await api.post('/admin/users', data);
+        return res.data;
+    },
+
+    async delete(id: number) {
+        const res = await api.delete(`/admin/users/${id}`);
+        return res.data;
+    },
+
+    async getComprehensiveUserDetail(id: string): Promise<any> {
+        const response = await api.get(`/admin/users/${id}/comprehensive`);
+        return response.data;
+    }
 };
+
+export interface ComprehensiveUserDetail {
+    user: AdminUserDetail;
+    otp_info: {
+        latest: { created_at: string; is_used: boolean; type: string } | null;
+        reset_count: number;
+    };
+    weight_analysis: {
+        history: { date: string; weight: number }[];
+        start: number | null;
+        current: number | null;
+        change: number;
+        trend: 'stable' | 'increasing' | 'decreasing';
+    };
+    eating_behavior: {
+        total_days_logged: number;
+        avg_calories: number;
+        avg_protein: number;
+        meal_breakdown: { breakfast: number; lunch: number; dinner: number; snack: number };
+        meal_percentages: { breakfast: number; lunch: number; dinner: number; snack: number };
+    };
+    top_foods: { id: number; name: string; image: string; calories: number; logs_count: number }[];
+    favorites: { id: number; name: string; image: string; calories: number }[];
+    daily_diary: DailyDiary[];
+}
+
+export interface DailyDiary {
+    date: string;
+    total_calories: number;
+    meals: {
+        breakfast: MealGroup;
+        lunch: MealGroup;
+        dinner: MealGroup;
+        snack: MealGroup;
+    };
+}
+
+export interface MealGroup {
+    calories: number;
+    items: LogItem[];
+}
+
+export interface LogItem {
+    id: number;
+    name: string;
+    image: string;
+    calories: number;
+    amount: number;
+    unit: string;
+}

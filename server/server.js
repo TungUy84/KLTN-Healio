@@ -11,6 +11,8 @@ const dashboardRoutes = require('./src/routes/dashboard');
 const adminUsersRoutes = require('./src/routes/adminUsers');
 const statsRoutes = require('./src/routes/stats');
 const aiRoutes = require('./src/routes/ai');
+const dietRoutes = require('./src/routes/diet');
+const { seedDietPresets } = require('./src/controllers/userController');
 
 // Require models để đảm bảo chúng được sync
 require('./src/models/RawFood');
@@ -19,6 +21,7 @@ require('./src/models/FoodIngredient'); // Junction table for Meal <-> RawFood r
 require('./src/models/UserFavoriteFood'); // PB_19: Favorites
 require('./src/models/UserDailyLog'); // PB_23: Diary
 require('./src/models/UserWeightLog'); // PB_27: Weight History
+require('./src/models/FoodDietPreset'); // Link Food <-> DietPreset
 
 const app = express();
 
@@ -37,14 +40,16 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/admin/users', adminUsersRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/diets', dietRoutes);
 
 // Sync DB & Start Server
 // Use alter: true to update tables if models change (add columns)
 sequelize.sync({ alter: true }).then(() => {
     console.log('Database connected & synced');
     const PORT = process.env.PORT || 3000;
-    app.listen(PORT, '0.0.0.0', () => {
+    app.listen(PORT, '0.0.0.0', async () => {
         console.log(`Server running on port ${PORT}`);
+        await seedDietPresets();
     });
 }).catch(err => {
     console.error('Unable to connect to database:', err);

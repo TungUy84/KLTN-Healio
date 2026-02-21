@@ -1,8 +1,23 @@
-// PB_52: View Detail Meal
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { foodService, type Food } from '../../services/foodService';
-import { FaArrowLeft, FaEdit } from 'react-icons/fa';
+import {
+    ArrowLeft,
+    Edit3,
+    Clock,
+    Flame,
+    Utensils,
+    ChevronRight,
+    Beef,
+    Droplet,
+    Wheat,
+    Scale,
+    Tag,
+    Activity,
+    ChefHat,
+    Atom
+} from 'lucide-react';
+import toast from 'react-hot-toast';
 
 const FoodDetail: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -20,6 +35,7 @@ const FoodDetail: React.FC = () => {
             setFood(data);
         } catch (error) {
             console.error('Failed to fetch detail', error);
+            toast.error('Không thể tải chi tiết món ăn');
         } finally {
             setLoading(false);
         }
@@ -35,181 +51,276 @@ const FoodDetail: React.FC = () => {
         return labels[category] || category;
     };
 
-    const getDietTagLabel = (tag: string) => {
-        const labels: Record<string, string> = {
-            'keto': 'Keto',
-            'low_carb': 'Low Carb',
-            'high_protein': 'High Protein',
-            'low_fat': 'Low Fat',
-            'balanced': 'Cân bằng'
-        };
-        return labels[tag] || tag;
-    };
 
-    if (loading) return <div className="p-10 text-center text-gray-500">Loading...</div>;
-    if (!food) return <div className="p-10 text-center text-gray-500">Không tìm thấy dữ liệu</div>;
+
+    if (loading) return (
+        <div className="flex items-center justify-center min-h-[400px]">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600"></div>
+        </div>
+    );
+
+    if (!food) return (
+        <div className="flex flex-col items-center justify-center min-h-[400px] text-gray-500">
+            <Utensils size={48} className="mb-4 opacity-20" />
+            <p>Không tìm thấy món ăn</p>
+            <Link to="/foods" className="mt-4 text-emerald-600 hover:underline">Quay lại danh sách</Link>
+        </div>
+    );
 
     return (
-        <div className="w-full max-w-7xl mx-auto">
-            <div className="flex justify-between items-center mb-6">
+        <div className="w-full max-w-7xl mx-auto space-y-6">
+            {/* Header Section */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
-                    <Link to="/foods" className="flex items-center justify-center w-9 h-9 rounded-full bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 transition-colors">
-                        <FaArrowLeft />
+                    <Link
+                        to="/foods"
+                        className="flex items-center justify-center w-10 h-10 rounded-xl bg-white text-gray-400 border border-gray-100 hover:bg-gray-50 hover:text-gray-900 transition-all shadow-sm group"
+                    >
+                        <ArrowLeft size={20} className="group-hover:-translate-x-0.5 transition-transform" />
                     </Link>
-                    <h1 className="text-2xl font-bold text-gray-900 m-0">
-                        {food.name}
-                    </h1>
+                    <div>
+                        <div className="flex items-center gap-2">
+                            <h1 className="text-2xl font-bold text-gray-900 m-0">{food.name}</h1>
+                            <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${food.status === 'active'
+                                ? 'bg-emerald-100 text-emerald-700'
+                                : 'bg-red-100 text-red-700'
+                                }`}>
+                                {food.status === 'active' ? 'Active' : 'Inactive'}
+                            </span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-gray-500 mt-1">
+                            <span>Chi tiết món ăn</span>
+                            <ChevronRight size={14} />
+                            <span className="text-gray-900 font-medium">{food.name}</span>
+                        </div>
+                    </div>
                 </div>
-                <Link to={`/foods/edit/${food.id}`} className="flex items-center bg-white text-gray-700 border border-gray-300 px-4 py-2 rounded-lg font-medium text-sm hover:bg-gray-50 transition-colors">
-                    <FaEdit className="mr-2" /> Chỉnh sửa
+
+                <Link
+                    to={`/foods/edit/${food.id}`}
+                    className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-200 font-medium"
+                >
+                    <Edit3 size={18} />
+                    Chỉnh sửa món này
                 </Link>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Left Column: Image & Basic Info */}
-                <div className="flex flex-col">
-                    <div className="bg-white rounded-xl p-6 shadow-sm h-fit">
-                        <div className="w-full aspect-square rounded-lg overflow-hidden border border-gray-200 mb-5">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                {/* Left Column: Image & Basic Info (4/12) */}
+                <div className="lg:col-span-4 flex flex-col gap-6">
+                    {/* Image Card */}
+                    <div className="bg-white rounded-2xl p-2 shadow-sm border border-gray-100">
+                        <div className="w-full aspect-square rounded-xl overflow-hidden bg-gray-50 relative group">
                             {food.image ? (
-                                <img src={`http://localhost:3000${food.image}`} alt={food.name} className="w-full h-full object-cover" />
+                                <img
+                                    src={`http://localhost:3000${food.image}`}
+                                    alt={food.name}
+                                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                />
                             ) : (
-                                <div className="w-full h-full flex items-center justify-center bg-gray-100 text-gray-400">No Image</div>
+                                <div className="w-full h-full flex flex-col items-center justify-center text-gray-300">
+                                    <Utensils size={48} className="mb-2" />
+                                    <span className="text-sm font-medium">Chưa có ảnh</span>
+                                </div>
                             )}
                         </div>
-                        <div className="flex flex-col gap-3">
-                            <div className="flex justify-between items-center bg-gray-50 p-2 rounded-lg">
-                                <span className="text-sm font-medium text-gray-700">Đơn vị:</span>
-                                <span className="text-sm font-bold text-indigo-600 bg-white px-2 py-0.5 rounded border border-gray-200 shadow-sm">
+                    </div>
+
+                    {/* Quick Info Card */}
+                    <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 space-y-5">
+                        <h3 className="font-bold text-gray-900 flex items-center gap-2">
+                            <Activity size={18} className="text-indigo-500" />
+                            Thông tin chung
+                        </h3>
+
+                        <div className="space-y-4">
+                            <div className="flex justify-between items-center py-1">
+                                <span className="text-sm text-gray-500 flex items-center gap-2">
+                                    <Scale size={16} /> Đơn vị tính
+                                </span>
+                                <span className="font-medium text-gray-900 bg-gray-50 px-3 py-1 rounded-lg border border-gray-100">
                                     1 {food.serving_unit || 'suất'}
                                 </span>
                             </div>
 
-                            {/* Meal Categories */}
-                            <div className="flex flex-col gap-2">
-                                <label className="text-gray-500 font-medium text-sm">Nhóm bữa ăn:</label>
-                                {food.meal_categories && food.meal_categories.length > 0 ? (
-                                    <div className="flex flex-wrap gap-2">
-                                        {food.meal_categories.map((cat, idx) => (
-                                            <span key={idx} className="px-2 py-1 bg-indigo-100 text-indigo-700 rounded text-xs font-medium">
+                            <div className="space-y-2">
+                                <span className="text-sm text-gray-500 flex items-center gap-2">
+                                    <Clock size={16} /> Bữa ăn phù hợp
+                                </span>
+                                <div className="flex flex-wrap gap-1.5 pl-6">
+                                    {food.meal_categories && food.meal_categories.length > 0 ? (
+                                        food.meal_categories.map((cat, idx) => (
+                                            <span key={idx} className="px-2.5 py-1 bg-indigo-50 text-indigo-700 rounded-lg text-xs font-bold border border-indigo-100">
                                                 {getCategoryLabel(cat)}
                                             </span>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <span className="text-gray-400 text-sm">Chưa chọn</span>
-                                )}
-                            </div>
-                            
-                            {/* Diet Tags */}
-                            <div className="flex flex-col gap-2">
-                                <label className="text-gray-500 font-medium text-sm">Tag Chế độ:</label>
-                                {food.diet_tags && food.diet_tags.length > 0 ? (
-                                    <div className="flex flex-wrap gap-2">
-                                        {food.diet_tags.map((tag, idx) => (
-                                            <span key={idx} className="px-2 py-1 bg-emerald-100 text-emerald-700 rounded text-xs font-medium">
-                                                {getDietTagLabel(tag)}
-                                            </span>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <span className="text-gray-400 text-sm">-</span>
-                                )}
+                                        ))
+                                    ) : (
+                                        <span className="text-xs text-gray-400 italic">Chưa chọn</span>
+                                    )}
+                                </div>
                             </div>
 
-                            {/* Status */}
-                            <div className="flex justify-between text-sm">
-                                <label className="text-gray-500 font-medium">Trạng thái:</label>
-                                <span className={`px-2 py-1 rounded text-xs font-medium ${
-                                    food.status === 'active' 
-                                        ? 'bg-green-100 text-green-700' 
-                                        : 'bg-red-100 text-red-700'
-                                }`}>
-                                    {food.status === 'active' ? 'Active' : 'Inactive'}
+                            <div className="space-y-2">
+                                <span className="text-sm text-gray-500 flex items-center gap-2">
+                                    <Tag size={16} /> Chế độ ăn
                                 </span>
+                                <div className="flex flex-wrap gap-1.5 pl-6">
+                                    {food.dietPresets && food.dietPresets.length > 0 ? (
+                                        food.dietPresets.map((preset) => (
+                                            <span key={preset.id} className="px-2.5 py-1 bg-emerald-50 text-emerald-700 rounded-lg text-xs font-bold border border-emerald-100">
+                                                {preset.name}
+                                            </span>
+                                        ))
+                                    ) : (
+                                        <span className="text-xs text-gray-400 italic">Chưa gắn thẻ</span>
+                                    )}
+                                </div>
                             </div>
                         </div>
-                        
-                        {/* Description */}
-                        <div className="mt-5 border-t border-gray-200 pt-4">
-                            <h4 className="m-0 mb-2 text-sm font-semibold text-gray-900">Mô tả</h4>
-                            <p className="text-sm text-gray-600 leading-relaxed m-0">
-                                {food.description || food.cooking || 'Chưa có mô tả'}
-                            </p>
-                        </div>
+                    </div>
+
+                    {/* Description Card */}
+                    <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex-1">
+                        <h3 className="font-bold text-gray-900 mb-3">Mô tả / Cách nấu</h3>
+                        <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">
+                            {food.description || food.cooking || 'Chưa có mô tả chi tiết.'}
+                        </p>
                     </div>
                 </div>
 
-                {/* Right Column: Nutrition & Ingredients */}
-                <div className="lg:col-span-2 flex flex-col">
-                    {/* Macro Nutrients */}
-                    <div className="bg-white rounded-xl p-6 shadow-sm h-fit">
-                        <h3 className="text-base font-bold text-gray-900 mb-4 m-0">Giá trị dinh dưỡng</h3>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                            <div className="p-3 rounded-lg flex flex-col items-center bg-red-50">
-                                <span className="text-xs font-semibold mb-1 text-red-500">Calo</span>
-                                <strong className="text-sm text-gray-800">{Math.round(food.calories || 0)} Kcal</strong>
+                {/* Right Column: Nutrition & Ingredients (8/12) */}
+                <div className="lg:col-span-8 flex flex-col gap-6">
+
+                    {/* 1. Macro Nutrients - Hero Cards */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        {/* Calories */}
+                        <div className="bg-linear-to-br from-orange-50 to-white p-4 rounded-2xl border border-orange-100 shadow-sm relative overflow-hidden group hover:shadow-md transition-shadow">
+                            <div className="absolute top-0 right-0 w-16 h-16 bg-orange-100 rounded-full blur-xl -mr-6 -mt-6"></div>
+                            <div className="relative z-10 flex flex-col h-full justify-between">
+                                <div className="p-2 bg-white rounded-xl w-fit shadow-sm text-orange-500 mb-3 border border-orange-50">
+                                    <Flame size={20} fill="currentColor" fillOpacity={0.2} />
+                                </div>
+                                <div>
+                                    <p className="text-gray-500 text-xs font-medium mb-1">Năng lượng</p>
+                                    <p className="text-2xl font-bold text-gray-900">{Math.round(food.calories || 0)} <span className="text-sm font-medium text-gray-400">kcal</span></p>
+                                </div>
                             </div>
-                            <div className="p-3 rounded-lg flex flex-col items-center bg-blue-50">
-                                <span className="text-xs font-semibold mb-1 text-blue-500">Protein</span>
-                                <strong className="text-sm text-gray-800">{Math.round(food.protein || 0)}g</strong>
+                        </div>
+
+                        {/* Protein */}
+                        <div className="bg-linear-to-br from-blue-50 to-white p-4 rounded-2xl border border-blue-100 shadow-sm relative overflow-hidden group hover:shadow-md transition-shadow">
+                            <div className="absolute top-0 right-0 w-16 h-16 bg-blue-100 rounded-full blur-xl -mr-6 -mt-6"></div>
+                            <div className="relative z-10 flex flex-col h-full justify-between">
+                                <div className="p-2 bg-white rounded-xl w-fit shadow-sm text-blue-500 mb-3 border border-blue-50">
+                                    <Beef size={20} />
+                                </div>
+                                <div>
+                                    <p className="text-gray-500 text-xs font-medium mb-1">Protein (Đạm)</p>
+                                    <p className="text-2xl font-bold text-gray-900">{Math.round(food.protein || 0)} <span className="text-sm font-medium text-gray-400">g</span></p>
+                                </div>
                             </div>
-                            <div className="p-3 rounded-lg flex flex-col items-center bg-orange-50">
-                                <span className="text-xs font-semibold mb-1 text-orange-500">Fat</span>
-                                <strong className="text-sm text-gray-800">{Math.round(food.fat || 0)}g</strong>
+                        </div>
+
+                        {/* Fat */}
+                        <div className="bg-linear-to-br from-yellow-50 to-white p-4 rounded-2xl border border-yellow-100 shadow-sm relative overflow-hidden group hover:shadow-md transition-shadow">
+                            <div className="absolute top-0 right-0 w-16 h-16 bg-yellow-100 rounded-full blur-xl -mr-6 -mt-6"></div>
+                            <div className="relative z-10 flex flex-col h-full justify-between">
+                                <div className="p-2 bg-white rounded-xl w-fit shadow-sm text-yellow-500 mb-3 border border-yellow-50">
+                                    <Droplet size={20} fill="currentColor" fillOpacity={0.2} />
+                                </div>
+                                <div>
+                                    <p className="text-gray-500 text-xs font-medium mb-1">Fat (Béo)</p>
+                                    <p className="text-2xl font-bold text-gray-900">{Math.round(food.fat || 0)} <span className="text-sm font-medium text-gray-400">g</span></p>
+                                </div>
                             </div>
-                            <div className="p-3 rounded-lg flex flex-col items-center bg-green-50">
-                                <span className="text-xs font-semibold mb-1 text-green-500">Carb</span>
-                                <strong className="text-sm text-gray-800">{Math.round(food.carb || 0)}g</strong>
+                        </div>
+
+                        {/* Carb */}
+                        <div className="bg-linear-to-br from-green-50 to-white p-4 rounded-2xl border border-green-100 shadow-sm relative overflow-hidden group hover:shadow-md transition-shadow">
+                            <div className="absolute top-0 right-0 w-16 h-16 bg-green-100 rounded-full blur-xl -mr-6 -mt-6"></div>
+                            <div className="relative z-10 flex flex-col h-full justify-between">
+                                <div className="p-2 bg-white rounded-xl w-fit shadow-sm text-green-500 mb-3 border border-green-50">
+                                    <Wheat size={20} />
+                                </div>
+                                <div>
+                                    <p className="text-gray-500 text-xs font-medium mb-1">Carb (Đường)</p>
+                                    <p className="text-2xl font-bold text-gray-900">{Math.round(food.carb || 0)} <span className="text-sm font-medium text-gray-400">g</span></p>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    {/* Micro Nutrients (JSONB) */}
-                    <div className="bg-white rounded-xl p-6 shadow-sm mt-6 h-fit">
-                        <h3 className="text-base font-bold text-gray-900 mb-4 m-0">Vi chất (Micronutrients)</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2">
-                            {food.micronutrients && Object.entries(food.micronutrients).length > 0 ? (
-                                Object.entries(food.micronutrients).map(([key, value]) => (
-                                    <div key={key} className="flex justify-start items-baseline py-2.5 border-b border-gray-100 last:border-0">
-                                        <span className="text-gray-600 text-sm min-w-[100px]">{key}</span>
-                                        <span className="mx-1 text-gray-400">-</span>
-                                        <span className="font-semibold text-gray-900 text-sm ml-2">{String(value)}</span>
-                                    </div>
-                                ))
-                            ) : (
-                                <p className="text-gray-400 italic">Không có dữ liệu vi chất.</p>
-                            )}
-                        </div>
-                    </div>
+                    {/* 2. Micro Nutrients & Ingredients Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-                    {/* Ingredients */}
-                    <div className="bg-white rounded-xl p-6 shadow-sm mt-6 h-fit">
-                        <h3 className="text-base font-bold text-gray-900 mb-4 m-0">Nguyên liệu</h3>
-                        {food.ingredients && food.ingredients.length > 0 ? (
-                            <div className="space-y-3">
-                                {food.ingredients.map((ingredient, idx) => {
-                                    const amount = ingredient.FoodIngredient?.amount_in_grams || 0;
-                                    
-                                    return (
-                                        <div key={idx} className="flex justify-between items-center py-2.5 border-b border-gray-100 last:border-0">
-                                            <div className="flex-1">
-                                                <span className="text-gray-900 font-medium text-sm">{ingredient.name}</span>
-                                                {ingredient.code && (
-                                                    <span className="text-gray-500 text-xs ml-2">({ingredient.code})</span>
-                                                )}
+                        {/* Ingredients List */}
+                        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex flex-col h-full">
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="font-bold text-gray-900 flex items-center gap-2">
+                                    <ChefHat size={18} className="text-emerald-500" />
+                                    Nguyên liệu
+                                    <span className="text-xs font-normal text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
+                                        {food.ingredients?.length || 0}
+                                    </span>
+                                </h3>
+                            </div>
+
+                            <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                                {food.ingredients && food.ingredients.length > 0 ? (
+                                    food.ingredients.map((ingredient, idx) => (
+                                        <div key={idx} className="flex justify-between items-center p-3 hover:bg-gray-50 rounded-xl border border-gray-100/50 transition-colors group">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center font-medium text-xs">
+                                                    {idx + 1}
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm font-medium text-gray-900 group-hover:text-emerald-700 transition-colors">{ingredient.name}</p>
+                                                    {ingredient.code && (
+                                                        <p className="text-[10px] text-gray-400">#{ingredient.code}</p>
+                                                    )}
+                                                </div>
                                             </div>
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-gray-900 font-semibold text-sm">
-                                                    {Math.round(amount)}g
+                                            <span className="font-bold text-sm text-gray-700 bg-white px-2 py-1 rounded-md border border-gray-100 shadow-sm">
+                                                {Math.round(ingredient.FoodIngredient?.amount_in_grams || 0)}g
+                                            </span>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="text-center py-8 text-gray-400">
+                                        <p className="text-sm">Chưa có danh sách nguyên liệu</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Micro Nutrients */}
+                        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex flex-col h-full">
+                            <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
+                                <Atom size={18} className="text-purple-500" />
+                                Vi chất (Micronutrients)
+                            </h3>
+
+                            <div className="space-y-1">
+                                {food.micronutrients && Object.entries(food.micronutrients).length > 0 ? (
+                                    <div className="grid grid-cols-1 gap-2">
+                                        {Object.entries(food.micronutrients).map(([key, value],) => (
+                                            <div key={key} className="flex justify-between items-center p-2.5 rounded-xl hover:bg-purple-50/50 border border-transparent hover:border-purple-100 transition-all">
+                                                <span className="text-sm text-gray-600 font-medium">
+                                                    {key.replace(/_/g, ' ').replace(/mg/g, '').replace(/mcg/g, '').replace('Vit ', 'Vitamin ').trim()}
+                                                </span>
+                                                <span className="text-sm font-bold text-gray-900 bg-gray-50 px-2 py-0.5 rounded border border-gray-100">
+                                                    {String(value)} mg
                                                 </span>
                                             </div>
-                                        </div>
-                                    );
-                                })}
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="text-center py-8 text-gray-400 bg-gray-50/50 rounded-xl border border-dashed border-gray-200">
+                                        <p className="text-sm">Chưa có thông tin vi chất</p>
+                                    </div>
+                                )}
                             </div>
-                        ) : (
-                            <p className="text-gray-400 italic">Chưa có nguyên liệu.</p>
-                        )}
+                        </div>
                     </div>
                 </div>
             </div>

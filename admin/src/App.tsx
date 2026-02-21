@@ -8,12 +8,15 @@ import RawFoodImport from './pages/raw-food/RawFoodImport';
 import RawFoodDetail from './pages/raw-food/RawFoodDetail';
 import FoodList from './pages/food/FoodList';
 import FoodForm from './pages/food/FoodForm';
+import DietList from './pages/diets/DietList';
 import FoodDetail from './pages/food/FoodDetail';
 import UserList from './pages/users/UserList';
 import UserDetail from './pages/users/UserDetail';
 import Statistics from './pages/Statistics';
 import AdminLayout from './layouts/AdminLayout';
 import { authService } from './services/authService';
+import { Toaster } from 'react-hot-toast';
+import { GlobalConfirmDialog } from './utils/toastUtils';
 import './App.css';
 
 // Protected Route Component
@@ -24,6 +27,8 @@ const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
 function App() {
     return (
         <BrowserRouter>
+            <Toaster position="top-center" reverseOrder={false} />
+            <GlobalConfirmDialog />
             <Routes>
                 <Route path="/login" element={<Login />} />
 
@@ -137,6 +142,9 @@ function App() {
                 <Route path="/users" element={<PrivateRoute><AdminLayout><UserList /></AdminLayout></PrivateRoute>} />
                 <Route path="/users/:id" element={<PrivateRoute><AdminLayout><UserDetail /></AdminLayout></PrivateRoute>} />
                 <Route path="/statistics" element={<PrivateRoute><AdminLayout><Statistics /></AdminLayout></PrivateRoute>} />
+
+                {/* Diet Management */}
+                <Route path="/diets" element={<PrivateRoute><AdminLayout><DietList /></AdminLayout></PrivateRoute>} />
 
                 {/* Default redirect */}
                 <Route path="*" element={<Navigate to="/dashboard" />} />

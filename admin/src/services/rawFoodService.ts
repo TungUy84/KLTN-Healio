@@ -27,11 +27,46 @@ export interface RawFoodListResponse {
     };
 }
 
+export interface RawFoodStats {
+    total: number;
+    highProtein: number; // Items > 20g protein
+    missingImage: number;
+    avgCalories: number;
+}
+
+export interface RawFoodFilters {
+    min_kcal?: number;
+    max_kcal?: number;
+    has_image?: boolean; // true, false or undefined
+}
+
 export const rawFoodService = {
-    getAll: async (page = 1, limit = 10, search = '', sort = 'createdAt', order = 'DESC') => {
-        const response = await api.get<RawFoodListResponse>('/raw-foods', {
-            params: { page, limit, search, sort, order }
-        });
+    getAll: async (
+        page = 1,
+        limit = 10,
+        search = '',
+        sort = 'createdAt',
+        order = 'DESC',
+        filters?: RawFoodFilters
+    ) => {
+        const params: any = { page, limit, search, sort, order };
+        if (filters) {
+            if (filters.min_kcal !== undefined) params.min_kcal = filters.min_kcal;
+            if (filters.max_kcal !== undefined) params.max_kcal = filters.max_kcal;
+            if (filters.has_image !== undefined) params.has_image = String(filters.has_image);
+        }
+
+        const response = await api.get<RawFoodListResponse>('/raw-foods', { params });
+        return response.data;
+    },
+
+    getStats: async () => {
+        const response = await api.get<RawFoodStats>('/raw-foods/stats');
+        return response.data;
+    },
+
+    generateInfo: async (foodName: string) => {
+        const response = await api.post<{ success: boolean; data: any }>('/ai/raw-food-info', { foodName });
         return response.data;
     },
 

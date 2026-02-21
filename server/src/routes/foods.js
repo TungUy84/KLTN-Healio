@@ -21,6 +21,7 @@ router.use(verifyToken);
 
 // Routes
 router.get('/', foodController.getFoods);
+router.get('/stats', foodController.getStats);
 router.get('/:id', foodController.getFoodById);
 router.post('/', upload.single('image'), foodController.createFood);
 router.put('/:id', upload.single('image'), foodController.updateFood);

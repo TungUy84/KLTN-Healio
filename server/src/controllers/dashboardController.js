@@ -8,29 +8,79 @@ const sequelize = require('../config/database');
 // PB_40: Get Dashboard Stats
 exports.getStats = async (req, res) => {
     try {
-        // Count users (excluding admins)
-        const usersCount = await User.count({
-            where: { role: 'user' }
+        // Date ranges for trend calculation (last 7 days vs previous 7 days)
+        const now = new Date();
+        const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+
+        // 1. Users
+        const usersTotal = await User.count({ where: { role: 'user' } });
+        const usersLast7Days = await User.count({
+            where: {
+                role: 'user',
+                created_at: { [Op.between]: [sevenDaysAgo, now] }
+            }
+        });
+        const usersPrev7Days = await User.count({
+            where: {
+                role: 'user',
+                created_at: { [Op.between]: [fourteenDaysAgo, sevenDaysAgo] }
+            }
         });
 
-        // Count admins
-        const adminsCount = await User.count({
-            where: { role: 'admin' }
-        });
+        let userGrowth = 0;
+        if (usersPrev7Days > 0) {
+            userGrowth = ((usersLast7Days - usersPrev7Days) / usersPrev7Days) * 100;
+        } else if (usersLast7Days > 0) {
+            userGrowth = 100; // From 0 to something is 100% growth (symbolic)
+        }
 
-        // Count raw foods (ingredients)
+        // 2. Admins
+        const adminsCount = await User.count({ where: { role: 'admin' } });
+
+        // 3. Raw Foods (Ingredients)
         const ingredientsCount = await RawFood.count();
 
-        // Count foods (meals)
-        const foodsCount = await Food.count({
-            where: { status: { [Op.ne]: 'deleted' } } // Exclude deleted
+        // 4. Foods (Meals)
+        const foodsTotal = await Food.count({ where: { status: { [Op.ne]: 'deleted' } } });
+        const foodsLast7Days = await Food.count({
+            where: {
+                status: { [Op.ne]: 'deleted' },
+                created_at: { [Op.between]: [sevenDaysAgo, now] }
+            }
+        });
+        const foodsPrev7Days = await Food.count({
+            where: {
+                status: { [Op.ne]: 'deleted' },
+                created_at: { [Op.between]: [fourteenDaysAgo, sevenDaysAgo] }
+            }
+        });
+
+        let foodGrowth = 0;
+        if (foodsPrev7Days > 0) {
+            foodGrowth = ((foodsLast7Days - foodsPrev7Days) / foodsPrev7Days) * 100;
+        } else if (foodsLast7Days > 0) {
+            foodGrowth = 100;
+        }
+
+        // Daily Logs (Calories Tracked Today)
+        const startOfToday = new Date();
+        startOfToday.setHours(0, 0, 0, 0);
+
+        const logsToday = await UserDailyLog.sum('calories', {
+            where: {
+                date: { [Op.gte]: startOfToday.toISOString().split('T')[0] } // Approximate using date field
+            }
         });
 
         res.json({
-            users: usersCount,
+            users: usersTotal,
+            usersGrowth: Math.round(userGrowth),
             admins: adminsCount,
             ingredients: ingredientsCount,
-            foods: foodsCount
+            foods: foodsTotal,
+            foodsGrowth: Math.round(foodGrowth),
+            caloriesToday: Math.round(logsToday || 0)
         });
     } catch (err) {
         console.error('Error fetching dashboard stats:', err);
@@ -49,22 +99,22 @@ exports.getRecentActivities = async (req, res) => {
         const recentUsers = await User.findAll({
             where: {
                 role: 'user',
-                [Op.and]: [
-                    sequelize.where(sequelize.literal('"User"."created_at"'), Op.gte, sevenDaysAgo)
-                ]
+                created_at: {
+                    [Op.gte]: sevenDaysAgo
+                }
             },
-            order: [[sequelize.literal('"User"."created_at"'), 'DESC']],
+            order: [[sequelize.col('created_at'), 'DESC']],
             limit: 5,
             attributes: [
                 'id',
                 'full_name',
                 'avatar',
-                [sequelize.literal('"User"."created_at"'), 'created_at']
+                [sequelize.col('created_at'), 'created_at']
             ]
         });
 
         recentUsers.forEach(user => {
-            const createdAt = user.get('created_at');
+            const createdAt = user.created_at;
             activities.push({
                 id: `user_${user.id}`,
                 user: user.full_name,
@@ -78,17 +128,17 @@ exports.getRecentActivities = async (req, res) => {
         // 2. Recent meals created by admins (last 7 days)
         const recentMeals = await Food.findAll({
             where: {
-                [Op.and]: [
-                    sequelize.where(sequelize.literal('"Food"."created_at"'), Op.gte, sevenDaysAgo)
-                ]
+                created_at: {
+                    [Op.gte]: sevenDaysAgo
+                }
             },
-            order: [[sequelize.literal('"Food"."created_at"'), 'DESC']],
+            order: [[sequelize.col('created_at'), 'DESC']],
             limit: 5,
             attributes: [
                 'id',
                 'name',
                 'created_by_user_id',
-                [sequelize.literal('"Food"."created_at"'), 'created_at']
+                [sequelize.col('created_at'), 'created_at']
             ]
         });
 
@@ -107,7 +157,7 @@ exports.getRecentActivities = async (req, res) => {
                 }
             }
 
-            const mealCreatedAt = meal.get('created_at');
+            const mealCreatedAt = meal.created_at;
             activities.push({
                 id: `meal_${meal.id}`,
                 user: creatorName,
@@ -151,16 +201,19 @@ exports.getTopFoods = async (req, res) => {
             include: [{
                 model: Food,
                 as: 'food', // Alias must match association
-                attributes: ['name']
+                attributes: ['id', 'name', 'image', 'calories']
             }],
-            group: ['food_id', 'food.id', 'food.name'], // Group by included columns too
+            group: ['food_id', 'food.id', 'food.name', 'food.image', 'food.calories'], // Group by included columns too
             order: [[sequelize.literal('count'), 'DESC']],
             limit: limit
         });
 
         // Format result
         const result = logs.map(log => ({
+            id: log.food ? log.food.id : null,
             name: log.food ? log.food.name : 'Unknown',
+            image: log.food ? log.food.image : null,
+            calories: log.food ? parseFloat(log.food.calories) : 0,
             count: parseInt(log.get('count'))
         }));
 
@@ -168,6 +221,91 @@ exports.getTopFoods = async (req, res) => {
     } catch (err) {
         console.error('Error fetching top foods:', err);
         res.status(500).json({ message: 'Lỗi khi lấy thống kê món ăn phổ biến' });
+    }
+};
+
+// PB_44: Get User Activity Stats (Logs per day for last 7 days)
+exports.getUserActivityStats = async (req, res) => {
+    try {
+        const days = 7;
+        const endDate = new Date();
+        const startDate = new Date();
+        startDate.setDate(endDate.getDate() - days + 1);
+
+        const startDateStr = startDate.toISOString().split('T')[0];
+
+        // Query counts grouped by date
+        const logs = await UserDailyLog.findAll({
+            attributes: [
+                'date',
+                [sequelize.fn('COUNT', sequelize.col('id')), 'count']
+            ],
+            where: {
+                date: { [Op.gte]: startDateStr }
+            },
+            group: ['date'],
+            order: [['date', 'ASC']]
+        });
+
+        // Create a map of existing data for quick lookup
+        const logMap = {};
+        logs.forEach(log => {
+            logMap[log.date] = parseInt(log.get('count'));
+        });
+
+        // Fill in missing days and format for chart
+        const result = [];
+        const daysOfWeek = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+
+        for (let i = 0; i < days; i++) {
+            const d = new Date(startDate);
+            d.setDate(d.getDate() + i);
+            const dateStr = d.toISOString().split('T')[0];
+            const dayName = daysOfWeek[d.getDay()];
+
+            result.push({
+                name: dayName,
+                logs: logMap[dateStr] || 0
+            });
+        }
+
+        res.json(result);
+    } catch (err) {
+        console.error('Error fetching user activity stats:', err);
+        res.status(500).json({ message: 'Lỗi khi lấy thống kê hoạt động người dùng' });
+    }
+};
+
+// PB_45: Get Macro Stats (Average nutrition distribution)
+exports.getMacroStats = async (req, res) => {
+    try {
+        // Calculate average macros for all active foods
+        const stats = await Food.findOne({
+            attributes: [
+                [sequelize.fn('AVG', sequelize.col('protein')), 'avgProtein'],
+                [sequelize.fn('AVG', sequelize.col('carb')), 'avgCarb'],
+                [sequelize.fn('AVG', sequelize.col('fat')), 'avgFat']
+            ],
+            where: {
+                status: { [Op.ne]: 'deleted' }
+            }
+        });
+
+        const protein = parseFloat(stats.get('avgProtein')) || 0;
+        const carbs = parseFloat(stats.get('avgCarb')) || 0;
+        const fat = parseFloat(stats.get('avgFat')) || 0;
+
+        // Return formatted for PieChart
+        const result = [
+            { name: 'Protein', value: Math.round(protein), color: '#10B981' }, // Emerald
+            { name: 'Carbs', value: Math.round(carbs), color: '#3B82F6' },   // Blue
+            { name: 'Fat', value: Math.round(fat), color: '#F59E0B' }        // Amber
+        ];
+
+        res.json(result);
+    } catch (err) {
+        console.error('Error fetching macro stats:', err);
+        res.status(500).json({ message: 'Lỗi khi lấy thống kê dinh dưỡng' });
     }
 };
 

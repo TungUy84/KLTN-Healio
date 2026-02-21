@@ -4,6 +4,7 @@ const fs = require('fs');
 const { Op } = require('sequelize');
 
 // PB_44: Get List Raw Foods with Pagination and Search
+// PB_44: Get List Raw Foods with Pagination and Search
 exports.getRawFoods = async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
@@ -12,12 +13,33 @@ exports.getRawFoods = async (req, res) => {
         const sort = req.query.sort || 'createdAt';
         const order = req.query.order || 'DESC';
 
+        // Filters
+        const min_kcal = req.query.min_kcal ? parseFloat(req.query.min_kcal) : undefined;
+        const max_kcal = req.query.max_kcal ? parseFloat(req.query.max_kcal) : undefined;
+        const has_image = req.query.has_image; // 'true', 'false', or undefined
+
         const where = {};
+
+        // Search Logic
         if (search) {
             where[Op.or] = [
-                { name: { [Op.iLike]: `%${search}%` } }, // Postgres use iLike for case-insensitive
+                { name: { [Op.iLike]: `%${search}%` } },
                 { code: { [Op.iLike]: `%${search}%` } }
             ];
+        }
+
+        // Calorie Range
+        if (min_kcal !== undefined || max_kcal !== undefined) {
+            where.energy_kcal = {};
+            if (min_kcal !== undefined) where.energy_kcal[Op.gte] = min_kcal;
+            if (max_kcal !== undefined) where.energy_kcal[Op.lte] = max_kcal;
+        }
+
+        // Image Filter
+        if (has_image === 'true') {
+            where.image = { [Op.not]: null };
+        } else if (has_image === 'false') {
+            where.image = { [Op.is]: null };
         }
 
         const offset = (page - 1) * limit;
@@ -43,6 +65,34 @@ exports.getRawFoods = async (req, res) => {
     }
 };
 
+// PB_44_STATS: Get Stats for Raw Foods
+exports.getRawFoodStats = async (req, res) => {
+    try {
+        const total = await RawFood.count();
+        const highProtein = await RawFood.count({
+            where: { protein_g: { [Op.gte]: 20 } }
+        });
+        const missingImage = await RawFood.count({
+            where: { image: { [Op.is]: null } }
+        });
+
+        // Calculate average calories
+        const avgResult = await RawFood.findOne({
+            attributes: [[RawFood.sequelize.fn('AVG', RawFood.sequelize.col('energy_kcal')), 'avgCal']]
+        });
+        const avgCal = avgResult?.get('avgCal') ? parseFloat(avgResult.get('avgCal')).toFixed(0) : 0;
+
+        res.json({
+            total,
+            highProtein,
+            missingImage,
+            avgCalories: avgCal
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching stats', error: error.message });
+    }
+};
+
 // PB_45: Get Detail
 exports.getRawFoodById = async (req, res) => {
     try {
@@ -60,11 +110,21 @@ exports.getRawFoodById = async (req, res) => {
 exports.createRawFood = async (req, res) => {
     try {
         const { code, name, unit, energy_kcal, protein_g, fat_g, carb_g, fiber_g, micronutrients, description } = req.body;
-        
+
         // Check duplicate code
-        const existing = await RawFood.findOne({ where: { code } });
-        if (existing) {
+        const existingCode = await RawFood.findOne({ where: { code } });
+        if (existingCode) {
             return res.status(400).json({ message: 'Mã nguyên liệu (Code) đã tồn tại.' });
+        }
+
+        // Check duplicate name
+        const existingName = await RawFood.findOne({
+            where: {
+                name: { [Op.iLike]: name }
+            }
+        });
+        if (existingName) {
+            return res.status(400).json({ message: `Tên nguyên liệu "${name}" đã tồn tại trong hệ thống.` });
         }
 
         // Parse micronutrients if it comes as string from form-data
@@ -102,7 +162,7 @@ exports.updateRawFood = async (req, res) => {
     try {
         const { id } = req.params;
         const updateData = { ...req.body };
-        
+
         if (req.file) {
             updateData.image = `/uploads/${req.file.filename}`;
         }
@@ -117,7 +177,7 @@ exports.updateRawFood = async (req, res) => {
         }
 
         const [updatedRows] = await RawFood.update(updateData, { where: { id } });
-        
+
         if (updatedRows === 0) {
             return res.status(404).json({ message: 'Raw food not found or no changes made' });
         }
@@ -175,7 +235,7 @@ exports.importRawFoods = async (req, res) => {
             // Remove temp file
             try {
                 if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
-            } catch(e) { console.error("Error deleting file", e); }
+            } catch (e) { console.error("Error deleting file", e); }
 
             for (const row of results) {
                 try {
@@ -209,7 +269,16 @@ exports.importRawFoods = async (req, res) => {
                     });
 
                     // Check existence
-                    const existing = await RawFood.findOne({ where: { code } });
+                    let existing = await RawFood.findOne({ where: { code } });
+
+                    // Nếu không tìm thấy theo Code, thử tìm theo Tên (để bắt các món do AI tạo có mã AI_...)
+                    if (!existing && row.Name) {
+                        existing = await RawFood.findOne({
+                            where: {
+                                name: { [Op.iLike]: row.Name.trim() }
+                            }
+                        });
+                    }
 
                     if (existing) {
                         if (mode === 'overwrite') {

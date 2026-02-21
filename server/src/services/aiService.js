@@ -22,14 +22,21 @@ const generateRecipeFromText = async (foodName) => {
             4. Tên nguyên liệu ("name") phải bằng Tiếng Việt, phổ thông.
             5. "serving_unit": Đơn vị tính phổ biến của món này (VD: Tô, Dĩa, Cái, Ly).
             6. "meal_categories": Mảng các bữa ăn phù hợp (chọn từ: "breakfast", "lunch", "dinner", "snack").
-            7. "diet_tags": Mảng các chế độ ăn phù hợp (chọn từ: "balanced", "low_carb", "low_fat", "high_protein", "keto", "vegan", "vegetarian").
-
+            7. "diet_tags": Mảng các chế độ ăn phù hợp (chọn từ: "balanced", "low_carb", "low_fat", "high_protein", "keto", "vegetarian").
+            8. "micronutrients": Object chứa các vi chất quan trọng. QUY ĐỊNH: Tất cả quy đổi về đơn vị **mg** (miligam). Giá trị chỉ là SỐ (String hoặc Number), không kèm đơn vị.
+            
             Format JSON trả về:
             {
                 "description": "Mô tả món ăn...",
                 "serving_unit": "Dĩa",
                 "meal_categories": ["lunch", "dinner"],
                 "diet_tags": ["balanced", "high_protein"],
+                "micronutrients": { 
+                    "Vit_A_mg": "0.8",   // Vitamin A (mg)
+                    "Vit_C_mg": "50",    // Vitamin C (mg)
+                    "Calcium_mg": "100", // Calcium (mg)
+                    "Iron_mg": "2.5"     // Iron (mg)
+                },
                 "ingredients": [
                     {
                         "name": "Tên nguyên liệu (VD: Thịt ba chỉ)",
@@ -37,7 +44,9 @@ const generateRecipeFromText = async (foodName) => {
                         "calories": 250, // Calo trên 100g
                         "carb": 0, // Gram trên 100g
                         "protein": 18, // Gram trên 100g
-                        "fat": 15 // Gram trên 100g
+                        "fat": 15, // Gram trên 100g
+                        "fiber": 0, // Gram trên 100g
+                        "micronutrients": {} // Các vi chất (nếu có, VD: {"Vitamin A": "..."})
                     }
                 ]
             }
@@ -121,7 +130,53 @@ const suggestMealPlan = async (userProfile, nutritionTarget, availableFoods) => 
     }
 };
 
+const generateRawFoodInfo = async (foodName) => {
+    try {
+        if (!process.env.GEMINI_API_KEY) {
+            throw new Error("Missing GEMINI_API_KEY");
+        }
+        console.log(`[AI] Generating raw food info for: ${foodName}`);
+
+        const prompt = `
+            Bạn là chuyên gia dinh dưỡng. Hãy cung cấp thông tin dinh dưỡng cho nguyên liệu THÔ (RAW): "${foodName}".
+            
+            Yêu cầu:
+            1. Tính toán dinh dưỡng trên 100g phần ăn được (edible portion).
+            2. Trả về JSON duy nhất.
+            
+            Format JSON:
+            {
+                "name": "Tên chuẩn hóa (VD: Ức gà, Cà rốt...)",
+                "calories": 165, // Kcal
+                "protein": 31, // Gram
+                "fat": 3.6, // Gram
+                "carb": 0, // Gram
+                "fiber": 0, // Gram (Chất xơ)
+                "micronutrients": { // Các vi chất nổi bật. QUY ĐỊNH: Tất cả quy đổi về đơn vị **mg**. Key dùng định dạng chuẩn (VD: Calcium_mg, Vit_A_mg).
+                    "Vit_A_mg": "12.5", 
+                    "Vit_C_mg": "0.5",
+                    "Calcium_mg": "100",
+                    "Iron_mg": "2.5"
+                },
+                "description": "Mô tả ngắn gọn về đặc điểm dinh dưỡng (dưới 30 từ)."
+            }
+        `;
+
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        let text = response.text();
+
+        text = text.replace(/```json/g, '').replace(/```/g, '').trim();
+        return JSON.parse(text);
+
+    } catch (error) {
+        console.error("AI Generate Raw Food Error:", error);
+        throw error;
+    }
+};
+
 module.exports = {
     generateRecipeFromText,
-    suggestMealPlan
+    suggestMealPlan,
+    generateRawFoodInfo
 };

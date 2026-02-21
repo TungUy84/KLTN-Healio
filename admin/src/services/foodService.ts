@@ -16,7 +16,8 @@ export interface Food {
     fat?: number;
     micronutrients?: Record<string, number>; // JSONB object for micronutrients
     status: 'active' | 'inactive';
-    diet_tags: string[]; // ['keto', 'low_carb', 'high_protein', etc.]
+    dietPresets?: { id: number; code: string; name: string }[];
+    // diet_tags: string[]; // Deprecated
     createdAt: string;
     updatedAt: string;
     // PB_52: Ingredients (only included when fetching by ID)
@@ -37,7 +38,32 @@ export interface FoodListResponse {
     };
 }
 
+export interface FoodStats {
+    total: number;
+    inactive: number;
+    avgCalories: number;
+    diets: {
+        keto: number;
+        low_carb: number;
+        high_protein: number;
+        low_fat: number;
+        balanced: number;
+        vegetarian: number;
+    };
+    meals: {
+        breakfast: number;
+        lunch: number;
+        dinner: number;
+        snack: number;
+    };
+}
+
 export const foodService = {
+    getStats: async () => {
+        const response = await api.get<FoodStats>('/foods/stats');
+        return response.data;
+    },
+
     getAll: async (
         page = 1,
         limit = 10,
@@ -101,7 +127,13 @@ export const foodService = {
             serving_unit: string;
             meal_categories: string[];
             diet_tags: string[];
+            micronutrients?: Record<string, number>;
         }>('/ai/generate-recipe', { foodName });
+        return response.data;
+    },
+
+    getDietPresets: async () => {
+        const response = await api.get<{ id: number, code: string, name: string, description?: string }[]>('/users/diet-presets');
         return response.data;
     }
 };
