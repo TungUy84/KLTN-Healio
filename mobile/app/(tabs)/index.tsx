@@ -24,8 +24,8 @@ import { aiService, MealPlanSuggestion } from '../../services/aiService';
 const AnimatedView = Animated.createAnimatedComponent(View);
 const { width } = Dimensions.get('window');
 
-// 1. Modern Glass Header & Calendar
-const GlassHeader = ({ userProfile, selectedDate, onPrevDate, onNextDate, onDatePress, handleSuggestMeal }: any) => {
+// 1. Modern Glass Header & Search/AI Bar
+const GlassHeader = ({ userProfile, onSearchPress, handleSuggestMeal }: any) => {
   const insets = useSafeAreaInsets();
 
   const getGreeting = () => {
@@ -36,22 +36,10 @@ const GlassHeader = ({ userProfile, selectedDate, onPrevDate, onNextDate, onDate
     return 'Chào buổi tối';
   };
 
-  const getDays = () => {
-    const days = [];
-    for (let i = -2; i <= 2; i++) {
-      const d = new Date(selectedDate);
-      d.setDate(d.getDate() + i);
-      days.push(d);
-    }
-    return days;
-  };
-
-  const dayNames = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
-
   return (
     <View style={{ paddingTop: insets.top + 10 }} className="px-6 pb-2 z-20">
-      {/* Top Row */}
-      <View className="flex-row justify-between items-center mb-8">
+      {/* Top Row: Greeting & Avatar */}
+      <View className="flex-row justify-between items-center mb-6">
         <View className="flex-row items-center gap-3">
           <View className="w-12 h-12 rounded-full overflow-hidden border-2 border-white/50">
             <Image
@@ -60,9 +48,9 @@ const GlassHeader = ({ userProfile, selectedDate, onPrevDate, onNextDate, onDate
             />
           </View>
           <View>
-            <Text className="text-white/80 text-xs font-medium">{getGreeting()}</Text>
+            <Text className="text-white/80 text-sm font-medium">{getGreeting()}</Text>
             <View className="flex-row items-center gap-1">
-              <Text className="text-white font-bold text-lg">{userProfile?.full_name?.split(' ')[userProfile?.full_name?.split(' ').length - 1] || 'Bạn'}</Text>
+              <Text className="text-white font-bold text-xl">{userProfile?.full_name?.split(' ')[userProfile?.full_name?.split(' ').length - 1] || 'Bạn'}</Text>
               <Ionicons name="hand-right" size={18} color="#FBBF24" />
             </View>
           </View>
@@ -73,22 +61,26 @@ const GlassHeader = ({ userProfile, selectedDate, onPrevDate, onNextDate, onDate
         </TouchableOpacity>
       </View>
 
-      {/* Calendar Strip */}
-      <View className="flex-row justify-between items-center px-2">
-        {getDays().map((date, idx) => {
-          const isSelected = idx === 2; // Center date
-          return (
-            <TouchableOpacity
-              key={idx}
-              onPress={idx < 2 ? onPrevDate : idx > 2 ? onNextDate : onDatePress}
-              className={`w-[50px] h-[76px] rounded-full items-center justify-center ${isSelected ? 'bg-white shadow-lg shadow-teal-900/20' : 'bg-white/20'}`}
-              style={!isSelected ? { backgroundColor: 'rgba(255,255,255,0.2)' } : undefined} // Force glass effect
-            >
-              <Text className={`text-xs mb-1 ${isSelected ? 'text-slate-500 font-medium' : 'text-white/80'}`}>{dayNames[date.getDay()]}</Text>
-              <Text className={`text-lg ${isSelected ? 'text-slate-900 font-bold' : 'text-white font-semibold'}`}>{date.getDate()}</Text>
-            </TouchableOpacity>
-          );
-        })}
+      {/* Search Bar & AI Action Row */}
+      <View className="flex-row items-center justify-between gap-3 px-1">
+        {/* Fake Search Bar for navigation */}
+        <TouchableOpacity
+          activeOpacity={0.8}
+          onPress={onSearchPress}
+          className="flex-1 h-14 bg-white/20 rounded-2xl border border-white/30 flex-row items-center px-4"
+        >
+          <Feather name="search" size={20} color="white" />
+          <Text className="ml-3 text-white/80 font-medium text-base">Hôm nay bạn muốn ăn gì?</Text>
+        </TouchableOpacity>
+
+        {/* AI Suggestion Button */}
+        <TouchableOpacity
+          activeOpacity={0.8}
+          onPress={handleSuggestMeal}
+          className="w-14 h-14 bg-emerald-500 rounded-2xl items-center justify-center shadow-lg shadow-emerald-500/30 border border-white/20"
+        >
+          <Ionicons name="sparkles" size={24} color="white" />
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -123,9 +115,10 @@ const CaloriesHero = ({ target, eaten, dailyLog, tCarb, tProt, tFat }: any) => {
         </View>
       </View>
 
-      {/* Summary Cards (Goal, Food, Exercise - Adapted to Macros for health app) */}
+      {/* Summary Cards */}
       <View className="mt-8 flex-row gap-3">
-        <View className="flex-1 bg-white rounded-3xl p-4 shadow-sm">
+        {/* CARBS */}
+        <View className="bg-white/90 flex-1 rounded-3xl p-4 border border-white shadow-sm shadow-slate-200">
           <View className="flex-row justify-between items-start mb-2">
             <Text className="text-slate-500 text-[10px] font-bold uppercase tracking-wider">Carbs</Text>
             <View className="w-6 h-6 rounded-full bg-emerald-50 items-center justify-center">
@@ -133,12 +126,13 @@ const CaloriesHero = ({ target, eaten, dailyLog, tCarb, tProt, tFat }: any) => {
             </View>
           </View>
           <View className="flex-row items-baseline gap-1">
-            <Text className="text-slate-800 font-bold text-base">{Math.round(dailyLog?.carbs || 0)}</Text>
+            <Text className="text-slate-800 font-bold text-xl">{Math.round(dailyLog?.carbs || 0)}</Text>
             <Text className="text-slate-400 text-[10px]">/{Math.round(tCarb)}g</Text>
           </View>
         </View>
 
-        <View className="flex-1 bg-white rounded-3xl p-4 shadow-sm">
+        {/* PROTEIN */}
+        <View className="bg-white/90 flex-1 rounded-3xl p-4 border border-white shadow-sm shadow-slate-200">
           <View className="flex-row justify-between items-start mb-2">
             <Text className="text-slate-500 text-[10px] font-bold uppercase tracking-wider">Protein</Text>
             <View className="w-6 h-6 rounded-full bg-orange-50 items-center justify-center">
@@ -146,20 +140,21 @@ const CaloriesHero = ({ target, eaten, dailyLog, tCarb, tProt, tFat }: any) => {
             </View>
           </View>
           <View className="flex-row items-baseline gap-1">
-            <Text className="text-slate-800 font-bold text-base">{Math.round(dailyLog?.protein || 0)}</Text>
+            <Text className="text-slate-800 font-bold text-xl">{Math.round(dailyLog?.protein || 0)}</Text>
             <Text className="text-slate-400 text-[10px]">/{Math.round(tProt)}g</Text>
           </View>
         </View>
 
-        <View className="flex-1 bg-white rounded-3xl p-4 shadow-sm">
+        {/* FAT */}
+        <View className="bg-white/90 flex-1 rounded-3xl p-4 border border-white shadow-sm shadow-slate-200">
           <View className="flex-row justify-between items-start mb-2">
             <Text className="text-slate-500 text-[10px] font-bold uppercase tracking-wider">Fat</Text>
             <View className="w-6 h-6 rounded-full bg-blue-50 items-center justify-center">
-              <MaterialCommunityIcons name="water" size={14} color="#3B82F6" />
+              <MaterialCommunityIcons name="water" size={12} color="#3B82F6" />
             </View>
           </View>
           <View className="flex-row items-baseline gap-1">
-            <Text className="text-slate-800 font-bold text-base">{Math.round(dailyLog?.fat || 0)}</Text>
+            <Text className="text-slate-800 font-bold text-xl">{Math.round(dailyLog?.fat || 0)}</Text>
             <Text className="text-slate-400 text-[10px]">/{Math.round(tFat)}g</Text>
           </View>
         </View>
@@ -218,30 +213,26 @@ const MetricSection = ({ metrics }: any) => {
 }
 
 // 4. Next Habit / Meal Grid
-const MealItem = ({ title, calories, icon, checkDelay, onPress, colorTheme }: any) => {
-  let iconBg = 'bg-slate-100';
-  let iconColor = 'text-slate-500';
-
-  if (colorTheme?.includes('orange')) { iconBg = 'bg-orange-100'; iconColor = '#F97316'; }
-  else if (colorTheme?.includes('blue')) { iconBg = 'bg-blue-100'; iconColor = '#3B82F6'; }
-  else if (colorTheme?.includes('indigo')) { iconBg = 'bg-indigo-100'; iconColor = '#6366F1'; }
-  else if (colorTheme?.includes('rose')) { iconBg = 'bg-rose-100'; iconColor = '#F43F5E'; }
+const MealItem = ({ title, calories, iconName, checkDelay, onPress, colorTheme }: any) => {
+  let primaryColor = '#0F172A';
+  if (colorTheme === 'orange') primaryColor = '#F97316';
+  else if (colorTheme === 'blue') primaryColor = '#3B82F6';
+  else if (colorTheme === 'indigo') primaryColor = '#6366F1';
+  else if (colorTheme === 'rose') primaryColor = '#F43F5E';
 
   return (
     <AnimatedView entering={FadeInDown.delay(checkDelay).duration(500)} className="w-[48%] mb-4">
-      <TouchableOpacity
-        onPress={onPress}
-        activeOpacity={0.7}
-        className="bg-white rounded-3xl p-5 shadow-sm active:scale-[0.98]"
-      >
-        <View className={`w-12 h-12 rounded-full ${iconBg} bg-opacity-30 flex items-center justify-center mb-4`}>
-          <Image source={{ uri: icon }} className="w-6 h-6" style={{ tintColor: iconColor }} resizeMode="contain" />
-        </View>
-        <Text className="font-bold text-slate-900 text-lg">{title}</Text>
-        <View className="mt-2 space-y-0.5">
-          <View className="flex-row items-center gap-1">
-            <MaterialCommunityIcons name="fire" size={14} color="#94A3B8" />
-            <Text className="text-slate-400 text-xs">{calories} kcal</Text>
+      <TouchableOpacity onPress={onPress} activeOpacity={0.7} className="w-full">
+        <View className="bg-white/90 rounded-[24px] p-5 border border-white shadow-sm shadow-slate-200">
+          <View className="w-12 h-12 rounded-full flex items-center justify-center mb-4 bg-slate-50 shadow-sm shadow-slate-100">
+            <MaterialCommunityIcons name={iconName} size={24} color={primaryColor} />
+          </View>
+          <Text className="font-bold text-slate-800 text-xl">{title}</Text>
+          <View className="mt-2 space-y-0.5">
+            <View className="flex-row items-center gap-1">
+              <MaterialCommunityIcons name="fire" size={16} color={primaryColor} />
+              <Text className="text-slate-500 text-sm font-semibold">{calories} kcal</Text>
+            </View>
           </View>
         </View>
       </TouchableOpacity>
@@ -252,8 +243,6 @@ const MealItem = ({ title, calories, icon, checkDelay, onPress, colorTheme }: an
 // --- MAIN SCREEN ---
 export default function DiaryScreen() {
   const router = useRouter();
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  const [showDatePicker, setShowDatePicker] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   // Data
@@ -288,7 +277,7 @@ export default function DiaryScreen() {
     if (!mealPlan) return;
     setAiLoading(true);
     try {
-      const dateStr = selectedDate.toISOString().split('T')[0];
+      const dateStr = new Date().toISOString().split('T')[0];
       const meals = [
         { ...mealPlan.breakfast, type: 'breakfast' },
         { ...mealPlan.lunch, type: 'lunch' },
@@ -318,7 +307,7 @@ export default function DiaryScreen() {
 
   const fetchMetrics = async () => {
     try {
-      const dateStr = selectedDate.toISOString().split('T')[0];
+      const dateStr = new Date().toISOString().split('T')[0];
       const [metricsData, logsData, profile] = await Promise.all([
         userService.getCalculatedMetrics(),
         foodService.getDailyLog(dateStr),
@@ -340,7 +329,7 @@ export default function DiaryScreen() {
     } catch (e) { console.log(e); }
   };
 
-  useFocusEffect(useCallback(() => { fetchMetrics(); }, [selectedDate]));
+  useFocusEffect(useCallback(() => { fetchMetrics(); }, []));
 
   useEffect(() => {
     const subscription = DeviceEventEmitter.addListener('triggerAISuggestion', () => {
@@ -361,19 +350,16 @@ export default function DiaryScreen() {
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
       <LinearGradient
-        colors={['#059669', '#F8FAFC']}
+        colors={['#10B981', '#F8FAFC']}
         start={{ x: 0, y: 0 }}
-        end={{ x: 0, y: 0.7 }}
-        style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 800 }}
+        end={{ x: 0, y: 0.6 }}
+        style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1200 }}
       />
 
       {/* 1. Glass Header */}
       <GlassHeader
         userProfile={userProfile}
-        selectedDate={selectedDate}
-        onPrevDate={() => { const d = new Date(selectedDate); d.setDate(d.getDate() - 1); setSelectedDate(d); }}
-        onNextDate={() => { const d = new Date(selectedDate); d.setDate(d.getDate() + 1); setSelectedDate(d); }}
-        onDatePress={() => setShowDatePicker(true)}
+        onSearchPress={() => router.push('/(tabs)/foods')}
         handleSuggestMeal={handleSuggestMeal}
       />
 
@@ -393,43 +379,34 @@ export default function DiaryScreen() {
         {/* 3. Next Habit (Meals Grid) */}
         <View className="px-6 mt-10">
           <View className="flex-row justify-between items-center mb-4">
-            <Text className="text-slate-800 font-bold text-lg">Nhật ký hôm nay</Text>
+            <Text className="text-slate-900 font-bold text-xl">Nhật ký hôm nay</Text>
           </View>
 
           <View className="flex-row flex-wrap justify-between">
             <MealItem
               title="Bữa Sáng" calories={Math.round(dailyLog.meals.breakfast.calories)}
-              icon="https://cdn-icons-png.flaticon.com/512/887/887359.png" checkDelay={500} colorTheme="bg-orange-400"
+              iconName="food-croissant" checkDelay={500} colorTheme="orange"
               onPress={() => router.push({ pathname: '/(tabs)/foods', params: { meal: 'breakfast' } })}
             />
             <MealItem
               title="Bữa Trưa" calories={Math.round(dailyLog.meals.lunch.calories)}
-              icon="https://cdn-icons-png.flaticon.com/512/2921/2921822.png" checkDelay={600} colorTheme="bg-blue-400"
+              iconName="silverware-fork-knife" checkDelay={600} colorTheme="blue"
               onPress={() => router.push({ pathname: '/(tabs)/foods', params: { meal: 'lunch' } })}
             />
             <MealItem
               title="Bữa Tối" calories={Math.round(dailyLog.meals.dinner.calories)}
-              icon="https://cdn-icons-png.flaticon.com/512/706/706164.png" checkDelay={700} colorTheme="bg-indigo-400"
+              iconName="pot-steam-outline" checkDelay={700} colorTheme="indigo"
               onPress={() => router.push({ pathname: '/(tabs)/foods', params: { meal: 'dinner' } })}
             />
             <MealItem
               title="Bữa Phụ" calories={Math.round(dailyLog.meals.snack.calories)}
-              icon="https://cdn-icons-png.flaticon.com/512/2515/2515183.png" checkDelay={800} colorTheme="bg-rose-400"
+              iconName="food-apple-outline" checkDelay={800} colorTheme="rose"
               onPress={() => router.push({ pathname: '/(tabs)/foods', params: { meal: 'snack' } })}
             />
           </View>
         </View>
 
       </ScrollView>
-
-      {showDatePicker && (
-        <DateTimePicker
-          value={selectedDate}
-          mode="date"
-          display="default"
-          onChange={(event, date) => { setShowDatePicker(false); if (date) setSelectedDate(date); }}
-        />
-      )}
 
       {/* AI Meal Plan Modal */}
       <Modal visible={showAiModal} animationType="slide" transparent>

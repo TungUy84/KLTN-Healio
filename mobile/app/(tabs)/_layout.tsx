@@ -9,6 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 const TABS = [
   { name: 'index', title: 'Nhật ký', icon: 'book-open' },
   { name: 'foods', title: 'Thực đơn', icon: 'coffee' },
+  { name: 'calendar', title: 'Lịch', icon: 'calendar' },
   { name: 'progress', title: 'Thống kê', icon: 'bar-chart-2' },
   { name: 'profile', title: 'Tài khoản', icon: 'user' },
 ];
@@ -29,7 +30,7 @@ const CustomTabBar = ({ state, descriptors, navigation }: { state: any, descript
           shadowRadius: 20,
         }}
       >
-        {/* Lọc ra 4 tabs chính để render ở 2 bên */}
+        {/* Render 5 tabs evenly */}
         {state.routes.map((route: any, index: number) => {
           const item = TABS.find(t => t.name === route.name);
           if (!item) return null;
@@ -48,8 +49,7 @@ const CustomTabBar = ({ state, descriptors, navigation }: { state: any, descript
             }
           };
 
-          // Render button bình thường
-          const Button = (
+          return (
             <TouchableOpacity
               key={route.key}
               onPress={onPress}
@@ -62,36 +62,6 @@ const CustomTabBar = ({ state, descriptors, navigation }: { state: any, descript
               />
             </TouchableOpacity>
           );
-
-          // Chèn nút trung tâm ở giữa (sau tab thứ 2)
-          if (index === 1) {
-            return (
-              <React.Fragment key={route.key}>
-                {Button}
-                {/* Center Glowing Action Button - AI Suggestion */}
-                <View className="relative -top-5" key="center-action">
-                  <View className="absolute inset-0 bg-emerald-400 blur-xl opacity-40 rounded-full scale-150" />
-                  <TouchableOpacity
-                    className="w-[60px] h-[60px] bg-slate-800 rounded-full items-center justify-center border-4 border-[#1A1A1A] shadow-xl z-20 active:scale-95"
-                    style={{
-                      shadowColor: '#10B981',
-                      shadowOffset: { width: 0, height: 8 },
-                      shadowOpacity: 0.5,
-                      shadowRadius: 12,
-                      elevation: 15,
-                    }}
-                    onPress={() => DeviceEventEmitter.emit('triggerAISuggestion')}
-                  >
-                    <View className="w-14 h-14 rounded-full bg-gradient-to-tr from-emerald-400 to-emerald-300 items-center justify-center">
-                      <Ionicons name="sparkles" size={26} color="white" />
-                    </View>
-                  </TouchableOpacity>
-                </View>
-              </React.Fragment>
-            );
-          }
-
-          return Button;
         })}
       </View>
     </View>
@@ -106,6 +76,7 @@ export default function TabLayout() {
     >
       <Tabs.Screen name="index" options={{ title: 'Nhật ký' }} />
       <Tabs.Screen name="foods" options={{ title: 'Thực đơn' }} />
+      <Tabs.Screen name="calendar" options={{ title: 'Lịch' }} />
       <Tabs.Screen name="progress" options={{ title: 'Thống kê' }} />
       <Tabs.Screen name="profile" options={{ title: 'Tài khoản' }} />
     </Tabs>
