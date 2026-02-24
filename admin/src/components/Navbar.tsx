@@ -15,7 +15,9 @@ import {
     Check,
     Loader2
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { authService } from '../services/authService';
+import { useNotifications } from '../context/NotificationContext';
 import toast from 'react-hot-toast';
 
 interface NavbarProps {
@@ -23,7 +25,10 @@ interface NavbarProps {
 }
 
 const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar }) => {
+    const navigate = useNavigate();
+    const { notifications, removeNotification } = useNotifications();
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const [isNotificationOpen, setIsNotificationOpen] = useState(false);
     const [isSearchFocused, setIsSearchFocused] = useState(false);
 
     // Modal States
@@ -145,10 +150,10 @@ const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar }) => {
     };
 
     const renderAvatar = (wClass = "w-10 h-10", textClass = "text-base") => {
-        if (profile.avatar) {
-            return <img src={profile.avatar} alt="Avatar" className={`w-full h-full object-cover`} />;
-        }
-        return <span className={textClass}>A</span>;
+        const content = profile.avatar
+            ? <img src={profile.avatar} alt="Avatar" className="w-full h-full object-cover" />
+            : <span className={textClass}>A</span>;
+        return <div className={`${wClass} flex items-center justify-center overflow-hidden`}>{content}</div>;
     };
 
     return (
@@ -180,10 +185,73 @@ const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar }) => {
                 <div className="flex items-center gap-6">
 
                     {/* Notifications */}
-                    <button className="text-gray-400 hover:text-emerald-500 transition-colors relative">
-                        <Bell size={20} />
-                        <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
-                    </button>
+                    <div className="relative">
+                        <button
+                            onClick={() => {
+                                setIsNotificationOpen((v) => !v);
+                                setIsDropdownOpen(false);
+                            }}
+                            className="text-gray-400 hover:text-emerald-500 transition-colors relative"
+                            title="Thông báo"
+                        >
+                            <Bell size={20} />
+                            {notifications.length > 0 && (
+                                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 flex items-center justify-center text-[10px] font-bold text-white bg-red-500 rounded-full border-2 border-white">
+                                    {notifications.length > 99 ? '99+' : notifications.length}
+                                </span>
+                            )}
+                        </button>
+                        {isNotificationOpen && (
+                            <>
+                                <div className="fixed inset-0 z-30" onClick={() => setIsNotificationOpen(false)} />
+                                <div className="absolute right-0 mt-3 w-[360px] max-h-[400px] overflow-hidden bg-white rounded-2xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] border border-gray-100 z-40 flex flex-col animate-in fade-in slide-in-from-top-2 duration-200">
+                                    {/* Header - đồng bộ với profile dropdown */}
+                                    <div className="px-5 py-4 border-b border-gray-100 bg-gray-50/50 rounded-t-2xl">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-9 h-9 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-600">
+                                                <Bell size={18} strokeWidth={2.5} />
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-bold text-gray-800">Thông báo</p>
+                                                <p className="text-[11px] text-gray-500 font-medium">Các hoạt động gần đây</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="overflow-y-auto custom-scrollbar flex-1 min-h-[120px] max-h-[320px]">
+                                        {notifications.length === 0 ? (
+                                            <div className="flex flex-col items-center justify-center py-10 px-6 text-center">
+                                                <div className="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center text-gray-300 mb-3">
+                                                    <Bell size={26} strokeWidth={1.5} />
+                                                </div>
+                                                <p className="text-sm font-medium text-gray-600">Chưa có thông báo nào</p>
+                                                <p className="text-xs text-gray-400 mt-1">Các thao tác thành công sẽ hiển thị tại đây</p>
+                                            </div>
+                                        ) : (
+                                            <div className="p-2 space-y-1">
+                                                {notifications.map((n) => (
+                                                    <button
+                                                        key={n.id}
+                                                        type="button"
+                                                        onClick={() => {
+                                                            removeNotification(n.id);
+                                                            setIsNotificationOpen(false);
+                                                            navigate(n.link);
+                                                        }}
+                                                        className="w-full text-left rounded-xl px-4 py-3 hover:bg-emerald-50/70 active:bg-emerald-100/50 bg-gray-100/60 transition-all duration-200 group"
+                                                    >
+                                                        <p className="text-sm font-medium text-gray-800 line-clamp-2 group-hover:text-emerald-800">{n.message}</p>
+                                                        <p className="text-[11px] text-gray-400 mt-1.5 font-medium">
+                                                            {n.createdAt.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                                                        </p>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </>
+                        )}
+                    </div>
 
                     {/* Divider */}
                     <div className="h-8 w-px bg-gray-200"></div>
@@ -200,7 +268,7 @@ const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar }) => {
                             </div>
                             <div className="relative">
                                 <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 font-bold border-2 border-white shadow-sm overflow-hidden">
-                                    {renderAvatar()}
+                                    {isLoadingProfile ? <Loader2 className="w-5 h-5 animate-spin" /> : renderAvatar()}
                                 </div>
                                 <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
                             </div>

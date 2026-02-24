@@ -18,12 +18,14 @@ import {
     XCircle
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useNotifications } from '../../context/NotificationContext';
 import { confirmToast } from '../../utils/toastUtils';
 import FoodGeneratorModal from '../../components/FoodGeneratorModal';
 import FoodStatsOverview from '../../components/FoodStatsOverview';
 
 const FoodList: React.FC = () => {
     const navigate = useNavigate();
+    const { addNotification } = useNotifications();
     const [foods, setFoods] = useState<Food[]>([]);
     const [stats, setStats] = useState<FoodStats | null>(null);
     const [loading, setLoading] = useState(true);
@@ -103,7 +105,7 @@ const FoodList: React.FC = () => {
         }
     };
 
-    const handleDelete = (id: number) => {
+    const handleDelete = (id: number, name: string) => {
         confirmToast({
             message: 'Bạn có chắc muốn xóa món này? Hành động này sẽ ẩn món ăn khỏi ứng dụng.',
             confirmText: 'Xóa món ăn',
@@ -111,6 +113,7 @@ const FoodList: React.FC = () => {
                 try {
                     await foodService.delete(id);
                     toast.success('Đã xóa món ăn thành công');
+                    addNotification({ message: `Đã xóa món ăn "${name}"`, link: '/foods' });
                     fetchFoods();
                     fetchStats();
                 } catch (error) {
@@ -400,7 +403,7 @@ const FoodList: React.FC = () => {
                                                     <Edit3 size={18} />
                                                 </Link>
                                                 <button
-                                                    onClick={() => handleDelete(food.id)}
+                                                    onClick={() => handleDelete(food.id, food.name)}
                                                     className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
                                                     title="Xóa"
                                                 >

@@ -17,6 +17,7 @@ import AdminLayout from './layouts/AdminLayout';
 import { authService } from './services/authService';
 import { Toaster } from 'react-hot-toast';
 import { GlobalConfirmDialog } from './utils/toastUtils';
+import { NotificationProvider } from './context/NotificationContext';
 import './App.css';
 
 // Protected Route Component
@@ -27,9 +28,10 @@ const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
 function App() {
     return (
         <BrowserRouter>
-            <Toaster position="top-center" reverseOrder={false} />
-            <GlobalConfirmDialog />
-            <Routes>
+            <NotificationProvider>
+                <Toaster position="top-center" reverseOrder={false} />
+                <GlobalConfirmDialog />
+                <Routes>
                 <Route path="/login" element={<Login />} />
 
                 {/* Protected Dashboard Routes */}
@@ -148,7 +150,8 @@ function App() {
 
                 {/* Default redirect */}
                 <Route path="*" element={<Navigate to="/dashboard" />} />
-            </Routes>
+                </Routes>
+            </NotificationProvider>
         </BrowserRouter>
     )
 }

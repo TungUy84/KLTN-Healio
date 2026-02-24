@@ -7,6 +7,7 @@ import BasicInfoSection from '../../components/food-form/BasicInfoSection';
 import IngredientSection, { type Ingredient } from '../../components/food-form/IngredientSection';
 import NutritionSection from '../../components/food-form/NutritionSection';
 import toast from 'react-hot-toast';
+import { useNotifications } from '../../context/NotificationContext';
 
 // Helper: Calculate diet tags (PB_53) - Pure function, moved outside component
 // Helper: Calculate diet tags (PB_53) - Dynamic version
@@ -78,6 +79,7 @@ const FoodForm: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const isEditMode = !!id;
     const navigate = useNavigate();
+    const { addNotification } = useNotifications();
     const location = useLocation();
 
     const [loading, setLoading] = useState(false);
@@ -472,9 +474,11 @@ const FoodForm: React.FC = () => {
             if (isEditMode && id) {
                 await foodService.update(id, submitData);
                 toast.success('Cập nhật món ăn thành công!');
+                addNotification({ message: `Cập nhật món ăn "${formData.name}" thành công`, link: `/foods/${id}` });
             } else {
-                await foodService.create(submitData);
+                const created = await foodService.create(submitData);
                 toast.success('Thêm món ăn thành công!');
+                addNotification({ message: `Thêm món ăn "${formData.name}" thành công`, link: `/foods/${created.id}` });
             }
             navigate('/foods');
         } catch (error: any) {

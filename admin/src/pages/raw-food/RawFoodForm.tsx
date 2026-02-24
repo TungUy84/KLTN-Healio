@@ -14,6 +14,7 @@ import {
     FlaskConical
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useNotifications } from '../../context/NotificationContext';
 
 interface MicronutrientInput {
     key: string;
@@ -24,6 +25,7 @@ const RawFoodForm: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const isEditMode = !!id;
     const navigate = useNavigate();
+    const { addNotification } = useNotifications();
 
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
@@ -187,9 +189,11 @@ const RawFoodForm: React.FC = () => {
             if (isEditMode && id) {
                 await rawFoodService.update(id, submitData);
                 toast.success('Cập nhật nguyên liệu thành công!');
+                addNotification({ message: `Cập nhật nguyên liệu "${formData.name}" thành công`, link: `/raw-foods/${id}` });
             } else {
-                await rawFoodService.create(submitData);
+                const created = await rawFoodService.create(submitData);
                 toast.success('Thêm mới nguyên liệu thành công!');
+                addNotification({ message: `Thêm nguyên liệu "${formData.name}" thành công`, link: `/raw-foods/${created.id}` });
             }
             navigate('/raw-foods');
         } catch (error: any) {
