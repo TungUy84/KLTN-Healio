@@ -291,7 +291,7 @@ exports.resetPassword = async (req, res) => {
 
         await user.update({ password_hash });
 
-        // Gửi email mật khẩu mới cho user
+        // Send password to user by email
         const subject = 'Healio - Mật khẩu đã được đặt lại';
         const text = `Xin chào ${user.full_name || user.email},\n\nQuản trị viên đã đặt lại mật khẩu tài khoản của bạn.\nMật khẩu mới: ${tempPassword}\n\nVui lòng đăng nhập và đổi mật khẩu để bảo mật tài khoản.\n\n— Healio`;
         await sendEmail(user.email, subject, text);

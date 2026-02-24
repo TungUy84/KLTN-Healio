@@ -3,8 +3,6 @@ import {
     Search,
     Bell,
     Menu,
-    Moon,
-    Sun,
     LogOut,
     User,
     Settings,
@@ -17,7 +15,6 @@ import {
     Check,
     Loader2
 } from 'lucide-react';
-import { useTheme } from '../context/ThemeContext';
 import { authService } from '../services/authService';
 import toast from 'react-hot-toast';
 
@@ -26,7 +23,6 @@ interface NavbarProps {
 }
 
 const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar }) => {
-    const { theme, toggleTheme } = useTheme();
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [isSearchFocused, setIsSearchFocused] = useState(false);
 
@@ -182,15 +178,6 @@ const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar }) => {
 
                 {/* 3. RIGHT: Actions & Profile */}
                 <div className="flex items-center gap-6">
-
-                    {/* Theme Toggle */}
-                    <button
-                        onClick={toggleTheme}
-                        className="text-gray-400 hover:text-emerald-500 transition-colors relative"
-                        title={theme === 'dark' ? 'Chế độ sáng' : 'Chế độ tối'}
-                    >
-                        {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
-                    </button>
 
                     {/* Notifications */}
                     <button className="text-gray-400 hover:text-emerald-500 transition-colors relative">
