@@ -10,6 +10,7 @@ import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { foodService, Food } from '../../services/foodService';
 import { userService } from '../../services/userService';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 
 // --- HELPERS ---
 const resolveImg = (path: string | null | undefined) => {
@@ -20,35 +21,27 @@ const resolveImg = (path: string | null | undefined) => {
 };
 
 const MEAL_TYPES = [
-    { id: 'breakfast', label: 'Bữa Sáng', icon: 'coffee', color: '#F97316', bg: '#FFF7ED', badge: '#FED7AA' },
-    { id: 'lunch', label: 'Bữa Trưa', icon: 'silverware-fork-knife', color: '#3B82F6', bg: '#EFF6FF', badge: '#BFDBFE' },
-    { id: 'dinner', label: 'Bữa Tối', icon: 'pot-steam-outline', color: '#8B5CF6', bg: '#F5F3FF', badge: '#DDD6FE' },
-    { id: 'snack', label: 'Bữa Phụ', icon: 'food-apple-outline', color: '#F43F5E', bg: '#FFF1F2', badge: '#FECDD3' },
+    { id: 'breakfast', label: 'Bữa Sáng', icon: 'food-croissant', color: '#F97316', gradColors: ['#F97316', '#FB923C'] as [string, string] },
+    { id: 'lunch', label: 'Bữa Trưa', icon: 'silverware-fork-knife', color: '#3B82F6', gradColors: ['#3B82F6', '#60A5FA'] as [string, string] },
+    { id: 'dinner', label: 'Bữa Tối', icon: 'pot-steam-outline', color: '#8B5CF6', gradColors: ['#8B5CF6', '#A78BFA'] as [string, string] },
+    { id: 'snack', label: 'Bữa Phụ', icon: 'food-apple-outline', color: '#F43F5E', gradColors: ['#F43F5E', '#FB7185'] as [string, string] },
 ];
 
-// --- MACRO BAR ---
-const MacroBar = ({ label, value, total, color, bg }: any) => {
-    const pct = total > 0 ? Math.min((value / total) * 100, 100) : 0;
+// --- MÃ MACRO BAR ---
+const MacroBar = ({ label, value, total, color, barClassName }: any) => {
+    const pct = total > 0 ? Math.min(Math.round((value / total) * 100), 100) : 0;
     return (
-        <View style={{ marginBottom: 14 }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
-                <Text style={{ fontSize: 13, fontWeight: '700', color: '#475569' }}>{label}</Text>
-                <Text style={{ fontSize: 13, fontWeight: '800', color }}>{value}g</Text>
+        <View className="mb-4">
+            <View className="flex-row justify-between mb-1.5">
+                <Text className="text-slate-500 text-sm font-semibold">{label}</Text>
+                <Text className="text-sm font-bold" style={{ color }}>{value}g <Text className="text-slate-400 font-medium">({pct}%)</Text></Text>
             </View>
-            <View style={{ height: 8, backgroundColor: '#F1F5F9', borderRadius: 4 }}>
-                <View style={{ height: '100%', width: `${pct}%`, borderRadius: 4, backgroundColor: color }} />
+            <View className="h-2 bg-slate-100 rounded-full">
+                <View className={`h-full rounded-full ${barClassName}`} style={{ width: `${pct}%` }} />
             </View>
         </View>
     );
 };
-
-// --- MICRO ROW ---
-const MicroRow = ({ label, value, unit }: any) => (
-    <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' }}>
-        <Text style={{ fontSize: 14, color: '#64748B', fontWeight: '500' }}>{label}</Text>
-        <Text style={{ fontSize: 14, fontWeight: '700', color: '#1E293B' }}>{value} {unit || 'g'}</Text>
-    </View>
-);
 
 // --- MAIN ---
 export default function FoodDetailScreen() {
@@ -69,9 +62,7 @@ export default function FoodDetailScreen() {
     useEffect(() => {
         userService.getProfile().then(u => {
             const alg = u.UserProfile?.allergies;
-            if (alg) {
-                setUserAllergies(Array.isArray(alg) ? alg : String(alg).split(',').map((s: string) => s.trim()));
-            }
+            if (alg) setUserAllergies(Array.isArray(alg) ? alg : String(alg).split(',').map((s: string) => s.trim()));
         }).catch(() => { });
     }, []);
 
@@ -107,9 +98,9 @@ export default function FoodDetailScreen() {
                 date: selectedDate.toISOString().split('T')[0],
             });
             setShowAddModal(false);
-            Alert.alert('✅ Thành công!', `Đã thêm ${food.name} vào nhật ký.`, [
+            Alert.alert('Thêm thành công', `Đã thêm ${food.name} vào nhật ký.`, [
                 { text: 'Xem Lịch Biểu', onPress: () => router.navigate('/(tabs)/calendar') },
-                { text: 'Tiếp tục', style: 'cancel' }
+                { text: 'Tiếp tục', style: 'cancel' },
             ]);
         } catch { Alert.alert('Lỗi', 'Không thể thêm vào nhật ký'); }
     };
@@ -122,8 +113,8 @@ export default function FoodDetailScreen() {
             );
             if (conflicts.length > 0) {
                 Alert.alert(
-                    '⚠️ Cảnh báo Dị ứng',
-                    `Món ăn này có chứa: ${conflicts.map(c => c.name).join(', ')}\nĐây là nguyên liệu nằm trong danh sách kiêng kỵ của bạn.`,
+                    'Cảnh báo Dị ứng',
+                    `Món ăn này có chứa: ${conflicts.map(c => c.name).join(', ')}\nNằm trong danh sách kiêng kỵ của bạn.`,
                     [{ text: 'Hủy', style: 'cancel' }, { text: 'Vẫn thêm', style: 'destructive', onPress: addToDiaryLogic }]
                 );
                 return;
@@ -134,9 +125,9 @@ export default function FoodDetailScreen() {
 
     if (loading || !food) {
         return (
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F8FAFC' }}>
+            <View className="flex-1 justify-center items-center bg-slate-50">
                 <ActivityIndicator size="large" color="#10B981" />
-                <Text style={{ marginTop: 12, color: '#94A3B8' }}>Đang tải...</Text>
+                <Text className="mt-3 text-slate-400 font-medium">Đang tải...</Text>
             </View>
         );
     }
@@ -146,149 +137,142 @@ export default function FoodDetailScreen() {
     const dispProt = Math.round(food.protein * mult);
     const dispCarb = Math.round(food.carb * mult);
     const dispFat = Math.round(food.fat * mult);
-    const totalMacros = dispProt + dispCarb + dispFat;
+    const totalM = dispProt + dispCarb + dispFat;
     const imgUri = resolveImg(food.image as string | undefined);
     const activeMeal = MEAL_TYPES.find(m => m.id === selectedMeal) || MEAL_TYPES[0];
 
     return (
-        <View style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
+        <View className="flex-1 bg-slate-50">
             <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
             {/* Hero Image */}
-            <View style={{ height: 280, position: 'relative' }}>
+            <View className="h-72 relative">
                 {imgUri ? (
-                    <Image source={{ uri: imgUri }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+                    <Image source={{ uri: imgUri }} className="w-full h-full" resizeMode="cover" />
                 ) : (
-                    <LinearGradient colors={['#ECFDF5', '#D1FAE5']} style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+                    <LinearGradient colors={['#ECFDF5', '#D1FAE5']} className="flex-1 items-center justify-center">
                         <MaterialCommunityIcons name="food-variant" size={80} color="#6EE7B7" />
                     </LinearGradient>
                 )}
-                {/* Scrim */}
+                {/* Scrim gradient */}
                 <LinearGradient
-                    colors={['rgba(0,0,0,0.4)', 'transparent', 'rgba(0,0,0,0.3)']}
+                    colors={['rgba(0,0,0,0.45)', 'transparent', 'rgba(0,0,0,0.3)']}
                     locations={[0, 0.4, 1]}
-                    style={{ position: 'absolute', inset: 0 } as any}
+                    className="absolute inset-0"
                 />
                 {/* Nav buttons */}
-                <View style={{ position: 'absolute', top: insets.top + 8, left: 16, right: 16, flexDirection: 'row', justifyContent: 'space-between' }}>
+                <View className="absolute left-4 right-4 flex-row justify-between" style={{ top: insets.top + 8 }}>
                     <TouchableOpacity
                         onPress={() => router.back()}
-                        style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(0,0,0,0.35)', alignItems: 'center', justifyContent: 'center' }}
+                        className="w-10 h-10 rounded-xl items-center justify-center bg-black/35"
                     >
                         <Feather name="arrow-left" size={20} color="#fff" />
                     </TouchableOpacity>
                     <TouchableOpacity
                         onPress={handleToggleFavorite}
-                        style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(0,0,0,0.35)', alignItems: 'center', justifyContent: 'center' }}
+                        className="w-10 h-10 rounded-xl items-center justify-center bg-black/35"
                     >
                         <Feather name="heart" size={20} color={isFavorite ? '#F43F5E' : '#fff'} />
                     </TouchableOpacity>
                 </View>
-                {/* Calo floating badge */}
-                <View style={{
-                    position: 'absolute', bottom: 16, right: 16,
-                    backgroundColor: 'rgba(255,255,255,0.95)', borderRadius: 16,
-                    paddingHorizontal: 14, paddingVertical: 8,
-                    flexDirection: 'row', alignItems: 'center', gap: 6,
-                    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.15, shadowRadius: 8,
-                }}>
+                {/* Calo badge */}
+                <View className="absolute bottom-4 right-4 bg-white/95 rounded-2xl px-3 py-2 flex-row items-center gap-1.5 shadow-sm shadow-black/20">
                     <MaterialCommunityIcons name="fire" size={18} color="#F97316" />
-                    <Text style={{ fontSize: 18, fontWeight: '900', color: '#F97316' }}>{dispCal}</Text>
-                    <Text style={{ fontSize: 12, fontWeight: '600', color: '#94A3B8' }}>kcal</Text>
+                    <Text className="text-lg font-black text-orange-500">{dispCal}</Text>
+                    <Text className="text-xs font-semibold text-slate-400">kcal</Text>
                 </View>
             </View>
 
             <ScrollView
-                style={{ flex: 1, marginTop: -20 }}
+                className="flex-1 -mt-5"
                 contentContainerStyle={{ paddingBottom: 110 }}
                 showsVerticalScrollIndicator={false}
             >
-                <View style={{ backgroundColor: '#F8FAFC', borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingTop: 24, paddingHorizontal: 20 }}>
+                <View className="bg-slate-50 rounded-t-[24px] pt-6 px-5">
 
-                    {/* Name + Amount row */}
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
-                        <View style={{ flex: 1, marginRight: 12 }}>
-                            <Text style={{ fontSize: 24, fontWeight: '900', color: '#0F172A', lineHeight: 30 }}>
-                                {food.name}
-                            </Text>
-                            <Text style={{ fontSize: 14, color: '#94A3B8', fontWeight: '500', marginTop: 4 }}>
-                                1 {food.serving_unit || 'suất'}
-                            </Text>
+                    {/* Name + Stepper */}
+                    <View className="flex-row justify-between items-start mb-6">
+                        <View className="flex-1 mr-4">
+                            <Text className="text-2xl font-black text-slate-900 leading-8">{food.name}</Text>
+                            <Text className="text-sm text-slate-400 font-medium mt-1">1 {food.serving_unit || 'suất'}</Text>
                         </View>
                         {/* Amount Stepper */}
-                        <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: 16, borderWidth: 1.5, borderColor: '#E2E8F0', overflow: 'hidden' }}>
+                        <View className="flex-row items-center bg-white rounded-2xl border-[1.5px] border-slate-200 overflow-hidden">
                             <TouchableOpacity
                                 onPress={() => setAmount((Math.max(0.5, parseFloat(amount) - 0.5)).toString())}
-                                style={{ width: 38, height: 40, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F8FAFC' }}
+                                className="w-10 h-11 items-center justify-center bg-slate-50"
                             >
                                 <Feather name="minus" size={16} color="#64748B" />
                             </TouchableOpacity>
-                            <View style={{ paddingHorizontal: 10, alignItems: 'center' }}>
+                            <View className="px-3 items-center">
                                 <TextInput
-                                    value={amount}
-                                    onChangeText={setAmount}
-                                    keyboardType="numeric"
-                                    style={{ fontSize: 16, fontWeight: '800', color: '#1E293B', textAlign: 'center', minWidth: 28 }}
+                                    value={amount} onChangeText={setAmount} keyboardType="numeric"
+                                    className="text-lg font-black text-slate-800 text-center min-w-[28px]"
                                 />
                             </View>
                             <TouchableOpacity
                                 onPress={() => setAmount((parseFloat(amount) + 0.5).toString())}
-                                style={{ width: 38, height: 40, alignItems: 'center', justifyContent: 'center', backgroundColor: '#ECFDF5' }}
+                                className="w-10 h-11 items-center justify-center bg-emerald-50"
                             >
                                 <Feather name="plus" size={16} color="#10B981" />
                             </TouchableOpacity>
                         </View>
                     </View>
 
-                    {/* Macros Card */}
-                    <View style={{ backgroundColor: '#FFFFFF', borderRadius: 22, padding: 20, borderWidth: 1.5, borderColor: '#F1F5F9', marginBottom: 16, shadowColor: '#CBD5E1', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 2 }}>
-                        <Text style={{ fontSize: 14, fontWeight: '800', color: '#94A3B8', letterSpacing: 0.5, marginBottom: 16 }}>
-                            BẢNG DINH DƯỠNG
-                        </Text>
+                    {/* NUTRITION CARD */}
+                    <View className="bg-white rounded-[22px] p-5 border border-slate-100 mb-4 shadow-sm shadow-slate-200">
+                        <Text className="text-xs font-bold text-slate-400 tracking-widest mb-4">BẢNG DINH DƯỠNG</Text>
 
-                        {/* Summary Row */}
-                        <View style={{ flexDirection: 'row', marginBottom: 20, gap: 10 }}>
-                            {[
-                                { label: 'Protein', value: dispProt, color: '#3B82F6', bg: '#EFF6FF' },
-                                { label: 'Carbs', value: dispCarb, color: '#F59E0B', bg: '#FFFBEB' },
-                                { label: 'Fat', value: dispFat, color: '#F43F5E', bg: '#FFF1F2' },
-                            ].map(m => (
-                                <View key={m.label} style={{ flex: 1, backgroundColor: m.bg, borderRadius: 14, padding: 12, alignItems: 'center' }}>
-                                    <Text style={{ fontSize: 20, fontWeight: '900', color: m.color }}>{m.value}</Text>
-                                    <Text style={{ fontSize: 11, fontWeight: '600', color: m.color, opacity: 0.7 }}>g</Text>
-                                    <Text style={{ fontSize: 11, fontWeight: '600', color: '#94A3B8', marginTop: 4 }}>{m.label}</Text>
-                                </View>
-                            ))}
+                        {/* 3 Pills */}
+                        <View className="flex-row gap-3 mb-5">
+                            <View className="flex-1 bg-blue-50 rounded-2xl p-3 items-center border border-blue-100">
+                                <Text className="text-2xl font-black text-blue-600">{dispProt}</Text>
+                                <Text className="text-[11px] font-semibold text-blue-400">g</Text>
+                                <Text className="text-xs font-semibold text-slate-400 mt-1">Protein</Text>
+                            </View>
+                            <View className="flex-1 bg-amber-50 rounded-2xl p-3 items-center border border-amber-100">
+                                <Text className="text-2xl font-black text-amber-500">{dispCarb}</Text>
+                                <Text className="text-[11px] font-semibold text-amber-400">g</Text>
+                                <Text className="text-xs font-semibold text-slate-400 mt-1">Carbs</Text>
+                            </View>
+                            <View className="flex-1 bg-rose-50 rounded-2xl p-3 items-center border border-rose-100">
+                                <Text className="text-2xl font-black text-rose-500">{dispFat}</Text>
+                                <Text className="text-[11px] font-semibold text-rose-400">g</Text>
+                                <Text className="text-xs font-semibold text-slate-400 mt-1">Fat</Text>
+                            </View>
                         </View>
 
-                        {/* Bars */}
-                        <MacroBar label="Protein" value={dispProt} total={totalMacros} color="#3B82F6" bg="#EFF6FF" />
-                        <MacroBar label="Carbohydrate" value={dispCarb} total={totalMacros} color="#F59E0B" bg="#FFFBEB" />
-                        <MacroBar label="Fat" value={dispFat} total={totalMacros} color="#F43F5E" bg="#FFF1F2" />
+                        {/* Progress Bars */}
+                        <MacroBar label="Protein" value={dispProt} total={totalM} color="#3B82F6" barClassName="bg-blue-500" />
+                        <MacroBar label="Carbohydrate" value={dispCarb} total={totalM} color="#F59E0B" barClassName="bg-amber-400" />
+                        <MacroBar label="Fat" value={dispFat} total={totalM} color="#F43F5E" barClassName="bg-rose-500" />
                     </View>
 
-                    {/* Micronutrients Toggle */}
+                    {/* Micronutrients */}
                     {food.micronutrients && Object.keys(food.micronutrients).length > 0 && (
-                        <View style={{ backgroundColor: '#FFFFFF', borderRadius: 22, borderWidth: 1.5, borderColor: '#F1F5F9', marginBottom: 16, overflow: 'hidden' }}>
+                        <View className="bg-white rounded-[22px] border border-slate-100 mb-4 overflow-hidden">
                             <TouchableOpacity
                                 onPress={() => setShowMicros(!showMicros)}
-                                style={{ flexDirection: 'row', alignItems: 'center', padding: 16, gap: 12 }}
+                                className="flex-row items-center p-4 gap-3"
                             >
-                                <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: '#F0FDF4', alignItems: 'center', justifyContent: 'center' }}>
+                                <View className="w-9 h-9 rounded-xl bg-emerald-50 items-center justify-center">
                                     <MaterialCommunityIcons name="flask-outline" size={20} color="#10B981" />
                                 </View>
-                                <Text style={{ flex: 1, fontSize: 15, fontWeight: '700', color: '#1E293B' }}>Vi chất dinh dưỡng</Text>
+                                <Text className="flex-1 text-base font-bold text-slate-800">Vi chất dinh dưỡng</Text>
                                 <Feather name={showMicros ? 'chevron-up' : 'chevron-down'} size={18} color="#94A3B8" />
                             </TouchableOpacity>
                             {showMicros && (
-                                <View style={{ paddingHorizontal: 16, paddingBottom: 12 }}>
-                                    {Object.entries(food.micronutrients).map(([key, value]) => (
-                                        <MicroRow
-                                            key={key}
-                                            label={key === 'fiber' ? 'Chất xơ' : key === 'sugar' ? 'Đường' : key === 'sodium' ? 'Natri' : key === 'cholesterol' ? 'Cholesterol' : key}
-                                            value={Math.round((value as number) * mult * 10) / 10}
-                                            unit={['sodium', 'cholesterol', 'potassium', 'calcium'].includes(key) ? 'mg' : 'g'}
-                                        />
+                                <View className="px-4 pb-3">
+                                    {Object.entries(food.micronutrients).map(([key, value], idx, arr) => (
+                                        <View key={key} className={`flex-row justify-between py-2.5 ${idx < arr.length - 1 ? 'border-b border-slate-50' : ''}`}>
+                                            <Text className="text-sm text-slate-500 font-medium capitalize">
+                                                {key === 'fiber' ? 'Chất xơ' : key === 'sugar' ? 'Đường' : key === 'sodium' ? 'Natri' : key === 'cholesterol' ? 'Cholesterol' : key}
+                                            </Text>
+                                            <Text className="text-sm font-bold text-slate-800">
+                                                {Math.round((value as number) * mult * 10) / 10}
+                                                {['sodium', 'cholesterol', 'potassium', 'calcium'].includes(key) ? 'mg' : 'g'}
+                                            </Text>
+                                        </View>
                                     ))}
                                 </View>
                             )}
@@ -297,27 +281,22 @@ export default function FoodDetailScreen() {
 
                     {/* Ingredients */}
                     {food.ingredients && food.ingredients.length > 0 && (
-                        <View style={{ backgroundColor: '#FFFFFF', borderRadius: 22, padding: 20, borderWidth: 1.5, borderColor: '#F1F5F9', marginBottom: 16 }}>
-                            <Text style={{ fontSize: 16, fontWeight: '800', color: '#1E293B', marginBottom: 14 }}>
-                                Nguyên liệu ({food.ingredients.length})
-                            </Text>
+                        <View className="bg-white rounded-[22px] p-5 border border-slate-100 mb-4">
+                            <Text className="text-base font-bold text-slate-800 mb-3">Nguyên liệu ({food.ingredients.length})</Text>
                             {food.ingredients.map((ing, idx) => {
                                 const ingImg = resolveImg(ing.image as string | undefined);
                                 return (
-                                    <View key={idx} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: idx < food.ingredients!.length - 1 ? 1 : 0, borderBottomColor: '#F1F5F9' }}>
-                                        <View style={{ width: 44, height: 44, borderRadius: 12, overflow: 'hidden', backgroundColor: '#F8FAFC', marginRight: 12 }}>
-                                            {ingImg ? (
-                                                <Image source={{ uri: ingImg }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
-                                            ) : (
-                                                <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-                                                    <Text style={{ fontSize: 20 }}>🥗</Text>
-                                                </View>
-                                            )}
+                                    <View key={idx} className={`flex-row items-center py-2.5 ${idx < food.ingredients!.length - 1 ? 'border-b border-slate-50' : ''}`}>
+                                        <View className="w-11 h-11 rounded-xl overflow-hidden bg-slate-100 mr-3">
+                                            {ingImg
+                                                ? <Image source={{ uri: ingImg }} className="w-full h-full" resizeMode="cover" />
+                                                : <View className="flex-1 items-center justify-center"><MaterialCommunityIcons name="food-variant" size={22} color="#CBD5E1" /></View>
+                                            }
                                         </View>
-                                        <Text style={{ flex: 1, fontSize: 14, fontWeight: '600', color: '#374151' }}>{ing.name}</Text>
+                                        <Text className="flex-1 text-sm font-semibold text-slate-700">{ing.name}</Text>
                                         {ing.FoodIngredient?.amount_in_grams && (
-                                            <View style={{ backgroundColor: '#ECFDF5', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 }}>
-                                                <Text style={{ fontSize: 13, fontWeight: '700', color: '#059669' }}>
+                                            <View className="bg-emerald-50 px-3 py-1 rounded-lg border border-emerald-100">
+                                                <Text className="text-sm font-bold text-emerald-600">
                                                     {Math.round(ing.FoodIngredient.amount_in_grams * mult)}g
                                                 </Text>
                                             </View>
@@ -330,99 +309,85 @@ export default function FoodDetailScreen() {
 
                     {/* Description */}
                     {(food.cooking || food.description) && (
-                        <View style={{ backgroundColor: '#FFFFFF', borderRadius: 22, padding: 20, borderWidth: 1.5, borderColor: '#F1F5F9', marginBottom: 16 }}>
-                            <Text style={{ fontSize: 16, fontWeight: '800', color: '#1E293B', marginBottom: 12 }}>Mô tả & Cách làm</Text>
-                            <Text style={{ fontSize: 14, color: '#64748B', lineHeight: 24 }}>{food.cooking || food.description}</Text>
+                        <View className="bg-white rounded-[22px] p-5 border border-slate-100 mb-4">
+                            <Text className="text-base font-bold text-slate-800 mb-3">Mô tả & Cách làm</Text>
+                            <Text className="text-[15px] text-slate-600 leading-6">{food.cooking || food.description}</Text>
                         </View>
                     )}
                 </View>
             </ScrollView>
 
             {/* Bottom CTA */}
-            <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: 20, paddingBottom: insets.bottom + 12, backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: '#F1F5F9' }}>
-                <TouchableOpacity
-                    onPress={() => setShowAddModal(true)}
-                    style={{ borderRadius: 18, overflow: 'hidden' }}
-                >
+            <View className="absolute bottom-0 left-0 right-0 px-5 bg-white border-t border-slate-100" style={{ paddingBottom: insets.bottom + 12, paddingTop: 12 }}>
+                <TouchableOpacity onPress={() => setShowAddModal(true)} className="rounded-2xl overflow-hidden">
                     <LinearGradient
                         colors={['#10B981', '#059669']}
                         start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-                        style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 16, gap: 10 }}
+                        className="flex-row items-center justify-center py-4 gap-2.5"
                     >
                         <MaterialCommunityIcons name="plus-circle-outline" size={22} color="#fff" />
-                        <Text style={{ fontSize: 16, fontWeight: '800', color: '#FFFFFF' }}>Thêm vào Nhật ký</Text>
+                        <Text className="text-base font-black text-white">Thêm vào Nhật ký</Text>
                     </LinearGradient>
                 </TouchableOpacity>
             </View>
 
-            {/* Add to Diary Modal */}
+            {/* ==== MODAL THÊM NHẬT KÝ ==== */}
             <Modal visible={showAddModal} transparent animationType="slide" onRequestClose={() => setShowAddModal(false)}>
-                <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' }}>
-                    <View style={{ backgroundColor: '#F8FAFC', borderTopLeftRadius: 32, borderTopRightRadius: 32, maxHeight: '82%' }}>
-                        {/* Modal Handle */}
-                        <View style={{ alignItems: 'center', paddingTop: 12, marginBottom: 4 }}>
-                            <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: '#E2E8F0' }} />
+                <View className="flex-1 justify-end bg-black/50">
+                    <View className="bg-slate-50 rounded-t-[32px]" style={{ maxHeight: '84%' }}>
+                        {/* Handle */}
+                        <View className="items-center pt-3 mb-1">
+                            <View className="w-10 h-1 rounded-full bg-slate-200" />
                         </View>
 
                         {/* Modal Header */}
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' }}>
+                        <View className="flex-row justify-between items-center px-5 py-4 border-b border-slate-100">
                             <View>
-                                <Text style={{ fontSize: 18, fontWeight: '900', color: '#0F172A' }}>Thêm vào Nhật ký</Text>
-                                <Text style={{ fontSize: 13, color: '#94A3B8', marginTop: 2 }}>{food.name}</Text>
+                                <Text className="text-lg font-black text-slate-900">Thêm vào Nhật ký</Text>
+                                <Text className="text-xs text-slate-400 mt-0.5">{food.name}</Text>
                             </View>
                             <TouchableOpacity
                                 onPress={() => setShowAddModal(false)}
-                                style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: '#F1F5F9', alignItems: 'center', justifyContent: 'center' }}
+                                className="w-9 h-9 rounded-xl bg-slate-100 items-center justify-center"
                             >
                                 <Feather name="x" size={18} color="#64748B" />
                             </TouchableOpacity>
                         </View>
 
                         <ScrollView contentContainerStyle={{ padding: 20 }} showsVerticalScrollIndicator={false}>
-                            {/* Meal Type */}
-                            <Text style={{ fontSize: 13, fontWeight: '700', color: '#94A3B8', marginBottom: 10, letterSpacing: 0.5 }}>
-                                CHỌN BỮA ĂN
-                            </Text>
-                            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 20 }}>
+                            {/* Chọn bữa ăn */}
+                            <Text className="text-xs font-bold text-slate-400 tracking-widest mb-3">CHỌN BỮA ĂN</Text>
+                            <View className="flex-row flex-wrap gap-2.5 mb-6">
                                 {MEAL_TYPES.map(m => (
                                     <TouchableOpacity
                                         key={m.id}
                                         onPress={() => setSelectedMeal(m.id)}
-                                        style={{
-                                            flexDirection: 'row', alignItems: 'center', gap: 8,
-                                            paddingVertical: 10, paddingHorizontal: 14, borderRadius: 14,
-                                            backgroundColor: selectedMeal === m.id ? m.color : '#FFFFFF',
-                                            borderWidth: 1.5,
-                                            borderColor: selectedMeal === m.id ? m.color : '#E2E8F0',
-                                        }}
+                                        className={`flex-row items-center gap-2 py-2.5 px-4 rounded-2xl border-[1.5px] ${selectedMeal === m.id ? 'border-transparent' : 'bg-white border-slate-200'}`}
+                                        style={selectedMeal === m.id ? { backgroundColor: m.color, borderColor: m.color } : {}}
                                     >
                                         <MaterialCommunityIcons name={m.icon as any} size={16} color={selectedMeal === m.id ? '#fff' : m.color} />
-                                        <Text style={{ fontSize: 13, fontWeight: '700', color: selectedMeal === m.id ? '#fff' : '#64748B' }}>
-                                            {m.label}
-                                        </Text>
+                                        <Text className={`text-sm font-bold ${selectedMeal === m.id ? 'text-white' : 'text-slate-600'}`}>{m.label}</Text>
                                     </TouchableOpacity>
                                 ))}
                             </View>
 
-                            {/* Date */}
-                            <Text style={{ fontSize: 13, fontWeight: '700', color: '#94A3B8', marginBottom: 10, letterSpacing: 0.5 }}>
-                                CHỌN NGÀY
-                            </Text>
+                            {/* Chọn ngày */}
+                            <Text className="text-xs font-bold text-slate-400 tracking-widest mb-3">CHỌN NGÀY</Text>
                             <TouchableOpacity
                                 onPress={() => setShowDatePicker(true)}
-                                style={{ flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#FFFFFF', borderRadius: 14, padding: 14, borderWidth: 1.5, borderColor: '#E2E8F0', marginBottom: 20 }}
+                                className="flex-row items-center gap-3 bg-white rounded-2xl p-4 border-[1.5px] border-slate-200 mb-5"
                             >
-                                <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: '#ECFDF5', alignItems: 'center', justifyContent: 'center' }}>
+                                <View className="w-9 h-9 rounded-xl bg-emerald-50 items-center justify-center">
                                     <Feather name="calendar" size={16} color="#10B981" />
                                 </View>
-                                <Text style={{ flex: 1, fontSize: 15, fontWeight: '700', color: '#1E293B' }}>
+                                <Text className="flex-1 text-base font-bold text-slate-800">
                                     {selectedDate.toLocaleDateString('vi-VN', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' })}
                                 </Text>
                                 <Feather name="chevron-right" size={16} color="#94A3B8" />
                             </TouchableOpacity>
 
                             {showDatePicker && (
-                                <View style={{ marginBottom: 20 }}>
+                                <View className="mb-5">
                                     <DateTimePicker
                                         value={selectedDate} mode="date"
                                         display={Platform.OS === 'ios' ? 'spinner' : 'default'}
@@ -433,70 +398,65 @@ export default function FoodDetailScreen() {
                                         textColor="black"
                                     />
                                     {Platform.OS === 'ios' && (
-                                        <TouchableOpacity onPress={() => setShowDatePicker(false)} style={{ alignItems: 'center', paddingVertical: 10, backgroundColor: '#ECFDF5', borderRadius: 10, marginTop: 8 }}>
-                                            <Text style={{ color: '#10B981', fontWeight: '700' }}>Xong</Text>
+                                        <TouchableOpacity onPress={() => setShowDatePicker(false)} className="items-center py-2.5 bg-emerald-50 rounded-xl mt-2">
+                                            <Text className="text-emerald-600 font-bold">Xong</Text>
                                         </TouchableOpacity>
                                     )}
                                 </View>
                             )}
 
-                            {/* Amount */}
-                            <Text style={{ fontSize: 13, fontWeight: '700', color: '#94A3B8', marginBottom: 10, letterSpacing: 0.5 }}>
-                                SỐ LƯỢNG
-                            </Text>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#FFFFFF', borderRadius: 14, padding: 16, borderWidth: 1.5, borderColor: '#E2E8F0', marginBottom: 24 }}>
+                            {/* Số lượng */}
+                            <Text className="text-xs font-bold text-slate-400 tracking-widest mb-3">SỐ LƯỢNG</Text>
+                            <View className="flex-row items-center justify-between bg-white rounded-2xl p-4 border-[1.5px] border-slate-200 mb-5">
                                 <TouchableOpacity
                                     onPress={() => setAmount((Math.max(0.5, parseFloat(amount) - 0.5)).toString())}
-                                    style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: '#F1F5F9', alignItems: 'center', justifyContent: 'center' }}
+                                    className="w-10 h-10 rounded-xl bg-slate-100 items-center justify-center"
                                 >
                                     <Feather name="minus" size={18} color="#64748B" />
                                 </TouchableOpacity>
-                                <View style={{ alignItems: 'center' }}>
+                                <View className="items-center">
                                     <TextInput
                                         value={amount} onChangeText={setAmount} keyboardType="numeric"
-                                        style={{ fontSize: 26, fontWeight: '900', color: '#1E293B', textAlign: 'center', minWidth: 60 }}
+                                        className="text-3xl font-black text-slate-800 text-center min-w-[64px]"
                                     />
-                                    <Text style={{ fontSize: 13, color: '#94A3B8', fontWeight: '600' }}>{food.serving_unit || 'suất'}</Text>
+                                    <Text className="text-sm text-slate-400 font-semibold">{food.serving_unit || 'suất'}</Text>
                                 </View>
                                 <TouchableOpacity
                                     onPress={() => setAmount((parseFloat(amount) + 0.5).toString())}
-                                    style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: '#ECFDF5', alignItems: 'center', justifyContent: 'center' }}
+                                    className="w-10 h-10 rounded-xl bg-emerald-50 items-center justify-center"
                                 >
                                     <Feather name="plus" size={18} color="#10B981" />
                                 </TouchableOpacity>
                             </View>
 
-                            {/* Preview */}
-                            <View style={{ backgroundColor: '#0F172A', borderRadius: 16, padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+                            {/* Dark preview card */}
+                            <View className="bg-slate-900 rounded-2xl p-4 flex-row items-center justify-between mb-5">
                                 <View>
-                                    <Text style={{ color: '#94A3B8', fontSize: 12, fontWeight: '600' }}>Năng lượng</Text>
-                                    <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 4, marginTop: 2 }}>
-                                        <Text style={{ color: '#34D399', fontSize: 28, fontWeight: '900' }}>{dispCal}</Text>
-                                        <Text style={{ color: '#6EE7B7', fontSize: 14, fontWeight: '700' }}>kcal</Text>
+                                    <Text className="text-slate-400 text-xs font-semibold">Năng lượng</Text>
+                                    <View className="flex-row items-baseline gap-1.5 mt-1">
+                                        <Text className="text-emerald-400 text-3xl font-black">{dispCal}</Text>
+                                        <Text className="text-emerald-300 text-sm font-bold">kcal</Text>
                                     </View>
                                 </View>
-                                <View style={{ gap: 6 }}>
-                                    <Text style={{ color: '#FCD34D', fontSize: 12, fontWeight: '700' }}>C: {dispCarb}g</Text>
-                                    <Text style={{ color: '#93C5FD', fontSize: 12, fontWeight: '700' }}>P: {dispProt}g</Text>
-                                    <Text style={{ color: '#F9A8D4', fontSize: 12, fontWeight: '700' }}>F: {dispFat}g</Text>
+                                <View className="gap-1.5">
+                                    <Text className="text-amber-300 text-xs font-bold">C: {dispCarb}g</Text>
+                                    <Text className="text-blue-300 text-xs font-bold">P: {dispProt}g</Text>
+                                    <Text className="text-pink-300 text-xs font-bold">F: {dispFat}g</Text>
                                 </View>
                             </View>
 
-                            {/* Confirm Button */}
-                            <TouchableOpacity onPress={handleAddToDiary} style={{ borderRadius: 16, overflow: 'hidden' }}>
+                            {/* Confirm button */}
+                            <TouchableOpacity onPress={handleAddToDiary} className="rounded-2xl overflow-hidden">
                                 <LinearGradient
-                                    colors={[activeMeal.color, activeMeal.color + 'CC']}
+                                    colors={activeMeal.gradColors}
                                     start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-                                    style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 16, gap: 10 }}
+                                    className="flex-row items-center justify-center py-4 gap-2.5"
                                 >
                                     <Feather name="check-circle" size={20} color="#fff" />
-                                    <Text style={{ fontSize: 16, fontWeight: '800', color: '#FFFFFF' }}>
-                                        Lưu vào {activeMeal.label}
-                                    </Text>
+                                    <Text className="text-base font-black text-white">Lưu vào {activeMeal.label}</Text>
                                 </LinearGradient>
                             </TouchableOpacity>
-
-                            <View style={{ height: 20 }} />
+                            <View className="h-6" />
                         </ScrollView>
                     </View>
                 </View>

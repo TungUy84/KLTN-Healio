@@ -443,14 +443,14 @@ export default function DiaryScreen() {
                 {/* Meals */}
                 <View className="gap-4">
                   {[
-                    { title: 'Sữa Sáng', data: mealPlan.breakfast, icon: '☀️', color: 'bg-orange-50 border-orange-100' },
-                    { title: 'Bữa Trưa', data: mealPlan.lunch, icon: '🌤️', color: 'bg-blue-50 border-blue-100' },
-                    { title: 'Bữa Tối', data: mealPlan.dinner, icon: '🌙', color: 'bg-indigo-50 border-indigo-100' }
+                    { title: 'Sữa Sáng', data: mealPlan.breakfast, icon: 'food-croissant', iconColor: '#F97316', color: 'bg-orange-50 border-orange-100' },
+                    { title: 'Bữa Trưa', data: mealPlan.lunch, icon: 'silverware-fork-knife', iconColor: '#3B82F6', color: 'bg-blue-50 border-blue-100' },
+                    { title: 'Bữa Tối', data: mealPlan.dinner, icon: 'pot-steam-outline', iconColor: '#6366F1', color: 'bg-indigo-50 border-indigo-100' }
                   ].map((meal, index) => (
                     <View key={index} className={`p-4 rounded-2xl border ${meal.color}`}>
                       <View className="flex-row justify-between items-start mb-2">
                         <View className="flex-row gap-2 items-center">
-                          <Text className="text-xl">{meal.icon}</Text>
+                          <MaterialCommunityIcons name={meal.icon as any} size={22} color={meal.iconColor} />
                           <Text className="font-bold text-slate-700 text-base">{meal.title}</Text>
                         </View>
                         <View className="bg-white/60 px-2 py-1 rounded text-xs">

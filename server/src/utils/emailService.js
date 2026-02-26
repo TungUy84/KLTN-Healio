@@ -7,8 +7,8 @@ const nodemailer = require('nodemailer');
 
 const sendEmail = async (to, subject, text, html) => {
     // 1. Log for debugging
-    console.log(`[EmailService] Sending to: ${to}`);
-    
+    // console.log(`[EmailService] Sending to: ${to}`);
+
     // 2. Transporter Configuration
     const transporter = nodemailer.createTransport({
         service: 'gmail',
@@ -27,10 +27,10 @@ const sendEmail = async (to, subject, text, html) => {
             text,
             html
         });
-        console.log(`[EmailService] Email sent successfully to ${to}`);
+        //console.log(`[EmailService] Email sent successfully to ${to}`);
         return true;
     } catch (error) {
-        console.error('[EmailService] Error sending email:', error);
+        //console.error('[EmailService] Error sending email:', error);
         throw error; // Re-throw so controller catches it
     }
 };

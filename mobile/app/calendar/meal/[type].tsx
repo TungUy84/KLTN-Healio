@@ -22,39 +22,35 @@ const resolveImage = (path: string | null | undefined): string | null => {
 
 const MEAL_CONFIG: Record<string, any> = {
     breakfast: {
-        label: 'Bữa Sáng', icon: 'coffee',
-        iconMci: 'food-croissant',
-        gradColors: ['#F97316', '#FB923C'],
-        accentColor: '#F97316', badge: '#FED7AA',
+        label: 'Bữa Sáng', iconMci: 'food-croissant',
+        gradColors: ['#F97316', '#FB923C'] as [string, string],
+        accentColor: '#F97316', badge: '#FED7AA', badgeClass: 'bg-orange-100',
     },
     lunch: {
-        label: 'Bữa Trưa', icon: 'sun',
-        iconMci: 'silverware-fork-knife',
-        gradColors: ['#3B82F6', '#60A5FA'],
-        accentColor: '#3B82F6', badge: '#BFDBFE',
+        label: 'Bữa Trưa', iconMci: 'silverware-fork-knife',
+        gradColors: ['#3B82F6', '#60A5FA'] as [string, string],
+        accentColor: '#3B82F6', badge: '#BFDBFE', badgeClass: 'bg-blue-100',
     },
     dinner: {
-        label: 'Bữa Tối', icon: 'moon',
-        iconMci: 'pot-steam-outline',
-        gradColors: ['#8B5CF6', '#A78BFA'],
-        accentColor: '#8B5CF6', badge: '#DDD6FE',
+        label: 'Bữa Tối', iconMci: 'pot-steam-outline',
+        gradColors: ['#8B5CF6', '#A78BFA'] as [string, string],
+        accentColor: '#8B5CF6', badge: '#DDD6FE', badgeClass: 'bg-violet-100',
     },
     snack: {
-        label: 'Bữa Phụ', icon: 'coffee',
-        iconMci: 'food-apple-outline',
-        gradColors: ['#F43F5E', '#FB7185'],
-        accentColor: '#F43F5E', badge: '#FECDD3',
+        label: 'Bữa Phụ', iconMci: 'food-apple-outline',
+        gradColors: ['#F43F5E', '#FB7185'] as [string, string],
+        accentColor: '#F43F5E', badge: '#FECDD3', badgeClass: 'bg-rose-100',
     },
 };
 
-// --- MACRO BADGE ---
+// --- MACRO BADGE (dùng dynamic color nên giữ style cho color) ---
 const MacroBadge = ({ label, value, color, bg }: any) => (
-    <View style={{ alignItems: 'center', flex: 1 }}>
-        <View style={{ backgroundColor: bg, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 8, width: '100%', alignItems: 'center' }}>
-            <Text style={{ fontSize: 20, fontWeight: '800', color }}>{value}</Text>
-            <Text style={{ fontSize: 11, fontWeight: '600', color, opacity: 0.7 }}>g</Text>
+    <View className="flex-1 items-center">
+        <View className="w-full items-center rounded-xl py-2 px-3" style={{ backgroundColor: bg }}>
+            <Text className="text-xl font-black" style={{ color }}>{value}</Text>
+            <Text className="text-[11px] font-semibold" style={{ color, opacity: 0.7 }}>g</Text>
         </View>
-        <Text style={{ fontSize: 11, fontWeight: '600', color: '#94A3B8', marginTop: 6 }}>{label}</Text>
+        <Text className="text-[11px] font-semibold text-slate-400 mt-1.5">{label}</Text>
     </View>
 );
 
@@ -65,76 +61,62 @@ const FoodItemCard = ({ item, index, onDelete }: any) => {
     return (
         <Animated.View
             entering={FadeInDown.delay(index * 80).duration(400)}
-            style={{
-                backgroundColor: '#FFFFFF',
-                borderRadius: 20,
-                marginBottom: 12,
-                borderWidth: 1.5,
-                borderColor: '#F1F5F9',
-                overflow: 'hidden',
-                shadowColor: '#CBD5E1',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.1,
-                shadowRadius: 8,
-                elevation: 2,
-            }}
+            className="bg-white rounded-[20px] mb-3 border-[1.5px] border-slate-100 overflow-hidden shadow-sm shadow-slate-200"
         >
-            <View style={{ flexDirection: 'row', alignItems: 'stretch' }}>
+            <View className="flex-row items-stretch">
                 {/* Image */}
-                <View style={{ width: 88, height: 88, backgroundColor: '#F8FAFC' }}>
+                <View className="w-22 h-22 bg-slate-50">
                     {img ? (
-                        <Image source={{ uri: img }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+                        <Image source={{ uri: img }} className="w-full h-full" resizeMode="cover" />
                     ) : (
-                        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F1F5F9' }}>
+                        <View className="flex-1 items-center justify-center bg-slate-100">
                             <MaterialCommunityIcons name="food-variant" size={36} color="#CBD5E1" />
                         </View>
                     )}
                 </View>
 
                 {/* Info */}
-                <View style={{ flex: 1, padding: 14, justifyContent: 'space-between' }}>
-                    {/* Name + Calories row */}
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <Text style={{ fontSize: 15, fontWeight: '800', color: '#1E293B', flex: 1, marginRight: 8 }} numberOfLines={2}>
+                <View className="flex-1 p-3.5 justify-between">
+                    {/* Name + Calories */}
+                    <View className="flex-row justify-between items-start">
+                        <Text className="flex-1 text-[15px] font-black text-slate-800 mr-2 leading-5" numberOfLines={2}>
                             {item.name}
                         </Text>
-                        <View style={{ alignItems: 'flex-end' }}>
-                            <Text style={{ fontSize: 18, fontWeight: '900', color: '#10B981' }}>{item.calories}</Text>
-                            <Text style={{ fontSize: 10, color: '#94A3B8', fontWeight: '600' }}>kcal</Text>
+                        <View className="items-end">
+                            <Text className="text-lg font-black text-emerald-500">{item.calories}</Text>
+                            <Text className="text-[10px] font-semibold text-slate-400">kcal</Text>
                         </View>
                     </View>
 
-                    {/* Quantity Badge */}
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6 }}>
-                        <View style={{ backgroundColor: '#F0FDF4', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4, borderWidth: 1, borderColor: '#BBFCDB' }}>
-                            <Text style={{ fontSize: 13, fontWeight: '700', color: '#059669' }}>
+                    {/* Quantity + Macro chips */}
+                    <View className="flex-row items-center gap-2 mt-1.5 flex-wrap">
+                        <View className="bg-emerald-50 border border-emerald-200 rounded-lg px-2.5 py-1">
+                            <Text className="text-[13px] font-bold text-emerald-700">
                                 {item.quantity} {item.unit}
                             </Text>
                         </View>
-
-                        {/* Macro chips */}
-                        <View style={{ flexDirection: 'row', gap: 4 }}>
-                            <View style={{ backgroundColor: '#FFFBEB', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 }}>
-                                <Text style={{ fontSize: 11, fontWeight: '600', color: '#D97706' }}>C {Math.round(item.carbs || 0)}g</Text>
+                        <View className="flex-row gap-1">
+                            <View className="bg-amber-50 border border-amber-100 rounded-md px-1.5 py-0.5">
+                                <Text className="text-[11px] font-semibold text-amber-600">C {Math.round(item.carbs || 0)}g</Text>
                             </View>
-                            <View style={{ backgroundColor: '#EFF6FF', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 }}>
-                                <Text style={{ fontSize: 11, fontWeight: '600', color: '#2563EB' }}>P {Math.round(item.protein || 0)}g</Text>
+                            <View className="bg-blue-50 border border-blue-100 rounded-md px-1.5 py-0.5">
+                                <Text className="text-[11px] font-semibold text-blue-600">P {Math.round(item.protein || 0)}g</Text>
                             </View>
-                            <View style={{ backgroundColor: '#FFF1F2', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 }}>
-                                <Text style={{ fontSize: 11, fontWeight: '600', color: '#E11D48' }}>F {Math.round(item.fat || 0)}g</Text>
+                            <View className="bg-rose-50 border border-rose-100 rounded-md px-1.5 py-0.5">
+                                <Text className="text-[11px] font-semibold text-rose-500">F {Math.round(item.fat || 0)}g</Text>
                             </View>
                         </View>
                     </View>
                 </View>
 
                 {/* Actions column */}
-                <View style={{ backgroundColor: '#FAFAFA', borderLeftWidth: 1, borderLeftColor: '#F1F5F9', justifyContent: 'center', paddingHorizontal: 8, gap: 8 }}>
-                    <TouchableOpacity style={{ alignItems: 'center', justifyContent: 'center', width: 32, height: 32, borderRadius: 8, backgroundColor: '#EFF6FF' }}>
+                <View className="bg-slate-50 border-l border-slate-100 justify-center px-2 gap-2">
+                    <TouchableOpacity className="w-8 h-8 rounded-lg bg-blue-50 items-center justify-center">
                         <Feather name="edit-2" size={14} color="#3B82F6" />
                     </TouchableOpacity>
                     <TouchableOpacity
                         onPress={() => onDelete(item.id)}
-                        style={{ alignItems: 'center', justifyContent: 'center', width: 32, height: 32, borderRadius: 8, backgroundColor: '#FFF1F2' }}
+                        className="w-8 h-8 rounded-lg bg-rose-50 items-center justify-center"
                     >
                         <Feather name="trash-2" size={14} color="#F43F5E" />
                     </TouchableOpacity>
@@ -199,8 +181,8 @@ export default function MealDetailScreen() {
     const totalFiber = Math.round(foodItems.reduce((s, i) => s + i.fiber, 0));
 
     return (
-        <View style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
-            <StatusBar barStyle="light-content" />
+        <View className="flex-1 bg-slate-50">
+            <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
             {/* Header Gradient */}
             <LinearGradient
@@ -209,44 +191,45 @@ export default function MealDetailScreen() {
                 style={{ paddingTop: insets.top + 8, paddingBottom: 28, paddingHorizontal: 20 }}
             >
                 {/* Top Nav */}
-                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 20 }}>
+                <View className="flex-row items-center mb-5">
                     <TouchableOpacity
                         onPress={() => router.back()}
-                        style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}
+                        className="w-10 h-10 rounded-xl items-center justify-center mr-3"
+                        style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}
                     >
                         <Feather name="arrow-left" size={20} color="#fff" />
                     </TouchableOpacity>
-                    <View style={{ flex: 1 }}>
-                        <Text style={{ fontSize: 12, fontWeight: '600', color: 'rgba(255,255,255,0.7)', marginBottom: 1 }}>
+                    <View className="flex-1">
+                        <Text className="text-xs font-semibold mb-0.5" style={{ color: 'rgba(255,255,255,0.7)' }}>
                             Chi tiết thực đơn
                         </Text>
-                        <Text style={{ fontSize: 20, fontWeight: '900', color: '#FFFFFF' }}>
-                            {cfg.label}
-                        </Text>
+                        <Text className="text-xl font-black text-white">{cfg.label}</Text>
                     </View>
-                    <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 8 }}>
-                        <Text style={{ fontSize: 12, fontWeight: '600', color: '#fff' }}>{date as string}</Text>
+                    <View className="rounded-xl px-3.5 py-2" style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}>
+                        <Text className="text-xs font-semibold text-white">{date as string}</Text>
                     </View>
                 </View>
 
                 {/* Summary Panel */}
-                <View style={{ backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 20, padding: 18, borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)' }}>
-                    {/* Calories */}
-                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                <View className="rounded-[20px] p-4 border border-white/20" style={{ backgroundColor: 'rgba(255,255,255,0.15)' }}>
+                    {/* Calories row */}
+                    <View className="flex-row items-center justify-between mb-4">
                         <View>
-                            <Text style={{ fontSize: 12, fontWeight: '600', color: 'rgba(255,255,255,0.7)' }}>Tổng năng lượng</Text>
-                            <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 4, marginTop: 2 }}>
-                                <Text style={{ fontSize: 38, fontWeight: '900', color: '#ffffff' }}>{totalCalories}</Text>
-                                <Text style={{ fontSize: 16, fontWeight: '700', color: 'rgba(255,255,255,0.8)' }}>kcal</Text>
+                            <Text className="text-xs font-semibold" style={{ color: 'rgba(255,255,255,0.7)' }}>
+                                Tổng năng lượng
+                            </Text>
+                            <View className="flex-row items-baseline gap-1 mt-0.5">
+                                <Text className="text-4xl font-black text-white">{totalCalories}</Text>
+                                <Text className="text-base font-bold" style={{ color: 'rgba(255,255,255,0.8)' }}>kcal</Text>
                             </View>
                         </View>
-                        <View style={{ backgroundColor: 'rgba(255,255,255,0.25)', width: 60, height: 60, borderRadius: 20, alignItems: 'center', justifyContent: 'center' }}>
+                        <View className="w-14 h-14 rounded-[18px] items-center justify-center" style={{ backgroundColor: 'rgba(255,255,255,0.25)' }}>
                             <MaterialCommunityIcons name={cfg.iconMci} size={30} color="#fff" />
                         </View>
                     </View>
 
                     {/* Macros Row */}
-                    <View style={{ flexDirection: 'row', gap: 8 }}>
+                    <View className="flex-row gap-2">
                         <MacroBadge label="Carb" value={totalCarbs} color="#78350F" bg="rgba(253,224,71,0.9)" />
                         <MacroBadge label="Protein" value={totalProtein} color="#1E3A5F" bg="rgba(147,197,253,0.9)" />
                         <MacroBadge label="Fat" value={totalFat} color="#9D174D" bg="rgba(249,168,212,0.9)" />
@@ -261,32 +244,27 @@ export default function MealDetailScreen() {
                 contentContainerStyle={{ padding: 20, paddingBottom: 100 }}
             >
                 {/* List header */}
-                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
-                    <Text style={{ fontSize: 18, fontWeight: '800', color: '#1E293B', flex: 1 }}>
-                        Danh Sách Món Ăn
-                    </Text>
-                    <View style={{
-                        backgroundColor: cfg.badge, borderRadius: 10,
-                        paddingHorizontal: 10, paddingVertical: 4
-                    }}>
-                        <Text style={{ fontSize: 13, fontWeight: '700', color: cfg.accentColor }}>
+                <View className="flex-row items-center mb-4">
+                    <Text className="flex-1 text-[18px] font-black text-slate-800">Danh Sách Món Ăn</Text>
+                    <View className="px-2.5 py-1 rounded-xl" style={{ backgroundColor: cfg.badge }}>
+                        <Text className="text-[13px] font-bold" style={{ color: cfg.accentColor }}>
                             {foodItems.length} món
                         </Text>
                     </View>
                 </View>
 
                 {isLoading ? (
-                    <View style={{ paddingVertical: 60, alignItems: 'center', justifyContent: 'center' }}>
+                    <View className="py-16 items-center justify-center">
                         <ActivityIndicator size="large" color={cfg.accentColor} />
-                        <Text style={{ color: '#94A3B8', marginTop: 12, fontSize: 14 }}>Đang tải món ăn...</Text>
+                        <Text className="text-slate-400 mt-3 text-sm">Đang tải món ăn...</Text>
                     </View>
                 ) : foodItems.length === 0 ? (
-                    <View style={{ paddingVertical: 60, alignItems: 'center' }}>
-                        <View style={{ width: 80, height: 80, borderRadius: 24, backgroundColor: cfg.badge, alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+                    <View className="py-16 items-center">
+                        <View className="w-20 h-20 rounded-[24px] items-center justify-center mb-4" style={{ backgroundColor: cfg.badge }}>
                             <MaterialCommunityIcons name="food-off-outline" size={40} color={cfg.accentColor} />
                         </View>
-                        <Text style={{ fontSize: 17, fontWeight: '800', color: '#64748B', marginBottom: 6 }}>Chưa có món ăn nào</Text>
-                        <Text style={{ fontSize: 13, color: '#94A3B8', textAlign: 'center', lineHeight: 20 }}>
+                        <Text className="text-[17px] font-black text-slate-500 mb-1.5">Chưa có món ăn nào</Text>
+                        <Text className="text-sm text-slate-400 text-center leading-5">
                             Bữa ăn này chưa được ghi chép.{'\n'}Thêm món bên dưới nhé!
                         </Text>
                     </View>
@@ -298,20 +276,13 @@ export default function MealDetailScreen() {
 
                 {/* Add Food Button */}
                 <TouchableOpacity
-                    style={{
-                        marginTop: 8, paddingVertical: 16,
-                        borderRadius: 18, borderWidth: 2,
-                        borderColor: cfg.accentColor,
-                        borderStyle: 'dashed',
-                        flexDirection: 'row', alignItems: 'center',
-                        justifyContent: 'center', gap: 8,
-                        backgroundColor: `${cfg.badge}30`
-                    }}
+                    className="mt-2 py-4 rounded-[18px] border-2 border-dashed flex-row items-center justify-center gap-2"
+                    style={{ borderColor: cfg.accentColor, backgroundColor: cfg.badge + '30' }}
                 >
-                    <View style={{ width: 28, height: 28, borderRadius: 8, backgroundColor: cfg.accentColor, alignItems: 'center', justifyContent: 'center' }}>
+                    <View className="w-7 h-7 rounded-lg items-center justify-center" style={{ backgroundColor: cfg.accentColor }}>
                         <Feather name="plus" size={16} color="#fff" />
                     </View>
-                    <Text style={{ fontSize: 15, fontWeight: '800', color: cfg.accentColor }}>
+                    <Text className="text-[15px] font-black" style={{ color: cfg.accentColor }}>
                         Thêm món ăn vào {cfg.label}
                     </Text>
                 </TouchableOpacity>
