@@ -10,6 +10,7 @@ const OTP = require('../models/Otp');
 const { Op, Sequelize } = require('sequelize');
 const bcrypt = require('bcryptjs');
 const sequelize = require('../config/database');
+const { sendEmail } = require('../utils/emailService');
 
 const SORT_FIELDS = ['id', 'email', 'full_name', 'role', 'status', 'created_at'];
 
@@ -290,10 +291,13 @@ exports.resetPassword = async (req, res) => {
 
         await user.update({ password_hash });
 
-        // In a real production app, we would email this.
-        // For now, return it to the admin to give to the user.
+        // Send password to user by email
+        const subject = 'Healio - Mật khẩu đã được đặt lại';
+        const text = `Xin chào ${user.full_name || user.email},\n\nQuản trị viên đã đặt lại mật khẩu tài khoản của bạn.\nMật khẩu mới: ${tempPassword}\n\nVui lòng đăng nhập và đổi mật khẩu để bảo mật tài khoản.\n\n— Healio`;
+        await sendEmail(user.email, subject, text);
+
         res.json({
-            message: 'Mật khẩu đã được đặt lại thành công',
+            message: 'Mật khẩu đã được đặt lại thành công và đã gửi email cho user',
             new_password: tempPassword
         });
 

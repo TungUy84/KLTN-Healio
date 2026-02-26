@@ -26,10 +26,12 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { confirmToast } from '../../utils/toastUtils';
+import { useNotifications } from '../../context/NotificationContext';
 import RawFoodGeneratorModal from '../../components/RawFoodGeneratorModal';
 
 const RawFoodList: React.FC = () => {
     const navigate = useNavigate();
+    const { addNotification } = useNotifications();
     // Data State
     const [foods, setFoods] = useState<RawFood[]>([]);
     const [stats, setStats] = useState<RawFoodStats | null>(null);
@@ -104,7 +106,7 @@ const RawFoodList: React.FC = () => {
         setOrder(newOrder);
     };
 
-    const handleDelete = (id: number) => {
+    const handleDelete = (id: number, name: string) => {
         confirmToast({
             message: 'Bạn có chắc chắn muốn xóa nguyên liệu này không? Hành động này không thể hoàn tác.',
             confirmText: 'Xóa ngay',
@@ -112,6 +114,7 @@ const RawFoodList: React.FC = () => {
                 try {
                     await rawFoodService.delete(id);
                     toast.success("Đã xóa nguyên liệu thành công");
+                    addNotification({ message: `Đã xóa nguyên liệu "${name}"`, link: '/raw-foods' });
                     fetchFoods();
                     fetchStats(); // Update stats
                 } catch (error) {
@@ -417,7 +420,7 @@ const RawFoodList: React.FC = () => {
                                                     <Edit size={18} />
                                                 </Link>
                                                 <button
-                                                    onClick={() => handleDelete(food.id)}
+                                                    onClick={() => handleDelete(food.id, food.name)}
                                                     className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
                                                 >
                                                     <Trash2 size={18} />
