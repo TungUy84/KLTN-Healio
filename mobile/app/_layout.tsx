@@ -1,7 +1,11 @@
 import { Stack } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { OnboardingProvider } from '../context/OnboardingContext'; 
+import { OnboardingProvider } from '../context/OnboardingContext';
 import '../global.css';
+
+import { useFonts, Roboto_400Regular, Roboto_500Medium, Roboto_700Bold, Roboto_900Black } from '@expo-google-fonts/roboto';
+import * as SplashScreen from 'expo-splash-screen';
+import { useEffect } from 'react';
 
 // TẮT CẢNH BÁO VÀNG
 import {
@@ -15,7 +19,26 @@ configureReanimatedLogger({
   strict: false, // Tắt cảnh báo strict
 });
 
+SplashScreen.preventAutoHideAsync();
+
 export default function RootLayout() {
+  const [loaded, error] = useFonts({
+    Roboto_400Regular,
+    Roboto_500Medium,
+    Roboto_700Bold,
+    Roboto_900Black,
+  });
+
+  useEffect(() => {
+    if (loaded || error) {
+      SplashScreen.hideAsync();
+    }
+  }, [loaded, error]);
+
+  if (!loaded && !error) {
+    return null;
+  }
+
   return (
     <SafeAreaProvider>
       <OnboardingProvider>

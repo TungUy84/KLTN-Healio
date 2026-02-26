@@ -13,8 +13,8 @@ WebBrowser.maybeCompleteAuthSession();
 
 export default function SignInScreen() {
     const router = useRouter();
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
+    const [email, setEmail] = useState('tunguykim@gmail.com');
+    const [password, setPassword] = useState('Tunguytv@2004');
     const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
 
@@ -138,7 +138,7 @@ export default function SignInScreen() {
                                 <Ionicons name="mail-outline" size={20} color="#9ca3af" />
                                 <TextInput
                                     className="flex-1 ml-3 text-gray-900 text-base"
-                                    placeholder="nhapemail@example.com"
+                                    placeholder="Email"
                                     value={email}
                                     onChangeText={setEmail}
                                     keyboardType="email-address"
@@ -154,7 +154,7 @@ export default function SignInScreen() {
                                 <Ionicons name="lock-closed-outline" size={20} color="#9ca3af" />
                                 <TextInput
                                     className="flex-1 ml-3 text-gray-900 text-base"
-                                    placeholder="••••••••"
+                                    placeholder="Mật Khẩu"
                                     value={password}
                                     onChangeText={setPassword}
                                     secureTextEntry={!showPassword}
