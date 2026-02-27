@@ -1,32 +1,24 @@
 
 import React, { useEffect, useState } from 'react';
-import { Calendar, Download, PieChart as PieChartIcon, Activity, User, Utensils } from 'lucide-react';
+import { Calendar, Download, PieChart as PieChartIcon, Utensils } from 'lucide-react';
 import { statsService } from '../services/statsService';
 import toast from 'react-hot-toast';
-import { BarChart, Bar, PieChart, Pie, Cell, Tooltip, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Legend } from 'recharts';
 
-// Import New Sections
+// Import New Sections (chỉ giữ các phần chính)
 import SectionSystem from '../components/stats/SectionSystem';
 import SectionNutrition from '../components/stats/SectionNutrition';
-import SectionGoals from '../components/stats/SectionGoals';
-import SectionAdvanced from '../components/stats/SectionAdvanced';
 
 const Statistics: React.FC = () => {
     // State for all data
     const [systemData, setSystemData] = useState<any>({});
     const [nutritionData, setNutritionData] = useState<any>({});
-    const [goalData, setGoalData] = useState<any>({});
-    const [insightsData, setInsightsData] = useState<any>({});
     const [foodData, setFoodData] = useState<any>({});
-    const [peakData, setPeakData] = useState<any>([]);
 
     // Legacy state for compatibility or specific reused charts
     const [growthData, setGrowthData] = useState([]);
 
     const [timeRange, setTimeRange] = useState('7d');
     const [loading, setLoading] = useState(true);
-
-    const COLORS = ['#10B981', '#3B82F6', '#EF4444', '#F59E0B', '#8B5CF6'];
 
     useEffect(() => {
         fetchAllData();
@@ -41,27 +33,24 @@ const Statistics: React.FC = () => {
                 growthRes,
                 systemRes,
                 nutritionRes,
-                goalRes,
-                insightsRes,
-                foodRes,
-                peakRes
+                ,
+                ,
+                trendingFoodsRes,
+                ,
             ] = await Promise.all([
                 statsService.getUserGrowth(timeRange),
                 statsService.getSystemStats(),
                 statsService.getNutritionStats(),
                 statsService.getGoalStats(),
                 statsService.getUserInsights(),
-                statsService.getFoodStats(),
+                statsService.getTrendingFoods(timeRange),
                 statsService.getActivityPeak()
             ]);
 
             setGrowthData(growthRes);
             setSystemData(systemRes || {});
             setNutritionData(nutritionRes || {});
-            setGoalData(goalRes || {});
-            setInsightsData(insightsRes || {});
-            setFoodData(foodRes || {});
-            setPeakData(peakRes || []);
+            setFoodData({ topFoods: trendingFoodsRes || [] });
 
         } catch (error) {
             console.error('Error fetching dashboard stats:', error);
@@ -133,56 +122,9 @@ const Statistics: React.FC = () => {
             {/* II. NUTRITION BEHAVIOR */}
             <SectionNutrition data={nutritionData} />
 
-            {/* III. GOALS & EFFECTIVENESS */}
-            <SectionGoals data={goalData} />
-
-            {/* IV. USER INSIGHTS */}
+            {/* III. FOOD STATS */}
             <div className="space-y-6">
-                <h2 className="text-xl font-bold text-gray-800 border-l-4 border-indigo-500 pl-3">IV. USER INSIGHTS</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* 13. User Segmentation */}
-                    <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
-                        <h3 className="font-semibold text-gray-700 mb-4 flex items-center gap-2">
-                            <User size={18} className="text-indigo-500" /> Phân khúc người dùng (BMI)
-                        </h3>
-                        <div className="h-[250px] flex justify-center">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <PieChart>
-                                    <Pie data={insightsData?.bmiDist || []} cx="50%" cy="50%" innerRadius={60} outerRadius={80} dataKey="value" paddingAngle={5}>
-                                        {insightsData?.bmiDist?.map((_: any, index: number) => (
-                                            <Cell key={`cell - ${index} `} fill={COLORS[index % COLORS.length]} />
-                                        ))}
-                                    </Pie>
-                                    <Tooltip />
-                                    <Legend verticalAlign="bottom" />
-                                </PieChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </div>
-
-                    {/* 15. Retention Rate */}
-                    <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
-                        <h3 className="font-semibold text-gray-700 mb-4 flex items-center gap-2">
-                            <Activity size={18} className="text-purple-500" /> Tỷ lệ giữ chân người dùng
-                        </h3>
-                        <div className="h-[250px]">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={insightsData?.retention || []}>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                                    <XAxis dataKey="name" fontSize={11} />
-                                    <YAxis />
-                                    <Tooltip />
-                                    <Bar dataKey="value" fill="#8B5CF6" radius={[4, 4, 0, 0]} barSize={40} />
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* V. FOOD STATS */}
-            <div className="space-y-6">
-                <h2 className="text-xl font-bold text-gray-800 border-l-4 border-emerald-500 pl-3">V. THỐNG KÊ THỰC PHẨM</h2>
+                <h2 className="text-xl font-bold text-gray-800 border-l-4 border-emerald-500 pl-3">III. THỐNG KÊ THỰC PHẨM</h2>
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
                     <h3 className="font-semibold text-gray-700 mb-6 flex items-center gap-2">
                         <Utensils size={18} className="text-emerald-500" /> Top Thực phẩm phổ biến
@@ -224,8 +166,6 @@ const Statistics: React.FC = () => {
                 </div>
             </div>
 
-            {/* VI. ADVANCED */}
-            <SectionAdvanced peakData={peakData} />
         </div>
     );
 };

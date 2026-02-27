@@ -19,5 +19,6 @@ router.get('/nutrition', statsController.getNutritionStats);
 router.get('/goals', statsController.getGoalStats);
 router.get('/insights', statsController.getUserInsights);
 router.get('/foods-stats', statsController.getFoodStats);
+router.get('/export', statsController.exportStats);
 
 module.exports = router;
