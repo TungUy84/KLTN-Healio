@@ -27,6 +27,7 @@ export interface Food {
     diet_tags?: string[];
     is_favorite?: boolean;
     ingredients?: Ingredient[];
+    usage_count?: number; // Số lần được thêm vào nhật ký (dữ liệu thật từ DB)
 }
 
 export interface FoodFilterParams {
@@ -106,5 +107,11 @@ export const foodService = {
     deleteDailyLog: async (id: number | string): Promise<any> => {
         const response = await api.delete(`/users/daily-log/${id}`);
         return response.data;
+    },
+
+    // Lấy các món ăn phổ biến nhất (COUNT thật từ user_daily_logs)
+    getPopularFoods: async (limit: number = 10): Promise<Food[]> => {
+        const response = await api.get('/foods/popular', { params: { limit } });
+        return response.data.data;
     }
 };

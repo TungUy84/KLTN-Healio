@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { confirmToast } from '../../utils/toastUtils';
+import { useNotifications } from '../../context/NotificationContext';
 import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
     PieChart, Pie, Cell, BarChart, Bar
@@ -31,6 +32,7 @@ const CHART_CONFIG = {
 
 const UserDetail: React.FC = () => {
     const { id } = useParams<{ id: string }>();
+    const { addNotification } = useNotifications();
     const [data, setData] = useState<ComprehensiveUserDetail | null>(null);
     const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState(false);
@@ -72,6 +74,8 @@ const UserDetail: React.FC = () => {
         if (id) fetchDetail(id);
     }, [id]);
 
+    const userDisplayName = data ? (data.user.full_name || data.user.email) : '';
+
     // --- ACTIONS ---
     const handleBan = () => {
         if (!data) return;
@@ -82,6 +86,7 @@ const UserDetail: React.FC = () => {
                 try {
                     await adminUserService.ban(data.user.id);
                     toast.success('Đã khóa tài khoản');
+                    addNotification({ message: `Đã khóa tài khoản "${userDisplayName}"`, link: `/users/${id}` });
                     fetchDetail(id!);
                 } catch (e) { toast.error('Lỗi khi khóa tài khoản'); }
                 finally { setActionLoading(false); }
@@ -99,6 +104,7 @@ const UserDetail: React.FC = () => {
                 try {
                     await adminUserService.unban(data.user.id);
                     toast.success('Đã mở khóa tài khoản');
+                    addNotification({ message: `Đã mở khóa tài khoản "${userDisplayName}"`, link: `/users/${id}` });
                     fetchDetail(id!);
                 } catch (e) { toast.error('Lỗi khi mở khóa'); }
                 finally { setActionLoading(false); }
@@ -117,6 +123,7 @@ const UserDetail: React.FC = () => {
                     const res = await adminUserService.resetPassword(data.user.id);
                     setNewPassword(res.new_password);
                     toast.success('Đặt lại mật khẩu thành công');
+                    addNotification({ message: `Đặt lại mật khẩu thành công cho "${userDisplayName}"`, link: `/users/${id}` });
                 } catch (e: any) { toast.error(e.response?.data?.message || 'Lỗi khi đặt lại mật khẩu'); }
                 finally { setActionLoading(false); }
             }
@@ -134,6 +141,7 @@ const UserDetail: React.FC = () => {
                 try {
                     await adminUserService.changeRole(data.user.id, newRole);
                     toast.success(`Đã đổi vai trò thành ${newRole}`);
+                    addNotification({ message: `Đã đổi vai trò "${userDisplayName}" thành ${newRole}`, link: `/users/${id}` });
                     fetchDetail(id!);
                 } catch (e: any) { toast.error(e.response?.data?.message || 'Lỗi khi đổi vai trò'); }
                 finally { setActionLoading(false); }

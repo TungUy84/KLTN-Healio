@@ -24,9 +24,11 @@ import UserStatsOverview from '../../components/UserStatsOverview';
 
 import CreateAdminModal from './CreateAdminModal';
 import toast from 'react-hot-toast';
+import { useNotifications } from '../../context/NotificationContext';
 import { confirmToast } from '../../utils/toastUtils';
 
 const UserList: React.FC = () => {
+    const { addNotification } = useNotifications();
     const [users, setUsers] = useState<AdminUser[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
@@ -67,8 +69,10 @@ const UserList: React.FC = () => {
 
     const handleCreateAdmin = async (data: any) => {
         try {
-            await adminUserService.create(data);
+            const created = await adminUserService.create(data);
             toast.success('Tạo tài khoản quản trị viên thành công');
+            const link = created?.id ? `/users/${created.id}` : '/users';
+            addNotification({ message: 'Tạo tài khoản quản trị viên thành công', link });
             fetchUsers();
         } catch (error: any) {
             console.error(error);
@@ -77,7 +81,7 @@ const UserList: React.FC = () => {
         }
     };
 
-    const handleDelete = (id: number) => {
+    const handleDelete = (id: number, displayName: string) => {
         confirmToast({
             message: 'Bạn có chắc chắn muốn xóa tài khoản này không? Hành động này không thể hoàn tác.',
             type: 'danger',
@@ -86,6 +90,7 @@ const UserList: React.FC = () => {
                 try {
                     await adminUserService.delete(id);
                     toast.success('Xóa tài khoản thành công');
+                    addNotification({ message: `Đã xóa tài khoản ${displayName}`, link: '/users' });
                     fetchUsers();
                 } catch (error: any) {
                     console.error('Error deleting user:', error);
@@ -417,7 +422,7 @@ const UserList: React.FC = () => {
                                                     <Eye size={18} />
                                                 </Link>
                                                 <button
-                                                    onClick={() => handleDelete(u.id)}
+                                                    onClick={() => handleDelete(u.id, u.full_name || u.email)}
                                                     className="inline-flex items-center justify-center p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all ml-1"
                                                     title="Xóa tài khoản"
                                                 >

@@ -14,9 +14,11 @@ import {
     List
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useNotifications } from '../../context/NotificationContext';
 
 const RawFoodImport: React.FC = () => {
     const navigate = useNavigate();
+    const { addNotification } = useNotifications();
     const [file, setFile] = useState<File | null>(null);
     const [mode, setMode] = useState<'skip' | 'overwrite'>('skip');
     const [loading, setLoading] = useState(false);
@@ -39,6 +41,7 @@ const RawFoodImport: React.FC = () => {
             const data = await rawFoodService.import(file, mode);
             setResult(data);
             toast.success("Import dữ liệu thành công!");
+            addNotification({ message: 'Import dữ liệu nguyên liệu thành công', link: '/raw-foods' });
         } catch (error: any) {
             console.error('Import failed', error);
             const msg = error.response?.data?.message || error.message || "Lỗi import";

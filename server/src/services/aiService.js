@@ -2,7 +2,7 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 // Initialize Gemini
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
 
 const generateRecipeFromText = async (foodName) => {
     try {
@@ -101,16 +101,18 @@ const suggestMealPlan = async (userProfile, nutritionTarget, availableFoods) => 
             ${JSON.stringify(simplifiedFoods)}
 
             **Nhiệm vụ:**
-            Chọn ra 3 món cho 3 bữa (Sáng, Trưa, Tối) từ danh sách trên sao cho:
+            Chọn ra danh sách các món ăn cho 3 bữa (Sáng, Trưa, Tối) từ danh sách trên sao cho:
             1. Tổng calo dao động trong khoảng ${Math.round(nutritionTarget.target_calories * 0.9)} - ${Math.round(nutritionTarget.target_calories * 1.1)}.
             2. TUYỆT ĐỐI KHÔNG chọn món chứa thành phần dị ứng (kiểm tra kỹ tên và thành phần).
-            3. Xác định **Số lượng (amount)** cho mỗi món (VD: 1.5 tô, 2 cái...) để đạt mục tiêu calo. "amount" phải là số thực (float), ví dụ: 0.5, 1, 1.5, 2.
+            3. Xác định **Số lượng (amount)** cho mỗi món (VD: 1.5 tô, 2 cái...) để đạt mục tiêu calo. "amount" phải là số thực (float).
+            4. YÊU CẦU BẮT BUỘC: Bữa Trưa (lunch) và Bữa Tối (dinner) PHẢI BAO GỒM TỪ 2 ĐẾN 3 MÓN KHÁC NHAU (Ví dụ: Cơm + Gà + Rau, hoặc Cơm + Bò). Bữa sáng (breakfast) có thể có 1-2 món tùy ý.
+            5. Không dồn mọi thứ vào 1 món với amount khổng lồ (VD: 3 phần Mì Ý là sai). Hãy đa dạng hóa.
 
             **Output JSON (Only JSON, no markdown):**
             {
-                "breakfast": { "food_id": Number, "amount": Number, "reason": "Ngắn gọn tại sao chọn" },
-                "lunch": { "food_id": Number, "amount": Number, "reason": "Ngắn gọn tại sao chọn" },
-                "dinner": { "food_id": Number, "amount": Number, "reason": "Ngắn gọn tại sao chọn" },
+                "breakfast": [ { "food_id": Number, "amount": Number, "reason": "Ngắn gọn tại sao chọn" } ],
+                "lunch": [ { "food_id": Number, "amount": Number, "reason": "Ngắn gọn tại sao chọn" }, { "food_id": Number, "amount": Number, "reason": "..." } ],
+                "dinner": [ { "food_id": Number, "amount": Number, "reason": "Ngắn gọn tại sao chọn" }, { "food_id": Number, "amount": Number, "reason": "..." } ],
                 "total_calories": Number,
                 "note": "Lời khuyên ngắn gọn"
             }

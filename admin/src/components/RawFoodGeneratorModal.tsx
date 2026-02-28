@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { rawFoodService } from '../services/rawFoodService';
+import { useNotifications } from '../context/NotificationContext';
 
 interface RawFoodGeneratorModalProps {
     isOpen: boolean;
@@ -26,6 +27,7 @@ interface RawFoodGeneratorModalProps {
 }
 
 const RawFoodGeneratorModal: React.FC<RawFoodGeneratorModalProps> = ({ isOpen, onClose, onSuccess, onEdit }) => {
+    const { addNotification } = useNotifications();
     const [foodName, setFoodName] = useState('');
     const [loading, setLoading] = useState(false);
     const [result, setResult] = useState<any>(null);
@@ -94,8 +96,9 @@ const RawFoodGeneratorModal: React.FC<RawFoodGeneratorModalProps> = ({ isOpen, o
                 formData.append('micronutrients', JSON.stringify(result.micronutrients));
             }
 
-            await rawFoodService.create(formData);
+            const created = await rawFoodService.create(formData);
             toast.success('Đã thêm nguyên liệu vào kho!');
+            addNotification({ message: `Thêm nguyên liệu "${result.name}" thành công`, link: `/raw-foods/${created.id}` });
             onSuccess();
             onClose();
         } catch (error) {

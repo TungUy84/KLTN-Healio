@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { foodService } from '../services/foodService';
+import { useNotifications } from '../context/NotificationContext';
 
 interface FoodGeneratorModalProps {
     isOpen: boolean;
@@ -26,6 +27,7 @@ interface FoodGeneratorModalProps {
 }
 
 const FoodGeneratorModal: React.FC<FoodGeneratorModalProps> = ({ isOpen, onClose, onSuccess, onEdit }) => {
+    const { addNotification } = useNotifications();
     const [foodName, setFoodName] = useState('');
     const [loading, setLoading] = useState(false);
     const [result, setResult] = useState<any>(null);
@@ -111,8 +113,9 @@ const FoodGeneratorModal: React.FC<FoodGeneratorModalProps> = ({ isOpen, onClose
             formData.append('status', 'active');
             formData.append('ingredients', JSON.stringify(submitData.ingredients));
 
-            await foodService.create(formData);
+            const created = await foodService.create(formData);
             toast.success('Đã thêm món ăn vào thực đơn!');
+            addNotification({ message: `Thêm món ăn "${result.name}" thành công`, link: `/foods/${created.id}` });
             onSuccess();
             onClose();
         } catch (error) {
