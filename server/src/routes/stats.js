@@ -13,7 +13,7 @@ router.get('/diets', statsController.getDietStats);
 router.get('/activity-peak', statsController.getActivityPeak); // New
 router.get('/bmi-dist', statsController.getBMIDistribution);   // New
 router.get('/macro-radar', statsController.getMacroStats);     // New
-// Mega Dashboard V3 Routes
+// Mega Dashboard Routes
 router.get('/system', statsController.getSystemStats);
 router.get('/nutrition', statsController.getNutritionStats);
 router.get('/goals', statsController.getGoalStats);

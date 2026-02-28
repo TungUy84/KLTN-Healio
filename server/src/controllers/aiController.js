@@ -111,7 +111,7 @@ const suggestMealPlan = async (req, res) => {
             where: { status: 'active' },
             limit: 60,
             order: sequelize.random(), // Randomize to get variety
-            attributes: ['id', 'name', 'calories', 'protein', 'carb', 'fat', 'serving_unit'] // Added serving_unit
+            attributes: ['id', 'name', 'calories', 'protein', 'carb', 'fat', 'serving_unit', 'image'] // Added image and serving_unit
         });
 
         if (foods.length < 5) {
@@ -123,12 +123,18 @@ const suggestMealPlan = async (req, res) => {
 
         // 4. Enrich Response with Full Food Details
         const meals = ['breakfast', 'lunch', 'dinner'];
-        const richPlan = {
-            ...plan,
-            breakfast: { ...plan.breakfast, detail: foods.find(f => f.id === plan.breakfast.food_id) },
-            lunch: { ...plan.lunch, detail: foods.find(f => f.id === plan.lunch.food_id) },
-            dinner: { ...plan.dinner, detail: foods.find(f => f.id === plan.dinner.food_id) }
-        };
+        const richPlan = { ...plan };
+
+        for (const meal of meals) {
+            if (Array.isArray(plan[meal])) {
+                richPlan[meal] = plan[meal].map(item => ({
+                    ...item,
+                    detail: foods.find(f => f.id === item.food_id)
+                })).filter(item => item.detail); // Clean up if API hallucinated un-existing id
+            } else {
+                richPlan[meal] = []; // fallback resilient
+            }
+        }
 
         res.json(richPlan);
 

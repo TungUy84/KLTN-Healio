@@ -1,9 +1,9 @@
 import api from './api';
 
 export interface MealPlanSuggestion {
-    breakfast: { food_id: number; amount: number; reason: string; detail?: any };
-    lunch: { food_id: number; amount: number; reason: string; detail?: any };
-    dinner: { food_id: number; amount: number; reason: string; detail?: any };
+    breakfast: { food_id: number; amount: number; reason: string; detail?: any }[];
+    lunch: { food_id: number; amount: number; reason: string; detail?: any }[];
+    dinner: { food_id: number; amount: number; reason: string; detail?: any }[];
     total_calories: number;
     note: string;
 }
