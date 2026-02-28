@@ -48,7 +48,7 @@ const CalorieGauge = ({ value, target }: { value: number; target: number }) => {
     const bgArc = arc(START, START + TOTAL);
     const progressDeg = (pct / 100) * TOTAL;
     const fgArc = arc(START, START + progressDeg);
-    // Màu dựa theo % (xanh lá nếu đầy đủ, cam nếu vừa, hồng nếu thiếu)
+    // Màu dựa theo % giống trang chủ (xanh lá nếu đầy đủ, cam nếu vừa, hồng nếu thiếu)
     const fgColor = pct >= 90 ? '#10B981' : pct >= 60 ? '#fb923c' : '#fb7185';
 
     return (
@@ -264,7 +264,7 @@ export default function AiPlanScreen() {
                                 <View>
                                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
                                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                                            <Flame size={11} color="#F97316" />
+                                            <Droplet size={11} color="#EAB308" />
                                             <Text className="text-slate-500 text-xs font-semibold">Chất béo</Text>
                                         </View>
                                         <Text className="text-slate-700 font-black text-xs">
@@ -272,7 +272,7 @@ export default function AiPlanScreen() {
                                         </Text>
                                     </View>
                                     <View className="bg-slate-100 rounded-full overflow-hidden" style={{ height: 6 }}>
-                                        <View className="bg-orange-400 rounded-full" style={{ height: 6, width: `${Math.min((totalFat / (targetFat || 1)) * 100, 100)}%` }} />
+                                        <View className="bg-yellow-400 rounded-full" style={{ height: 6, width: `${Math.min((totalFat / (targetFat || 1)) * 100, 100)}%` }} />
                                     </View>
                                 </View>
                             </View>

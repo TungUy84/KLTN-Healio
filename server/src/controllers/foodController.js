@@ -1,12 +1,50 @@
 const Food = require('../models/Food');
 const RawFood = require('../models/RawFood');
 const FoodIngredient = require('../models/FoodIngredient');
-
+const UserDailyLog = require('../models/UserDailyLog');
 const UserFavoriteFood = require('../models/UserFavoriteFood');
 const DietPreset = require('../models/DietPreset');
 const sequelize = require('../config/database');
 const { Op } = require('sequelize');
 const jwt = require('jsonwebtoken');
+
+// Lấy các món ăn phổ biến nhất dựa trên số lần được thêm vào nhật ký
+exports.getPopularFoods = async (req, res) => {
+    try {
+        const limit = parseInt(req.query.limit) || 10;
+
+        const popularFoods = await Food.findAll({
+            attributes: {
+                include: [
+                    [sequelize.fn('COUNT', sequelize.col('dailyLogs.id')), 'usage_count']
+                ]
+            },
+            include: [{
+                model: UserDailyLog,
+                as: 'dailyLogs',
+                attributes: [],
+                required: false // LEFT JOIN để lấy cả món chưa được log
+            }],
+            where: { status: { [Op.ne]: 'deleted' } },
+            group: ['Food.id'],
+            order: [[sequelize.fn('COUNT', sequelize.col('dailyLogs.id')), 'DESC']],
+            limit,
+            subQuery: false
+        });
+
+        // Gắn usage_count vào data trả về
+        const result = popularFoods.map(food => {
+            const plain = food.toJSON();
+            plain.usage_count = parseInt(plain.usage_count) || 0;
+            return plain;
+        });
+
+        res.json({ data: result });
+    } catch (error) {
+        console.error('Lỗi khi lấy món ăn phổ biến:', error);
+        res.status(500).json({ message: 'Lỗi khi lấy món ăn phổ biến', error: error.message });
+    }
+};
 
 // PB_51: Get List Foods with Pagination, Search and Filters
 exports.getFoods = async (req, res) => {
