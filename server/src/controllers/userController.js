@@ -467,7 +467,7 @@ exports.getFavorites = async (req, res) => {
             where: { user_id: userId },
             include: [{
                 model: Food,
-                attributes: ['id', 'name', 'image', 'calories', 'serving_unit']
+                attributes: ['id', 'name', 'image', 'calories', 'protein', 'carb', 'fat', 'cooking', 'serving_unit']
             }]
         });
         // Flatten structure for easier frontend consumption
@@ -479,6 +479,11 @@ exports.getFavorites = async (req, res) => {
                 name: food.name,
                 image: food.image,
                 calories: food.calories,
+                protein: food.protein,
+                carb: food.carb,
+                fat: food.fat,
+                description: food.cooking, // Model không có description, dùng cooking làm mô tả
+                cooking: food.cooking,
                 serving_unit: food.serving_unit,
                 favorite_at: f.createdAt
             }

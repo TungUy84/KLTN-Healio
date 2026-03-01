@@ -70,7 +70,7 @@ const CaloriesHero = ({ target, eaten, dailyLog, tCarb, tProt, tFat }: any) => {
   const left = Math.max(target - eaten, 0);
 
   return (
-    <View className="px-6 mt-6 mb-8">
+    <View className="px-6 mt-2 mb-8">
       {/* Calories Massive Typography */}
       <View>
         <Text className="text-slate-500 font-bold mb-1">Năng lượng hôm nay</Text>
@@ -541,10 +541,10 @@ export default function SuperAppHomeScreen() {
           )}
         </Animated.View>
 
-        {/* KHỐI 6: ĐƯỢC NHIỀU NGƯỜI CHỌN */}
-        <Animated.View entering={FadeInDown.delay(600).springify()} className="mb-6">
+        {/* KHỐI 6: MÓN ĂN NỔI BẬT */}
+        <Animated.View entering={FadeInDown.delay(600).springify()} className="mt-6 mb-6">
           <View className="px-5 flex-row justify-between items-center mb-4">
-            <Text className="text-xl font-black text-slate-800 tracking-tight">Được nhiều người chọn</Text>
+            <Text className="text-xl font-black text-slate-800 tracking-tight">Món ăn nổi bật</Text>
             <TouchableOpacity onPress={() => router.push('/foods')} className="flex-row items-center py-1 px-3 rounded-full shadow-sm shadow-slate-100">
               <Text className="text-slate-600 font-bold text-sm mr-1">Xem tất cả</Text>
               <Feather name="arrow-right" size={12} color="#1E293B" />
