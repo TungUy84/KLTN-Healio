@@ -1,132 +1,118 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Pressable, StatusBar, Keyboard, TouchableWithoutFeedback, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, Pressable, StatusBar, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useOnboarding } from '../../context/OnboardingContext';
 import { Ionicons } from '@expo/vector-icons';
+import Animated, { FadeInDown } from 'react-native-reanimated';
+import AnimatedBackground from '../../components/onboarding/AnimatedBackground';
+import RulerPicker from '../../components/onboarding/RulerPicker';
 
 export default function Step2Body() {
-  const router = useRouter();
-  const { data, updateData } = useOnboarding();
-  const [height, setHeight] = useState(data.height || '');
-  const [weight, setWeight] = useState(data.weight || '');
+    const router = useRouter();
+    const { data, updateData } = useOnboarding();
+    const [height, setHeight] = useState(data.height || '');
+    const [weight, setWeight] = useState(data.weight || '');
 
-  const handleNext = () => {
-    if (!height || !weight) return;
-    updateData({ height, weight });
-    router.push('/onboarding/step3-activity');
-  };
+    const handleNext = () => {
+        if (!height || !weight) return;
+        updateData({ height, weight });
+        router.push('/onboarding/step3-activity');
+    };
 
-  return (
-    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-      <View className="flex-1 bg-white">
-        <StatusBar barStyle="light-content" backgroundColor="#10b981" />
-        
-        {/* Header - Emerald Style */}
-        <View className="bg-emerald-500 pb-8 rounded-b-[40px] shadow-sm relative z-10 overflow-hidden">
-            <SafeAreaView edges={['top']} className="px-6 pb-4">
+    return (
+        <View className="flex-1 bg-white">
+            <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
+            <AnimatedBackground color1="#10B981" color2="#34D399" color3="#059669" />
+
+            {/* Header Style */}
+            <SafeAreaView edges={['top']} className="px-8 pb-4 pt-6">
                 {/* Navbar */}
-                <View className="flex-row justify-between items-center mb-6 mt-2">
-                    <Pressable onPress={() => router.back()} className="p-2 bg-white/20 rounded-full active:bg-white/30">
-                        <Ionicons name="arrow-back" size={24} color="white" />
+                <View className="flex-row justify-between items-center mb-6">
+                    <Pressable onPress={() => router.back()} className="w-11 h-11 bg-white/40 rounded-full items-center justify-center active:bg-white/60 backdrop-blur-md border border-white/50 shadow-sm shadow-emerald-100">
+                        <Ionicons name="arrow-back" size={24} color="#064e3b" />
                     </Pressable>
-                    
+
                     {/* Pagination Dots (Step 2/5) */}
-                    <View className="flex-row gap-2">
-                        <View className="w-2 h-2 bg-white/30 rounded-full" />
-                        <View className="w-8 h-2 bg-white rounded-full" />
-                        <View className="w-2 h-2 bg-white/30 rounded-full" />
-                        <View className="w-2 h-2 bg-white/30 rounded-full" />
-                        <View className="w-2 h-2 bg-white/30 rounded-full" />
+                    <View className="flex-row gap-2 bg-white/40 px-4 py-2 rounded-full backdrop-blur-md border border-white/50">
+                        <View className="w-2.5 h-2.5 bg-emerald-200 rounded-full" />
+                        <View className="w-8 h-2.5 bg-emerald-500 rounded-full shadow-sm" />
+                        <View className="w-2.5 h-2.5 bg-emerald-200 rounded-full" />
+                        <View className="w-2.5 h-2.5 bg-emerald-200 rounded-full" />
+                        <View className="w-2.5 h-2.5 bg-emerald-200 rounded-full" />
                     </View>
 
-                    <Pressable onPress={() => router.replace('/(tabs)')}>
-                        <Text className="text-white font-semibold text-base">Bỏ qua</Text>
-                    </Pressable>
+                    <View className="w-11" />
                 </View>
 
                 {/* Header Content */}
-                <View className="items-center mt-2">
-                    <View className="w-20 h-20 bg-white/20 rounded-full justify-center items-center mb-4 border border-white/30 backdrop-blur-md">
-                        <Ionicons name="body-outline" size={40} color="white" />
+                <Animated.View entering={FadeInDown.delay(100).springify()} className="items-center mt-4">
+                    <View className="flex-row items-center bg-white/60 px-4 py-2 rounded-full border border-white mb-6 shadow-sm shadow-emerald-100 backdrop-blur-md">
+                        <Ionicons name="body" size={16} color="#059669" />
+                        <Text className="text-emerald-700 font-bold ml-2 tracking-widest text-[12px] uppercase">Chỉ số đo</Text>
                     </View>
-                    <Text className="text-3xl font-bold text-white text-center mb-2">Chỉ số cơ thể</Text>
-                    <Text className="text-white/90 text-center text-base px-4">
-                        Giúp Healio tính toán chính xác nhu cầu calo của bạn
+                    <Text className="text-[36px] font-black text-slate-800 text-center mb-3 tracking-tighter shadow-sm">Chỉ số cơ thể</Text>
+                    <Text className="text-slate-600 text-center text-[16px] font-medium px-4">
+                        Giúp Healio tính toán chính xác nhu cầu calo của bạn.
                     </Text>
-                </View>
+                </Animated.View>
             </SafeAreaView>
-            
-            {/* Decorative circles */}
-            <View className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-10 -mt-10" />
-            <View className="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full -ml-10 -mb-10" />
-        </View>
 
-        {/* Content Area */}
-        <KeyboardAvoidingView 
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
-            className="flex-1"
-        >
-            <View className="flex-1 px-6 pt-10 pb-8 justify-between">
-                
-                <View className="gap-6">
-                    {/* 1. Chiều cao */}
-                    <View>
-                        <Text className="text-gray-700 text-base font-semibold mb-2 ml-1">Chiều cao</Text>
-                        <View className="flex-row items-center border border-gray-200 rounded-2xl px-4 h-20 bg-gray-50 focus:border-emerald-500 transition-colors">
-                            <View className="w-10 h-10 bg-emerald-100 rounded-full items-center justify-center mr-3">
-                                <Ionicons name="resize-outline" size={24} color="#10b981" />
-                            </View>
-                            <TextInput 
-                                className="flex-1 text-3xl font-bold text-gray-900 h-full pb-1"
-                                placeholder="0"
-                                placeholderTextColor="#d1d5db"
-                                keyboardType="numeric"
-                                maxLength={3}
-                                value={height}
-                                onChangeText={setHeight}
-                            />
-                            <Text className="text-gray-500 text-lg font-medium">cm</Text>
-                        </View>
-                    </View>
+            {/* Content Area */}
+            <View className="flex-1 px-8 pt-8 pb-12 justify-between">
 
-                    {/* 2. Cân nặng */}
-                    <View>
-                        <Text className="text-gray-700 text-base font-semibold mb-2 ml-1">Cân nặng</Text>
-                        <View className="flex-row items-center border border-gray-200 rounded-2xl px-4 h-20 bg-gray-50 focus:border-emerald-500 transition-colors">
-                            <View className="w-10 h-10 bg-orange-100 rounded-full items-center justify-center mr-3">
-                                <Ionicons name="scale-outline" size={24} color="#f97316" />
-                            </View>
-                            <TextInput 
-                                className="flex-1 text-3xl font-bold text-gray-900 h-full pb-1"
-                                placeholder="0"
-                                placeholderTextColor="#d1d5db"
-                                keyboardType="numeric"
-                                maxLength={3}
-                                value={weight}
-                                onChangeText={setWeight}
-                            />
-                            <Text className="text-gray-500 text-lg font-medium">kg</Text>
+                <View className="gap-10">
+                    {/* 1. Chiều cao (RulerPicker) */}
+                    <Animated.View entering={FadeInDown.delay(200).springify()} className="bg-white/60 p-6 rounded-[32px] border border-white/60 shadow-lg shadow-slate-200/50 backdrop-blur-xl">
+                        <View className="flex-row justify-between items-center mb-4">
+                            <Text className="text-slate-700 text-[16px] font-bold tracking-tight">Chiều cao</Text>
+                            <Ionicons name="resize" size={20} color="#10B981" />
                         </View>
-                    </View>
+                        <RulerPicker
+                            min={100}
+                            max={250}
+                            step={1}
+                            initialValue={height ? parseInt(height) : 170}
+                            unit="cm"
+                            onValueChange={(val) => setHeight(val.toString())}
+                        />
+                    </Animated.View>
+
+                    {/* 2. Cân nặng (RulerPicker) */}
+                    <Animated.View entering={FadeInDown.delay(300).springify()} className="bg-white/60 p-6 rounded-[32px] border border-white/60 shadow-lg shadow-slate-200/50 backdrop-blur-xl">
+                        <View className="flex-row justify-between items-center mb-4">
+                            <Text className="text-slate-700 text-[16px] font-bold tracking-tight">Cân nặng</Text>
+                            <Ionicons name="scale" size={20} color="#10B981" />
+                        </View>
+                        <RulerPicker
+                            min={30}
+                            max={200}
+                            step={1}
+                            initialValue={weight ? parseInt(weight) : 60}
+                            unit="kg"
+                            onValueChange={(val) => setWeight(val.toString())}
+                        />
+                    </Animated.View>
                 </View>
 
                 {/* Footer Button */}
-                <Pressable 
-                    className={`w-full p-5 rounded-full flex-row items-center justify-center shadow-lg transition-all active:scale-[0.98] ${
-                        (!height || !weight) ? 'bg-gray-300 opacity-70' : 'bg-orange-500 shadow-orange-500/30'
-                    }`}
-                    onPress={handleNext}
-                    disabled={!height || !weight}
-                >
-                    <Text className="text-white text-xl font-bold mr-2">Tiếp tục</Text>
-                    <Ionicons name="arrow-forward" size={24} color="white" />
-                </Pressable>
+                <Animated.View entering={FadeInDown.delay(400).springify()} className="w-full mt-4">
+                    <Pressable
+                        className={`h-[72px] rounded-[36px] flex-row items-center justify-between px-2 shadow-xl transition-all active:scale-[0.98] active:opacity-90 ${(!height || !weight) ? 'bg-slate-300 shadow-transparent' : 'bg-slate-900 shadow-slate-900/20'
+                            }`}
+                        onPress={handleNext}
+                        disabled={!height || !weight}
+                    >
+                        <View className="pl-6 flex-1 items-center">
+                            <Text className="text-white text-[18px] font-bold tracking-wide text-center">Tiếp tục</Text>
+                        </View>
+                        <View className={`w-14 h-14 rounded-full items-center justify-center shadow-md ${(!height || !weight) ? 'bg-slate-400' : 'bg-emerald-500 shadow-emerald-500/50'}`}>
+                            <Ionicons name="arrow-forward" size={24} color="white" />
+                        </View>
+                    </Pressable>
+                </Animated.View>
 
             </View>
-        </KeyboardAvoidingView>
-
-      </View>
-    </TouchableWithoutFeedback>
-  );
+        </View>
+    );
 }

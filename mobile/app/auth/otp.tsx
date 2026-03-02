@@ -6,7 +6,34 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { authService } from '../../services/authService';
-import { Ionicons } from '@expo/vector-icons'; // Dùng Ionicons cho đồng bộ
+import { Ionicons } from '@expo/vector-icons';
+import Animated, { FadeInDown } from 'react-native-reanimated';
+import Svg, { Defs, RadialGradient as SvgRadialGradient, Rect, Stop } from 'react-native-svg';
+
+// --- BACKGROUND AMBIENT GLOW ---
+const AmbientGlowBackground = () => (
+    <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} pointerEvents="none">
+        <Svg height="100%" width="100%">
+            <Defs>
+                <SvgRadialGradient id="grad1" cx="0%" cy="0%" rx="60%" ry="60%" fx="0%" fy="0%">
+                    <Stop offset="0%" stopColor="#10B981" stopOpacity="0.15" />
+                    <Stop offset="100%" stopColor="#10B981" stopOpacity="0" />
+                </SvgRadialGradient>
+                <SvgRadialGradient id="grad2" cx="100%" cy="30%" rx="50%" ry="50%" fx="100%" fy="30%">
+                    <Stop offset="0%" stopColor="#34D399" stopOpacity="0.1" />
+                    <Stop offset="100%" stopColor="#34D399" stopOpacity="0" />
+                </SvgRadialGradient>
+                <SvgRadialGradient id="grad3" cx="0%" cy="80%" rx="55%" ry="55%" fx="0%" fy="80%">
+                    <Stop offset="0%" stopColor="#059669" stopOpacity="0.1" />
+                    <Stop offset="100%" stopColor="#059669" stopOpacity="0" />
+                </SvgRadialGradient>
+            </Defs>
+            <Rect x="0" y="0" width="100%" height="100%" fill="url(#grad1)" />
+            <Rect x="0" y="0" width="100%" height="100%" fill="url(#grad2)" />
+            <Rect x="0" y="0" width="100%" height="100%" fill="url(#grad3)" />
+        </Svg>
+    </View>
+);
 
 export default function OtpScreen() {
     const router = useRouter();
@@ -84,13 +111,17 @@ export default function OtpScreen() {
 
     return (
         <View className="flex-1 bg-white">
-            <StatusBar barStyle="dark-content" />
+            <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
+            <AmbientGlowBackground />
             <SafeAreaView className="flex-1">
 
                 {/* Header: Nút Back */}
-                <View className="px-6 py-2">
-                    <Pressable onPress={() => router.back()} className="w-10 h-10 bg-gray-50 rounded-full items-center justify-center border border-gray-100 active:bg-gray-200">
-                        <Ionicons name="arrow-back" size={24} color="#374151" />
+                <View className="px-6 py-2 z-10 w-full flex-row">
+                    <Pressable
+                        onPress={() => router.back()}
+                        className="w-11 h-11 bg-white/60 rounded-full items-center justify-center border border-white/80 shadow-sm shadow-slate-200 active:bg-slate-50"
+                    >
+                        <Ionicons name="arrow-back" size={22} color="#334155" />
                     </Pressable>
                 </View>
 
@@ -100,21 +131,25 @@ export default function OtpScreen() {
                 >
                     <ScrollView contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false}>
 
-                        <View className="flex-1 px-6 items-center pt-6">
+                        <View className="flex-1 px-8 items-center pt-8">
 
                             {/* Icon trang trí */}
-                            <View className="w-20 h-20 bg-emerald-50 rounded-full items-center justify-center mb-6">
-                                <Ionicons name="shield-checkmark-outline" size={40} color="#10b981" />
-                            </View>
+                            <Animated.View entering={FadeInDown.delay(100).springify()} className="w-24 h-24 bg-white/80 rounded-[32px] items-center justify-center mb-8 border border-white shadow-xl shadow-emerald-100/50">
+                                <View className="w-16 h-16 bg-emerald-50 rounded-2xl items-center justify-center">
+                                    <Ionicons name="shield-checkmark-outline" size={32} color="#10b981" />
+                                </View>
+                            </Animated.View>
 
-                            <Text className="text-2xl font-bold text-gray-900 mb-2 text-center">Xác thực tài khoản</Text>
-                            <Text className="text-base text-gray-500 text-center mb-10 leading-6 px-4">
-                                Vui lòng nhập mã 6 số chúng tôi vừa gửi tới email{'\n'}
-                                <Text className="font-bold text-gray-900">{email}</Text>
-                            </Text>
+                            <Animated.View entering={FadeInDown.delay(200).springify()} className="w-full mb-10">
+                                <Text className="text-[28px] font-black text-slate-800 mb-2 text-center tracking-tight">Xác thực tài khoản</Text>
+                                <Text className="text-[15px] font-medium text-slate-500 text-center leading-6">
+                                    Vui lòng nhập mã 6 số chúng tôi vừa gửi tới email{'\n'}
+                                    <Text className="font-bold text-slate-800">{email}</Text>
+                                </Text>
+                            </Animated.View>
 
                             {/* Ô Nhập OTP */}
-                            <View className="w-full items-center mb-8 h-16 justify-center">
+                            <Animated.View entering={FadeInDown.delay(300).springify()} className="w-full items-center mb-8 h-14 justify-center">
                                 <TextInput
                                     ref={inputRef}
                                     className="absolute w-full h-full opacity-0 z-10"
@@ -134,48 +169,54 @@ export default function OtpScreen() {
                                             <Pressable
                                                 key={index}
                                                 onPress={() => inputRef.current?.focus()}
-                                                className={`flex-1 h-14 border rounded-xl justify-center items-center transition-all ${isActive ? 'border-emerald-500 border-2 bg-white' :
-                                                        isFilled ? 'border-emerald-500 bg-emerald-50' : 'border-gray-200 bg-gray-50'
+                                                className={`flex-1 h-14 border rounded-[16px] justify-center items-center transition-all ${isActive ? 'border-emerald-500 border-2 bg-white shadow-md shadow-emerald-100' :
+                                                    isFilled ? 'border-emerald-500 bg-white/90 shadow-sm shadow-emerald-50' : 'border-slate-200 bg-white/60 shadow-sm shadow-slate-100'
                                                     }`}
                                             >
-                                                <Text className={`text-2xl font-bold ${isFilled || isActive ? 'text-emerald-600' : 'text-gray-400'}`}>
+                                                <Text className={`text-[22px] font-black tracking-tighter ${isFilled || isActive ? 'text-emerald-600' : 'text-slate-300'}`}>
                                                     {otp[index] || ''}
                                                 </Text>
                                             </Pressable>
                                         );
                                     })}
                                 </View>
-                            </View>
+                            </Animated.View>
 
                             {/* Timer */}
-                            <Text className="text-sm text-gray-500 mb-8">
-                                Mã có hiệu lực trong <Text className="text-orange-500 font-bold">{formatTime(timeLeft)}</Text>
-                            </Text>
+                            <Animated.View entering={FadeInDown.delay(400).springify()} className="w-full items-center mb-8">
+                                <Text className="text-[14px] font-medium text-slate-500">
+                                    Mã có hiệu lực trong <Text className="text-orange-500 font-bold">{formatTime(timeLeft)}</Text>
+                                </Text>
+                            </Animated.View>
 
                             {/* Nút Xác nhận */}
-                            <Pressable
-                                className={`w-full h-14 rounded-full justify-center items-center shadow-lg active:scale-[0.98] transition-all ${otp.length === 6 ? 'bg-emerald-500 shadow-emerald-500/30' : 'bg-gray-300'
-                                    }`}
-                                onPress={handleVerify}
-                                disabled={loading || otp.length < 6}
-                            >
-                                {loading ? (
-                                    <ActivityIndicator color="#fff" />
-                                ) : (
-                                    <Text className="text-white text-lg font-bold">Xác nhận</Text>
-                                )}
-                            </Pressable>
+                            <Animated.View entering={FadeInDown.delay(500).springify()} className="w-full">
+                                <Pressable
+                                    className={`w-full h-14 rounded-full justify-center items-center shadow-lg active:scale-[0.98] transition-all ${otp.length === 6 ? 'bg-emerald-500 shadow-emerald-500/30' : 'bg-slate-300 shadow-transparent'
+                                        }`}
+                                    onPress={handleVerify}
+                                    disabled={loading || otp.length < 6}
+                                >
+                                    {loading ? (
+                                        <ActivityIndicator color="#fff" />
+                                    ) : (
+                                        <Text className="text-white text-[17px] font-bold tracking-wide">Xác nhận</Text>
+                                    )}
+                                </Pressable>
+                            </Animated.View>
 
                             {/* Gửi lại mã */}
-                            <Pressable
-                                className="mt-8 p-4"
-                                onPress={handleResend}
-                                disabled={timeLeft > 0}
-                            >
-                                <Text className={`text-sm text-center ${timeLeft > 0 ? 'text-gray-400' : 'text-gray-600'}`}>
-                                    Bạn chưa nhận được mã? <Text className={`font-bold ${timeLeft > 0 ? 'text-gray-400' : 'text-emerald-600'}`}>Gửi lại</Text>
-                                </Text>
-                            </Pressable>
+                            <Animated.View entering={FadeInDown.delay(600).springify()} className="w-full">
+                                <Pressable
+                                    className="mt-6 p-4 active:opacity-60"
+                                    onPress={handleResend}
+                                    disabled={timeLeft > 0}
+                                >
+                                    <Text className={`text-sm text-center font-medium ${timeLeft > 0 ? 'text-slate-400' : 'text-slate-600'}`}>
+                                        Bạn chưa nhận được mã? <Text className={`font-bold ${timeLeft > 0 ? 'text-slate-400' : 'text-emerald-600'}`}>Gửi lại</Text>
+                                    </Text>
+                                </Pressable>
+                            </Animated.View>
 
                         </View>
                     </ScrollView>

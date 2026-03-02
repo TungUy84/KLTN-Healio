@@ -6,9 +6,11 @@ import { Wheat, Beef, Droplet, Flame } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeInUp, FadeInLeft, FadeInRight, LinearTransition, useSharedValue, useAnimatedStyle, withSpring, interpolate, useAnimatedScrollHandler, Extrapolation } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import Svg, { Defs, RadialGradient as SvgRadialGradient, Rect, Stop, Path } from 'react-native-svg';
+import Svg, { Defs, RadialGradient as SvgRadialGradient, Rect, Stop } from 'react-native-svg';
 import { userService, CalculatedMetrics } from '../../services/userService';
 import { foodService, Food } from '../../services/foodService';
+import { AnimatedProgressBar } from '../../components/ui/AnimatedProgressBar';
+import { AnimatedCalorieGauge } from '../../components/ui/AnimatedCalorieGauge';
 
 const { width } = Dimensions.get('window');
 
@@ -24,55 +26,6 @@ const resolveImg = (path: string | null | undefined) => {
 // --- COMPONENTS CŨ PHỤC HỒI ---
 const AnimatedView = Animated.createAnimatedComponent(View);
 const AnimatedTouchableOpacity = Animated.createAnimatedComponent(TouchableOpacity);
-
-// Component Gauge Arc 270° bằng react-native-svg (gap ở dưới, hiện đại)
-const CalorieGauge = ({ value, target }: { value: number; target: number }) => {
-  const SIZE = 122;
-  const STROKE = 13;
-  const r = (SIZE - STROKE) / 2; // bán kính
-  const cx = SIZE / 2; // tâm x
-  const cy = SIZE / 2; // tâm y
-  const pct = Math.min(Math.max((value / (target || 1)) * 100, 0), 100);
-  const TOTAL = 235;  // tổng cung 235°
-  const START = 360 - TOTAL / 2; // tự động cân đối quanh 12 o'clock
-
-  // Chuyển độ sang toạ độ SVG
-  const pt = (deg: number) => {
-    const rad = ((deg - 90) * Math.PI) / 180;
-    return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
-  };
-
-  // Tạo SVG path cho cung tròn
-  const arc = (from: number, to: number) => {
-    if (to - from <= 0) return '';
-    const s = pt(from);
-    const e = pt(to);
-    const large = to - from > 180 ? 1 : 0;
-    return `M ${s.x.toFixed(2)} ${s.y.toFixed(2)} A ${r} ${r} 0 ${large} 1 ${e.x.toFixed(2)} ${e.y.toFixed(2)}`;
-  };
-
-  const bgArc = arc(START, START + TOTAL);
-  const progressDeg = (pct / 100) * TOTAL;
-  const fgArc = arc(START, START + progressDeg);
-  // Màu dựa theo % (xanh lá nếu đầy đủ, cam nếu vừa, hồng nếu thiếu)
-  const fgColor = pct >= 90 ? '#10B981' : pct >= 60 ? '#fb923c' : '#fb7185';
-
-  return (
-    <View style={{ width: SIZE, height: SIZE, alignItems: 'center', justifyContent: 'center' }}>
-      <Svg width={SIZE} height={SIZE} style={{ position: 'absolute' }}>
-        {/* Vòng nền xám */}
-        <Path d={bgArc} fill="none" stroke="#f1f5f9" strokeWidth={STROKE} strokeLinecap="round" />
-        {/* Vòng tiến độ */}
-        {fgArc ? <Path d={fgArc} fill="none" stroke={fgColor} strokeWidth={STROKE} strokeLinecap="round" /> : null}
-      </Svg>
-      {/* Text trung tâm */}
-      <View style={{ alignItems: 'center', marginTop: -8 }}>
-        <Text style={{ fontSize: 26, fontWeight: '900', color: '#1e293b', lineHeight: 30 }}>{Math.round(value)}</Text>
-        <Text style={{ fontSize: 11, fontWeight: '700', color: fgColor, lineHeight: 15 }}>{Math.round(pct)}%</Text>
-      </View>
-    </View>
-  );
-};
 
 // 2. Calories Hero & Summary Cards
 const CaloriesHero = ({ target, eaten, dailyLog, tCarb, tProt, tFat }: any) => {
@@ -95,11 +48,16 @@ const CaloriesHero = ({ target, eaten, dailyLog, tCarb, tProt, tFat }: any) => {
             <Text className="text-slate-400">Đã nạp {Math.round(percent)}%</Text>
             <Text className="text-slate-400">Còn lại {Math.round(left).toLocaleString()} kcal</Text>
           </View>
-          <View className="h-4 w-full bg-slate-100 rounded-full relative p-0.5 shadow-inner">
-            <View className="h-full bg-[#10B981] rounded-full relative" style={{ width: `${percent}%` }}>
-              <View className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-4 h-4 bg-white rounded-full shadow-sm border-2 border-emerald-500" />
-            </View>
-          </View>
+          <AnimatedProgressBar
+            progress={percent}
+            height={16}
+            color="#10B981"
+            backgroundColor="#F1F5F9"
+            containerClassName="shadow-inner"
+            showThumb={true}
+            delay={300}
+            duration={1200}
+          />
         </View>
       </View>
 
@@ -206,7 +164,8 @@ export default function SuperAppHomeScreen() {
 
   const fetchMetrics = async () => {
     try {
-      const dateStr = new Date().toISOString().split('T')[0];
+      const tzOffset = new Date().getTimezoneOffset() * 60000;
+      const dateStr = new Date(Date.now() - tzOffset).toISOString().split('T')[0];
       const [metricsData, logsData, profile] = await Promise.all([
         userService.getCalculatedMetrics(),
         foodService.getDailyLog(dateStr),
@@ -358,7 +317,7 @@ export default function SuperAppHomeScreen() {
 
               {/* Trái: Gauge Calo 270° */}
               <View style={{ width: '40%', alignItems: 'center', top: 10, justifyContent: 'center' }}>
-                <CalorieGauge value={dailyLog.eaten} target={target} />
+                <AnimatedCalorieGauge value={dailyLog.eaten} target={target} delay={400} />
               </View>
 
               {/* Separator dọc */}
@@ -377,9 +336,7 @@ export default function SuperAppHomeScreen() {
                       {Math.round(dailyLog.protein)}<Text className="text-slate-400 font-medium"> /{Math.round(tProt)}g</Text>
                     </Text>
                   </View>
-                  <View className="bg-slate-100 rounded-full overflow-hidden" style={{ height: 6 }}>
-                    <View className="bg-blue-400 rounded-full" style={{ height: 6, width: `${Math.min((dailyLog.protein / (tProt || 1)) * 100, 100)}%` }} />
-                  </View>
+                  <AnimatedProgressBar progress={(dailyLog.protein / (tProt || 1)) * 100} color="#60A5FA" delay={500} />
                 </View>
                 {/* Tinh bột */}
                 <View>
@@ -392,9 +349,7 @@ export default function SuperAppHomeScreen() {
                       {Math.round(dailyLog.carbs)}<Text className="text-slate-400 font-medium"> /{Math.round(tCarb)}g</Text>
                     </Text>
                   </View>
-                  <View className="bg-slate-100 rounded-full overflow-hidden" style={{ height: 6 }}>
-                    <View className="bg-emerald-400 rounded-full" style={{ height: 6, width: `${Math.min((dailyLog.carbs / (tCarb || 1)) * 100, 100)}%` }} />
-                  </View>
+                  <AnimatedProgressBar progress={(dailyLog.carbs / (tCarb || 1)) * 100} color="#10B981" delay={600} />
                 </View>
                 {/* Chất béo */}
                 <View>
@@ -407,9 +362,7 @@ export default function SuperAppHomeScreen() {
                       {Math.round(dailyLog.fat)}<Text className="text-slate-400 font-medium"> /{Math.round(tFat)}g</Text>
                     </Text>
                   </View>
-                  <View className="bg-slate-100 rounded-full overflow-hidden" style={{ height: 6 }}>
-                    <View className="bg-yellow-400 rounded-full" style={{ height: 6, width: `${Math.min((dailyLog.fat / (tFat || 1)) * 100, 100)}%` }} />
-                  </View>
+                  <AnimatedProgressBar progress={(dailyLog.fat / (tFat || 1)) * 100} color="#FACC15" delay={700} />
                 </View>
               </View>
             </View>

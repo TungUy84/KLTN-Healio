@@ -41,6 +41,10 @@ export default function FullCalendarScreen() {
     const router = useRouter();
     const [selectedDate, setSelectedDate] = useState(new Date());
 
+    // Tính toán ngày theo Local Timezone của thiết bị thay vì UTC
+    const tzOffset = selectedDate.getTimezoneOffset() * 60000;
+    const localDateStr = new Date(selectedDate.getTime() - tzOffset).toISOString().split('T')[0];
+
     return (
         <View className="flex-1 bg-white">
             <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
@@ -62,7 +66,7 @@ export default function FullCalendarScreen() {
 
             {/* Vertical Calendar List */}
             <CalendarList
-                current={selectedDate.toISOString().split('T')[0]}
+                current={localDateStr}
                 pastScrollRange={24}
                 futureScrollRange={1}
                 scrollEnabled={true}
@@ -112,7 +116,7 @@ export default function FullCalendarScreen() {
                     }
                 }}
                 markedDates={{
-                    [selectedDate.toISOString().split('T')[0]]: { selected: true, selectedColor: '#10B981' },
+                    [localDateStr]: { selected: true, selectedColor: '#10B981' },
                     '2026-03-01': { marked: true, dotColor: '#10B981' },
                 }}
             />

@@ -11,6 +11,8 @@ import { BlurView } from "expo-blur";
 import Svg, { Defs, RadialGradient as SvgRadialGradient, Rect, Stop, Path } from "react-native-svg";
 import { userService } from "../../services/userService";
 import { foodService } from "../../services/foodService";
+import { AnimatedProgressBar } from "../../components/ui/AnimatedProgressBar";
+import { AnimatedCalorieGauge } from "../../components/ui/AnimatedCalorieGauge";
 
 const { width } = Dimensions.get("window")
 const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://10.0.2.2:3000/api";
@@ -45,95 +47,6 @@ const AmbientGlowBackground = () => (
     </Svg>
   </View>
 );
-
-// Component Gauge Arc 270° bằng react-native-svg (gap ở dưới, hiện đại)
-const CalorieGauge = ({ value, target }: { value: number; target: number }) => {
-  const SIZE = 122;
-  const STROKE = 13;
-  const r = (SIZE - STROKE) / 2; // bán kính
-  const cx = SIZE / 2; // tâm x
-  const cy = SIZE / 2; // tâm y
-  const pct = Math.min(Math.max((value / (target || 1)) * 100, 0), 100);
-  const TOTAL = 235; // tổng cung 235°
-  const START = 360 - TOTAL / 2; // tự động cân đối quanh 12 o'clock
-
-  // Chuyển độ sang toạ độ SVG
-  const pt = (deg: number) => {
-    const rad = ((deg - 90) * Math.PI) / 180;
-    return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
-  };
-
-  // Tạo SVG path cho cung tròn
-  const arc = (from: number, to: number) => {
-    if (to - from <= 0) return "";
-    const s = pt(from);
-    const e = pt(to);
-    const large = to - from > 180 ? 1 : 0;
-    return `M ${s.x.toFixed(2)} ${s.y.toFixed(2)} A ${r} ${r} 0 ${large} 1 ${e.x.toFixed(2)} ${e.y.toFixed(2)}`;
-  };
-
-  const bgArc = arc(START, START + TOTAL);
-  const progressDeg = (pct / 100) * TOTAL;
-  const fgArc = arc(START, START + progressDeg);
-  // Màu dựa theo % (xanh lá nếu đầy đủ, cam nếu vừa, hồng nếu thiếu)
-  const fgColor = pct >= 90 ? "#10B981" : pct >= 60 ? "#fb923c" : "#fb7185";
-
-  return (
-    <View
-      style={{
-        width: SIZE,
-        height: SIZE,
-        alignItems: "center",
-        justifyContent: "center",
-      }}
-    >
-      <Svg width={SIZE} height={SIZE} style={{ position: "absolute" }}>
-        {/* Vòng nền xám */}
-        <Path
-          d={bgArc}
-          fill="none"
-          stroke="#f1f5f9"
-          strokeWidth={STROKE}
-          strokeLinecap="round"
-        />
-        {/* Vòng tiến độ */}
-        {fgArc ? (
-          <Path
-            d={fgArc}
-            fill="none"
-            stroke={fgColor}
-            strokeWidth={STROKE}
-            strokeLinecap="round"
-          />
-        ) : null}
-      </Svg>
-      {/* Text trung tâm */}
-      <View style={{ alignItems: "center", marginTop: -8 }}>
-        <Text
-          style={{
-            fontSize: 26,
-            fontWeight: "900",
-            color: "#1e293b",
-            lineHeight: 30,
-          }}
-        >
-          {Math.round(value)}
-        </Text>
-        <Text
-          style={{
-            fontSize: 11,
-            fontWeight: "700",
-            color: fgColor,
-            lineHeight: 15,
-          }}
-        >
-          {Math.round(pct)}%
-        </Text>
-      </View>
-    </View>
-  );
-};
-
 // --- MACRO BAR ---
 const MacroBar = ({ label, IconComponent, value, total, color, barClassName }: any) => {
   const pct = total > 0 ? Math.min(Math.round((value / total) * 100), 100) : 0;
@@ -148,9 +61,7 @@ const MacroBar = ({ label, IconComponent, value, total, color, barClassName }: a
           {value}<Text className="text-slate-400 font-medium"> /{total}g</Text>
         </Text>
       </View>
-      <View className="bg-slate-100 rounded-full overflow-hidden" style={{ height: 6 }}>
-        <View className={`h-full rounded-full ${barClassName}`} style={{ width: `${pct}%`, backgroundColor: color }} />
-      </View>
+      <AnimatedProgressBar progress={pct} color={color} height={6} delay={400} />
     </View>
   );
 };
@@ -216,7 +127,7 @@ const DailyOverviewCard = ({ data }: any) => {
             </Text>
           </View>
           <View className="items-end">
-            <CalorieGauge value={consumed} target={target} />
+            <AnimatedCalorieGauge value={consumed} target={target} delay={400} />
           </View>
         </View>
 

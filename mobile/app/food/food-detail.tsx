@@ -15,6 +15,7 @@ import Animated, { FadeInDown, ZoomIn } from 'react-native-reanimated';
 
 import { foodService, Food } from '../../services/foodService';
 import { userService } from '../../services/userService';
+import { AnimatedProgressBar } from '../../components/ui/AnimatedProgressBar';
 
 const { width } = Dimensions.get('window');
 
@@ -47,9 +48,7 @@ const MacroBar = ({ label, IconComponent, value, total, color, barClassName }: a
                     {value}g
                 </Text>
             </View>
-            <View className="bg-slate-100 rounded-full overflow-hidden" style={{ height: 6 }}>
-                <View className={`h-full rounded-full ${barClassName}`} style={{ width: `${pct}%`, backgroundColor: color }} />
-            </View>
+            <AnimatedProgressBar progress={pct} color={color} height={6} delay={300} />
         </View>
     );
 };
@@ -147,10 +146,13 @@ export default function FoodDetailScreen() {
     const addToDiaryLogic = async () => {
         if (!food) return;
         try {
+            const tzOffset = selectedDate.getTimezoneOffset() * 60000;
+            const localDateStr = new Date(selectedDate.getTime() - tzOffset).toISOString().split('T')[0];
+
             await foodService.addToDiary({
                 food_id: food.id, meal_type: selectedMeal,
                 quantity: parseFloat(amount), unit_name: food.serving_unit || 'suất',
-                date: selectedDate.toISOString().split('T')[0],
+                date: localDateStr,
             });
             setShowAddModal(false);
             Alert.alert('Thêm thành công', `Đã ghi nhận ${amount} ${food.serving_unit || 'suất'} ${food.name} vào nhật ký.`);
