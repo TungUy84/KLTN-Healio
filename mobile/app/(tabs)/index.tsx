@@ -3,7 +3,7 @@ import { View, Text, ScrollView, TouchableOpacity, StatusBar, RefreshControl, Im
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Feather, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Wheat, Beef, Droplet, Flame } from 'lucide-react-native';
-import Animated, { FadeInDown, FadeInUp, useSharedValue, useAnimatedStyle, withSpring, interpolate, useAnimatedScrollHandler, Extrapolation } from 'react-native-reanimated';
+import Animated, { FadeInDown, FadeInUp, FadeInLeft, FadeInRight, LinearTransition, useSharedValue, useAnimatedStyle, withSpring, interpolate, useAnimatedScrollHandler, Extrapolation } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Defs, RadialGradient as SvgRadialGradient, Rect, Stop, Path } from 'react-native-svg';
@@ -23,6 +23,7 @@ const resolveImg = (path: string | null | undefined) => {
 
 // --- COMPONENTS CŨ PHỤC HỒI ---
 const AnimatedView = Animated.createAnimatedComponent(View);
+const AnimatedTouchableOpacity = Animated.createAnimatedComponent(TouchableOpacity);
 
 // Component Gauge Arc 270° bằng react-native-svg (gap ở dưới, hiện đại)
 const CalorieGauge = ({ value, target }: { value: number; target: number }) => {
@@ -475,7 +476,8 @@ export default function SuperAppHomeScreen() {
 
               {/* Card LỚN - style ai-plan: ImageBackground + dark gradient */}
               {suggestedFoods[0] && (
-                <TouchableOpacity
+                <AnimatedTouchableOpacity
+                  entering={FadeInLeft.delay(200).springify()}
                   onPress={() => router.push(`/food/food-detail?id=${suggestedFoods[0].id}`)}
                   activeOpacity={0.9}
                   style={{ flex: 1, borderRadius: 24, overflow: 'hidden', backgroundColor: '#CBD5E1' }}
@@ -516,13 +518,14 @@ export default function SuperAppHomeScreen() {
                       </View>
                     </LinearGradient>
                   )}
-                </TouchableOpacity>
+                </AnimatedTouchableOpacity>
               )}
 
               {/* 2 Card nhỏ - style ai-plan side items */}
               <View style={{ width: '42%', gap: 12 }}>
-                {suggestedFoods.slice(1, 3).map((item) => (
-                  <TouchableOpacity
+                {suggestedFoods.slice(1, 3).map((item, index) => (
+                  <AnimatedTouchableOpacity
+                    entering={FadeInRight.delay(index * 150 + 300).springify()}
                     key={item.id}
                     onPress={() => router.push(`/food/food-detail?id=${item.id}`)}
                     activeOpacity={0.9}
@@ -542,7 +545,7 @@ export default function SuperAppHomeScreen() {
                         <Text className="text-orange-600 font-black" style={{ fontSize: 10 }}>{Math.round(item.calories)} kcal</Text>
                       </View>
                     </View>
-                  </TouchableOpacity>
+                  </AnimatedTouchableOpacity>
                 ))}
               </View>
             </View>
@@ -601,7 +604,8 @@ export default function SuperAppHomeScreen() {
                 const rank = originalIndex + 1;
 
                 return (
-                  <TouchableOpacity
+                  <AnimatedTouchableOpacity
+                    entering={FadeInRight.delay(originalIndex * 100).springify()}
                     key={`${food.id}-${index}`}
                     onPress={() => router.push(`/food/food-detail?id=${food.id}`)}
                     activeOpacity={0.92}
@@ -673,7 +677,7 @@ export default function SuperAppHomeScreen() {
                         </View>
                       </LinearGradient>
                     )}
-                  </TouchableOpacity>
+                  </AnimatedTouchableOpacity>
                 );
               })}
             </ScrollView>

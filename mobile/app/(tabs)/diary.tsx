@@ -6,7 +6,7 @@ import { Feather, MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { Wheat, Beef, Droplet, Flame } from "lucide-react-native";
-import Animated, { FadeInDown, FadeInUp, useSharedValue, useAnimatedStyle, interpolate, Extrapolation, useAnimatedScrollHandler } from "react-native-reanimated";
+import Animated, { FadeInDown, FadeInUp, FadeInLeft, LinearTransition, useSharedValue, useAnimatedStyle, interpolate, Extrapolation, useAnimatedScrollHandler } from "react-native-reanimated";
 import { BlurView } from "expo-blur";
 import Svg, { Defs, RadialGradient as SvgRadialGradient, Rect, Stop, Path } from "react-native-svg";
 import { userService } from "../../services/userService";
@@ -291,7 +291,7 @@ const MicronutrientsCard = ({ data }: any) => {
   };
 
   const allMicros = [];
-  
+
   // Thêm fiber từ macros
   if (data?.macros?.fiber > 0) {
     allMicros.push({ key: 'fiber', value: data.macros.fiber, unit: 'g' });
@@ -340,10 +340,10 @@ const MicronutrientsCard = ({ data }: any) => {
       </Text>
       <View className="flex-row flex-wrap gap-2.5 items-center">
         {displayMicros.map((micro, index) => {
-          const meta = micronutrientsMap[micro.key] || { 
-            n: micro.key.replace(/_/g, ' '), 
-            i: 'water-outline', 
-            c: '#3B82F6' 
+          const meta = micronutrientsMap[micro.key] || {
+            n: micro.key.replace(/_/g, ' '),
+            i: 'water-outline',
+            c: '#3B82F6'
           };
           const val = Math.round(micro.value * 10) / 10;
 
@@ -352,10 +352,10 @@ const MicronutrientsCard = ({ data }: any) => {
               key={`micro-${micro.key}-${index}`}
               className="flex-row items-center gap-2 bg-white/80 rounded-full px-3.5 py-2.5 border border-white shadow-sm shadow-slate-200"
             >
-              <MaterialCommunityIcons 
-                name={meta.i as any} 
-                size={15} 
-                color={meta.c} 
+              <MaterialCommunityIcons
+                name={meta.i as any}
+                size={15}
+                color={meta.c}
               />
               <Text className="text-[13px] font-bold text-slate-700">
                 {meta.n}
@@ -422,11 +422,11 @@ const MealCard = ({ mealType, meal, onRefresh }: any) => {
       <TouchableOpacity
         onPress={() => handleDeleteFood(foodLogId, foodName)}
         className="bg-red-500 justify-center items-center rounded-2xl mb-2.5 px-4"
-        style={{ 
-          shadowColor: '#EF4444', 
-          shadowOffset: { width: 0, height: 4 }, 
-          shadowOpacity: 0.3, 
-          shadowRadius: 8 
+        style={{
+          shadowColor: '#EF4444',
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.3,
+          shadowRadius: 8
         }}
       >
         <Feather name="trash-2" size={20} color="white" />
@@ -477,56 +477,61 @@ const MealCard = ({ mealType, meal, onRefresh }: any) => {
         {items.length > 0 && (
           <View className="px-3 pb-3 gap-2.5">
             {items.slice(0, 2).map((food: any, idx: number) => (
-              <Swipeable
+              <Animated.View
                 key={food.id ? `food-${food.id}-${idx}` : `food-idx-${idx}`}
-                renderRightActions={() => renderRightActions(food.id, food.name)}
-                overshootRight={false}
+                entering={FadeInLeft.delay(idx * 150 + 400).springify()}
+                layout={LinearTransition.springify()}
               >
-                <TouchableOpacity
-                  onPress={() => {
-                    if (food.food_id) {
-                      router.push(`/food/food-detail?id=${food.food_id}`);
-                    }
-                  }}
-                  activeOpacity={0.7}
-                  className="flex-row items-center bg-white/60 rounded-2xl p-2.5 border border-white/40"
+                <Swipeable
+                  renderRightActions={() => renderRightActions(food.id, food.name)}
+                  overshootRight={false}
                 >
-                  <View className="w-[60px] h-[60px] rounded-full bg-slate-100 overflow-hidden mr-3 shadow-sm shadow-slate-200">
-                    {food.image ? (
-                      <Image
-                        source={{ uri: resolveImg(food.image) as string }}
-                        className="w-full h-full"
-                      />
-                    ) : (
-                      <View className="flex-1 items-center justify-center bg-emerald-50">
-                        <MaterialCommunityIcons
-                          name="food-variant"
-                          size={24}
-                          color="#A7F3D0"
+                  <TouchableOpacity
+                    onPress={() => {
+                      if (food.food_id) {
+                        router.push(`/food/food-detail?id=${food.food_id}`);
+                      }
+                    }}
+                    activeOpacity={0.7}
+                    className="flex-row items-center bg-white/60 rounded-2xl p-2.5 border border-white/40"
+                  >
+                    <View className="w-[60px] h-[60px] rounded-full bg-slate-100 overflow-hidden mr-3 shadow-sm shadow-slate-200">
+                      {food.image ? (
+                        <Image
+                          source={{ uri: resolveImg(food.image) as string }}
+                          className="w-full h-full"
                         />
-                      </View>
-                    )}
-                  </View>
-                  <View className="flex-1">
-                    <Text
-                      className="text-slate-800 font-bold text-[14px] mb-1"
-                      numberOfLines={1}
-                    >
-                      {food.name}
-                    </Text>
-                    <Text className="text-slate-400 text-[11px] font-medium">
-                      {food.portion} {food.unit}
-                    </Text>
-                  </View>
-                  <View className="flex-row items-center gap-1 ml-2">
-                    <MaterialCommunityIcons name="fire" size={13} color="#F97316" />
-                    <Text className="text-slate-700 font-black text-[13px]">
-                      {food.calories}
-                      <Text className="text-slate-400 text-[10px] font-bold"> kcal</Text>
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              </Swipeable>
+                      ) : (
+                        <View className="flex-1 items-center justify-center bg-emerald-50">
+                          <MaterialCommunityIcons
+                            name="food-variant"
+                            size={24}
+                            color="#A7F3D0"
+                          />
+                        </View>
+                      )}
+                    </View>
+                    <View className="flex-1">
+                      <Text
+                        className="text-slate-800 font-bold text-[14px] mb-1"
+                        numberOfLines={1}
+                      >
+                        {food.name}
+                      </Text>
+                      <Text className="text-slate-400 text-[11px] font-medium">
+                        {food.portion} {food.unit}
+                      </Text>
+                    </View>
+                    <View className="flex-row items-center gap-1 ml-2">
+                      <MaterialCommunityIcons name="fire" size={13} color="#F97316" />
+                      <Text className="text-slate-700 font-black text-[13px]">
+                        {food.calories}
+                        <Text className="text-slate-400 text-[10px] font-bold"> kcal</Text>
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                </Swipeable>
+              </Animated.View>
             ))}
             {items.length > 2 && (
               <Text className="text-slate-400 text-[11px] font-bold ml-2 mt-1">
@@ -679,12 +684,12 @@ export default function DiaryScreen() {
           if (log.food?.micronutrients) {
             const micro = log.food.micronutrients;
             const amount = log.amount || 1;
-            
+
             // Tự động lưu tất cả các micronutrients
             Object.keys(micro).forEach(key => {
               const lowerKey = key.toLowerCase().replace(/_mg$|_g$|_mcg$|_iu$/, '');
               const value = micro[key];
-              
+
               if (value && typeof value === 'number') {
                 if (!newLog.micronutrients[lowerKey]) {
                   newLog.micronutrients[lowerKey] = 0;

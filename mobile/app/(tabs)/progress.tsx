@@ -1,550 +1,542 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, Modal,
-  TextInput, Alert, ActivityIndicator, Dimensions,
-  Platform, KeyboardAvoidingView, Keyboard, StatusBar
+  View, Text, ScrollView, FlatList, TouchableOpacity, Dimensions,
+  StatusBar, RefreshControl, ActivityIndicator, Platform, Image
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
-import { userService } from '../../services/userService';
-import { useIsFocused } from '@react-navigation/native';
-import { BarChart, LineChart } from 'react-native-gifted-charts';
+import { Beef, Wheat, Droplet } from 'lucide-react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { router } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated, {
+  FadeInDown, FadeInUp, ZoomIn,
+  useSharedValue, useAnimatedStyle, interpolate, Extrapolation, useAnimatedScrollHandler
+} from 'react-native-reanimated';
+import {
+  getDashboardStats, DashboardStats,
+  getNutritionStats, NutritionStats,
+  getBodyStats, BodyStats,
+  getFoodInsights, FoodInsights
+} from '../../services/statsService';
+import { BlurView } from 'expo-blur';
+import Svg, { Defs, RadialGradient as SvgRadialGradient, Rect, Stop } from 'react-native-svg';
+import { BarChart, LineChart, PieChart } from 'react-native-gifted-charts';
 
 const { width } = Dimensions.get('window');
+const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://10.0.2.2:3000/api';
+const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 
-// --- STAT CARD nhỏ ở header ---
-const StatPill = ({ label, value, unit, color, bg, icon }: any) => (
-  <View className="flex-1 rounded-2xl p-3.5 items-center" style={{ backgroundColor: bg }}>
-    <MaterialCommunityIcons name={icon} size={18} color={color} />
-    <Text className="text-lg font-black mt-1" style={{ color }}>{value}</Text>
-    <Text className="text-[10px] font-semibold text-slate-400">{unit}</Text>
-    <Text className="text-[10px] font-semibold text-slate-400 text-center">{label}</Text>
+// --- AMBIENT GLOW BACKGROUND (Sky Blue) ---
+const AmbientGlowBackground = () => (
+  <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} pointerEvents="none">
+    <Svg height="100%" width="100%">
+      <Defs>
+        <SvgRadialGradient id="s1" cx="80%" cy="0%" rx="70%" ry="60%">
+          <Stop offset="0%" stopColor="#0EA5E9" stopOpacity="0.18" />
+          <Stop offset="100%" stopColor="#0EA5E9" stopOpacity="0" />
+        </SvgRadialGradient>
+        <SvgRadialGradient id="s2" cx="0%" cy="35%" rx="55%" ry="55%">
+          <Stop offset="0%" stopColor="#0369A1" stopOpacity="0.1" />
+          <Stop offset="100%" stopColor="#0369A1" stopOpacity="0" />
+        </SvgRadialGradient>
+        <SvgRadialGradient id="s3" cx="100%" cy="75%" rx="50%" ry="50%">
+          <Stop offset="0%" stopColor="#38BDF8" stopOpacity="0.08" />
+          <Stop offset="100%" stopColor="#38BDF8" stopOpacity="0" />
+        </SvgRadialGradient>
+      </Defs>
+      <Rect x="0" y="0" width="100%" height="100%" fill="url(#s1)" />
+      <Rect x="0" y="0" width="100%" height="100%" fill="url(#s2)" />
+      <Rect x="0" y="0" width="100%" height="100%" fill="url(#s3)" />
+    </Svg>
   </View>
 );
 
-// --- SECTION HEADER ---
-const SectionHeader = ({ title, subtitle }: any) => (
-  <View className="mb-4">
-    <Text className="text-lg font-black text-slate-800">{title}</Text>
-    {subtitle && <Text className="text-xs font-medium text-slate-400 mt-0.5">{subtitle}</Text>}
-  </View>
+const resolveImg = (path: string | null | undefined) => {
+  if (!path) return null;
+  if (path.startsWith('http')) return path;
+  const base = API_URL.replace(/\/api$/, '');
+  return `${base}${path.startsWith('/') ? '' : '/'}${path}`;
+};
+
+// --- PERIOD OPTIONS (dùng chung cho tất cả section) ---
+const PERIODS = [
+  { id: '7d', label: 'Theo tuần' },
+  { id: '30d', label: 'Theo tháng' },
+  { id: '1y', label: 'Theo năm' },
+];
+
+// --- PERIOD PILLS (kiểu Foods – horizontal scroll) ---
+const PeriodPills = ({ value, onChange }: { value: string; onChange: (id: string) => void }) => (
+  <ScrollView
+    horizontal
+    showsHorizontalScrollIndicator={false}
+    contentContainerStyle={{ paddingLeft: 20, paddingRight: 8 }}
+    className="mb-5"
+  >
+    {PERIODS.map((item) => (
+      <TouchableOpacity
+        key={item.id}
+        onPress={() => onChange(item.id)}
+        className={`mr-3 px-5 py-3 rounded-full border shadow-sm ${value === item.id
+          ? 'bg-white border-white shadow-slate-200'
+          : 'bg-white/40 border-white/40 shadow-transparent'
+          }`}
+      >
+        <Text
+          className={`text-[15px] font-bold ${value === item.id ? 'text-slate-800' : 'text-slate-500'
+            }`}
+        >
+          {item.label}
+        </Text>
+      </TouchableOpacity>
+    ))}
+  </ScrollView>
 );
+
 
 export default function ProgressScreen() {
-  const isFocused = useIsFocused();
   const insets = useSafeAreaInsets();
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [nutrition, setNutrition] = useState<NutritionStats | null>(null);
+  const [bodyStats, setBodyStats] = useState<BodyStats | null>(null);
+  const [foodInsights, setFoodInsights] = useState<FoodInsights | null>(null);
 
-  const [calorieStats, setCalorieStats] = useState<any[]>([]);
-  const [weightHistory, setWeightHistory] = useState<any[]>([]);
-  const [currentWeight, setCurrentWeight] = useState<number>(0);
-  const [profile, setProfile] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  // Dùng chung 1 period state cho tất cả sections
+  const [period, setPeriod] = useState('7d');
+  const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const [modalVisible, setModalVisible] = useState(false);
-  const [newWeight, setNewWeight] = useState('');
-  const [logging, setLogging] = useState(false);
-  const [showCelebration, setShowCelebration] = useState(false);
-
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      const [stats, history, userProfile] = await Promise.all([
-        userService.getWeeklyStats(),
-        userService.getWeightHistory(),
-        userService.getProfile()
-      ]);
-      setCalorieStats(stats);
-      setWeightHistory(history);
-      setProfile(userProfile);
-
-      let curr = 0;
-      if (userProfile.UserProfile?.current_weight) {
-        curr = userProfile.UserProfile.current_weight;
-      } else if (history.length > 0) {
-        curr = history[history.length - 1].weight;
-      }
-      setCurrentWeight(curr);
-      setNewWeight(curr.toString());
-      checkGoalReached(curr, userProfile.UserProfile);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const checkGoalReached = (current: number, userProfile: any) => {
-    if (!userProfile?.goal_weight) return;
-    const { goal_weight: target, goal_type: type } = userProfile;
-    const reached =
-      (type === 'lose_weight' && current <= target) ||
-      (type === 'gain_weight' && current >= target);
-    if (reached && type !== 'maintain') setShowCelebration(true);
-  };
-
-  useEffect(() => { if (isFocused) fetchData(); }, [isFocused]);
-
-  const handleLogWeight = async () => {
-    Keyboard.dismiss();
-    if (!newWeight || isNaN(parseFloat(newWeight))) {
-      Alert.alert('Lỗi', 'Vui lòng nhập số cân hợp lệ');
-      return;
-    }
-    try {
-      setLogging(true);
-      await userService.logWeight(parseFloat(newWeight));
-      setModalVisible(false);
-      Alert.alert('Thành công', 'Đã ghi nhận cân nặng hôm nay');
-      fetchData();
-    } catch { Alert.alert('Lỗi', 'Ghi nhận thất bại'); }
-    finally { setLogging(false); }
-  };
-
-  const handleSwitchToMaintain = async () => {
-    try {
-      await userService.updateProfile({ goal_type: 'maintain' });
-      setShowCelebration(false);
-      Alert.alert('Đã cập nhật', 'Chế độ đã chuyển sang Giữ cân.');
-      fetchData();
-    } catch { Alert.alert('Lỗi', 'Không thể cập nhật chế độ'); }
-  };
-
-  // --- Chart data ---
-  const CHART_WIDTH = width - 80; // 20px page padding + 20px card padding mỗi bên
-  const tdeeVal = calorieStats.length > 0 ? calorieStats[0].tdee : 2000;
-
-  const barData = calorieStats.map(item => {
-    const isOver = item.calories > item.tdee;
-    const dayName = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'][new Date(item.date).getDay()];
-    return {
-      value: Math.round(item.calories),
-      label: dayName,
-      frontColor: isOver ? '#FB7185' : '#34D399',
-      gradientColor: isOver ? '#FCA5A5' : '#6EE7B7',
-    };
-  });
-
-  let chartLineData: any[] = weightHistory.map(item => ({
-    value: parseFloat(item.weight),
-    label: `${new Date(item.date).getDate()}/${new Date(item.date).getMonth() + 1}`,
-    dataPointText: `${parseFloat(item.weight).toFixed(1)}`,
-    textShiftY: -8,
-    textShiftX: -12,
-    textColor: '#059669',
-    textFontSize: 11,
+  // Animated header
+  const scrollY = useSharedValue(0);
+  const scrollHandler = useAnimatedScrollHandler({ onScroll: (e) => { scrollY.value = e.contentOffset.y; } });
+  const headerBlurStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(scrollY.value, [0, 60], [0, 1], Extrapolation.CLAMP)
   }));
-  if (chartLineData.length === 1) {
-    chartLineData = [
-      { value: chartLineData[0].value, label: '', hideDataPoint: true },
-      chartLineData[0]
-    ];
-  }
 
-  // Tính toán thống kê
-  const avgCal = calorieStats.length
-    ? Math.round(calorieStats.reduce((s, i) => s + i.calories, 0) / calorieStats.length)
-    : 0;
-  const goalWeight = profile?.UserProfile?.goal_weight || 0;
-  const weightDiff = goalWeight && currentWeight ? Math.abs(currentWeight - goalWeight) : null;
-  const goalType = profile?.UserProfile?.goal_type;
-  const goalLabel = goalType === 'lose_weight' ? 'Giảm cân' : goalType === 'gain_weight' ? 'Tăng cân' : 'Giữ cân';
-  const daysLogged = calorieStats.filter(d => d.calories > 0).length;
+  const fetchAllStats = async () => {
+    setLoading(true);
+    try {
+      const [dashboardData, nutritionData, bodyData, foodData] = await Promise.all([
+        getDashboardStats(),
+        getNutritionStats(period),
+        getBodyStats(period),
+        getFoodInsights(period),
+      ]);
+      setStats(dashboardData);
+      setNutrition(nutritionData);
+      setBodyStats(bodyData);
+      setFoodInsights(foodData);
+    } catch (err) { console.error(err); }
+    finally { setLoading(false); setRefreshing(false); }
+  };
+
+  useFocusEffect(useCallback(() => { fetchAllStats(); }, [period]));
+
+  // Helper: gộp raw daily data theo period rồi tính trung bình
+  const aggregateByPeriod = useCallback((
+    raw: { date: string; calories: number }[]
+  ): { label: string; avg: number }[] => {
+    if (!raw || raw.length === 0) return [];
+
+    if (period === '7d') {
+      // Mỗi ngày 1 cột, nhãn: dd/mm
+      return raw.map(item => {
+        const d = new Date(item.date);
+        return { label: `${d.getDate()}/${d.getMonth() + 1}`, avg: item.calories };
+      });
+    }
+
+    // Nhóm: key theo tuần (30d) hoặc tháng (6m / 1y)
+    const grouped: Record<string, { sum: number; count: number; label: string }> = {};
+
+    raw.forEach(item => {
+      const d = new Date(item.date);
+      let key: string;
+      let label: string;
+
+      if (period === '30d') {
+        // Tính số tuần trong tháng (0-based)
+        const weekOfMonth = Math.floor((d.getDate() - 1) / 7);
+        key = `${d.getFullYear()}-${d.getMonth()}-W${weekOfMonth}`;
+        const weekStart = weekOfMonth * 7 + 1;
+        label = `${weekStart}/${d.getMonth() + 1}`;
+      } else {
+        // 6m / 1y → nhóm theo tháng
+        key = `${d.getFullYear()}-${d.getMonth()}`;
+        label = `T${d.getMonth() + 1}`;
+      }
+
+      if (!grouped[key]) grouped[key] = { sum: 0, count: 0, label };
+      grouped[key].sum += item.calories;
+      grouped[key].count += 1;
+    });
+
+    return Object.values(grouped).map(g => ({ label: g.label, avg: Math.round(g.sum / g.count) }));
+  }, [period]);
+
+  // Chart data
+  const nutritionBarData = useMemo(() => {
+    if (!nutrition) return [];
+    const targetCals = nutrition.target.calories;
+    const aggregated = aggregateByPeriod(nutrition.timeline || []);
+    return aggregated.map(item => ({
+      value: item.avg,
+      label: item.label,
+      frontColor: item.avg > targetCals ? '#F87171' : '#10B981',
+      gradientColor: item.avg > targetCals ? '#FCA5A5' : '#6EE7B7',
+    }));
+  }, [nutrition, period, aggregateByPeriod]);
+
+  const nutritionPieData = useMemo(() => {
+    if (!nutrition) return [{ value: 1, color: '#E2E8F0' }];
+    const total = nutrition.macroSplit.carb + nutrition.macroSplit.protein + nutrition.macroSplit.fat;
+    if (total <= 0) return [{ value: 1, color: '#E2E8F0' }];
+    return [
+      { value: nutrition.macroSplit.protein, color: '#3B82F6' }, // Đạm – Blue
+      { value: nutrition.macroSplit.carb, color: '#10B981' },    // Tinh bột – Emerald
+      { value: nutrition.macroSplit.fat, color: '#EAB308' },     // Chất béo – Yellow
+    ];
+  }, [nutrition]);
+
+  const lineData = useMemo(() => {
+    if (!bodyStats) return [];
+    // Line chart: hiển thị raw data với nhãn dựa theo period
+    let data = bodyStats.history.map((item) => {
+      const d = new Date(item.date);
+      let lbl = '';
+      if (period === '7d') lbl = `${d.getDate()}/${d.getMonth() + 1}`;
+      else if (period === '30d') lbl = d.getDate() % 7 === 1 ? `${d.getDate()}/${d.getMonth() + 1}` : '';
+      else lbl = `T${d.getMonth() + 1}`;
+      return { value: parseFloat(item.weight as any), label: lbl };
+    });
+    if (data.length === 1) data = [{ value: data[0].value, label: '' } as any, data[0]];
+    return data;
+  }, [bodyStats, period]);
+
+  const MEAL_META: Record<string, { color: string; icon: string; label: string }> = {
+    breakfast: { color: '#3B82F6', icon: 'weather-sunset-up', label: 'Sáng' },
+    lunch: { color: '#F59E0B', icon: 'white-balance-sunny', label: 'Trưa' },
+    dinner: { color: '#8B5CF6', icon: 'weather-night', label: 'Tối' },
+    snack: { color: '#10B981', icon: 'cookie', label: 'Phụ' },
+    // fallback tiếng Việt phòng khi API đổi format
+    'Sáng': { color: '#3B82F6', icon: 'weather-sunset-up', label: 'Sáng' },
+    'Trưa': { color: '#F59E0B', icon: 'white-balance-sunny', label: 'Trưa' },
+    'Tối': { color: '#8B5CF6', icon: 'weather-night', label: 'Tối' },
+    'Phụ': { color: '#10B981', icon: 'cookie', label: 'Phụ' },
+  };
+
+  const foodPieData = useMemo(() => {
+    if (!foodInsights) return [];
+    const totalCals = foodInsights.mealDistribution.reduce((sum, item) => sum + item.calories, 0);
+    return foodInsights.mealDistribution.map((item) => ({
+      value: item.calories,
+      text: `${Math.round((item.calories / Math.max(1, totalCals)) * 100)}%`,
+      color: MEAL_META[item.meal]?.color || '#94A3B8',
+      label: item.meal,
+    }));
+  }, [foodInsights]);
+
+  const foodBarData = useMemo(() => {
+    if (!foodInsights) return [];
+    const aggregated = aggregateByPeriod(foodInsights.consistency || []);
+    return aggregated.map(item => ({
+      value: item.avg,
+      label: item.label,
+      frontColor: item.avg > 2000 ? '#F87171' : '#34D399',
+      gradientColor: item.avg > 2000 ? '#FCA5A5' : '#6EE7B7',
+    }));
+  }, [foodInsights, period, aggregateByPeriod]);
+
+  // Helper card wrapper
+  const CardWrap = ({ children, delay = 0, color = '#0EA5E9', icon, title, subtitle }: any) => (
+    <Animated.View
+      entering={FadeInDown.delay(delay).springify()}
+      className="mb-6"
+      style={{
+        backgroundColor: 'rgba(255,255,255,0.78)',
+        borderRadius: 36,
+        paddingHorizontal: 22,
+        paddingVertical: 22,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.7)',
+        shadowColor: color,
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.1,
+        shadowRadius: 24,
+        elevation: 4,
+      }}
+    >
+      <View className="flex-row items-center mb-5">
+        <Animated.View entering={ZoomIn.delay(delay + 200).springify()} className="w-12 h-12 rounded-[20px] items-center justify-center mr-4" style={{ backgroundColor: `${color}18` }}>
+          <MaterialCommunityIcons name={icon} size={24} color={color} />
+        </Animated.View>
+        <View className="flex-1">
+          <Text className="text-[19px] font-[900] text-slate-800 tracking-tighter">{title}</Text>
+          {subtitle ? <Text className="text-xs text-slate-400 font-bold mt-0.5">{subtitle}</Text> : null}
+        </View>
+      </View>
+      {children}
+    </Animated.View>
+  );
 
   return (
-    <View className="flex-1 bg-slate-50">
-      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+    <View className="flex-1 bg-white">
+      <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
+      <AmbientGlowBackground />
 
-      {/* ===== GRADIENT HEADER ===== */}
-      <LinearGradient
-        colors={['#0F172A', '#1E293B']}
-        start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-        style={{ paddingTop: insets.top + 12, paddingBottom: 28, paddingHorizontal: 20 }}
-      >
-        {/* Title row */}
-        <View className="flex-row justify-between items-center mb-5">
-          <View>
-            <Text className="text-emerald-400 text-[11px] font-bold tracking-widest mb-1">THỐNG KÊ</Text>
-            <Text className="text-white text-2xl font-black">Tiến độ của tôi</Text>
-          </View>
+      {/* Static Header (Foods style) – có Period filter */}
+      <BlurView tint="light" intensity={90} style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10, paddingTop: insets.top + 16, paddingBottom: 16, backgroundColor: 'rgba(255,255,255,0.2)' }}>
+        {/* Hàng 1: Back + Title + Streak */}
+        <View className="flex-row justify-between items-center px-5 mb-6">
           <TouchableOpacity
-            onPress={() => router.push('/(tabs)/profile')}
-            className="w-10 h-10 rounded-2xl items-center justify-center border border-white/20"
-            style={{ backgroundColor: 'rgba(255,255,255,0.1)' }}
+            onPress={() => router.back()}
+            className="w-11 h-11 rounded-full bg-white/60 items-center justify-center border border-white/60 shadow-sm shadow-slate-200"
           >
-            <Feather name="user" size={18} color="#fff" />
+            <Feather name="arrow-left" size={20} color="#334155" />
           </TouchableOpacity>
-        </View>
 
-        {/* Quick stats row */}
-        <View className="flex-row gap-3">
-          <StatPill
-            label="Cân nặng" value={currentWeight || '--'} unit="kg"
-            color="#34D399" bg="rgba(52,211,153,0.12)"
-            icon="scale-bathroom"
-          />
-          <StatPill
-            label="Mục tiêu" value={goalWeight || '--'} unit="kg"
-            color="#818CF8" bg="rgba(129,140,248,0.12)"
-            icon="flag-outline"
-          />
-          <StatPill
-            label="TB Calo" value={avgCal || '--'} unit="kcal"
-            color="#F97316" bg="rgba(249,115,22,0.12)"
-            icon="fire"
-          />
-          <StatPill
-            label="Ngày ghi" value={daysLogged} unit="ngày"
-            color="#38BDF8" bg="rgba(56,189,248,0.12)"
-            icon="calendar-check"
-          />
-        </View>
-      </LinearGradient>
+          <Text className="text-[22px] font-black text-slate-800 tracking-tight">Thống Kê</Text>
 
-      {/* Loading overlay */}
-      {loading && (
-        <View className="flex-1 justify-center items-center">
-          <ActivityIndicator size="large" color="#10B981" />
-          <Text className="text-slate-400 mt-3 font-medium">Đang tải dữ liệu...</Text>
-        </View>
-      )}
-
-      {!loading && (
-        <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 110 }} showsVerticalScrollIndicator={false}>
-
-          {/* ===== 1. Diet Info Card ===== */}
-          <Animated.View entering={FadeInDown.delay(100).duration(500)} className="mb-5">
-            <TouchableOpacity
-              onPress={() => router.push('/(tabs)/profile')}
-              activeOpacity={0.9}
-              className="bg-white rounded-[22px] overflow-hidden border border-slate-100 shadow-sm shadow-slate-200"
-            >
-              <LinearGradient
-                colors={['#F0FDF9', '#FFFFFF']}
-                className="p-5"
-              >
-                <View className="flex-row items-center justify-between mb-4">
-                  <View className="flex-row items-center gap-3">
-                    <View className="w-10 h-10 rounded-xl bg-emerald-100 items-center justify-center">
-                      <MaterialCommunityIcons name="leaf" size={20} color="#059669" />
-                    </View>
-                    <View>
-                      <Text className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Chế độ dinh dưỡng</Text>
-                      <Text className="text-base font-black text-slate-800 mt-0.5">
-                        {profile?.UserNutritionTarget?.DietPreset?.name || 'Cân bằng'}
-                      </Text>
-                    </View>
-                  </View>
-                  <View className="bg-emerald-50 border border-emerald-100 px-3 py-1.5 rounded-full flex-row items-center gap-1.5">
-                    <MaterialCommunityIcons name="lightning-bolt" size={12} color="#059669" />
-                    <Text className="text-emerald-700 text-xs font-bold">{tdeeVal} kcal/ngày</Text>
-                  </View>
-                </View>
-
-                <View className="h-px bg-slate-100 mb-4" />
-
-                <View className="flex-row justify-between">
-                  <View className="flex-row items-center gap-2">
-                    <View className="w-8 h-8 rounded-lg bg-violet-50 items-center justify-center">
-                      <MaterialCommunityIcons name="target" size={16} color="#7C3AED" />
-                    </View>
-                    <View>
-                      <Text className="text-[10px] font-semibold text-slate-400">Mục tiêu</Text>
-                      <Text className="text-sm font-bold text-slate-700">{goalLabel}</Text>
-                    </View>
-                  </View>
-                  {weightDiff !== null && (
-                    <View className="flex-row items-center gap-2">
-                      <View className="w-8 h-8 rounded-lg bg-orange-50 items-center justify-center">
-                        <MaterialCommunityIcons name="arrow-collapse-vertical" size={16} color="#EA580C" />
-                      </View>
-                      <View className="items-end">
-                        <Text className="text-[10px] font-semibold text-slate-400">Còn cần</Text>
-                        <Text className="text-sm font-bold text-slate-700">{weightDiff.toFixed(1)} kg</Text>
-                      </View>
-                    </View>
-                  )}
-                  <View className="w-7 h-7 rounded-full bg-slate-100 items-center justify-center self-center">
-                    <Feather name="chevron-right" size={14} color="#94A3B8" />
-                  </View>
-                </View>
-              </LinearGradient>
-            </TouchableOpacity>
+          <Animated.View entering={ZoomIn.delay(300).springify()} className="flex-row items-center gap-1.5 px-3.5 py-2 rounded-full ">
+            <MaterialCommunityIcons name="fire" size={20} color="#F59E0B" />
+            <Text className="text-amber-600 text-[20px] font-black">{stats?.streak || 0}</Text>
           </Animated.View>
+        </View>
 
-          {/* ===== 2. Weight Chart ===== */}
-          <Animated.View entering={FadeInDown.delay(200).duration(500)} className="mb-5">
-            <View className="flex-row justify-between items-center mb-3">
-              <SectionHeader title="Biến động cân nặng" subtitle="Xu hướng theo thời gian" />
+        {/* Hàng 2: Period filter – FlatList kiểu foods */}
+        <View className="px-5">
+          <FlatList
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            data={PERIODS}
+            keyExtractor={(i: { id: string; label: string }) => i.id}
+            contentContainerStyle={{ paddingRight: 20 }}
+            renderItem={({ item }: { item: { id: string; label: string } }) => (
               <TouchableOpacity
-                onPress={() => setModalVisible(true)}
-                className="flex-row items-center gap-1.5 px-4 py-2 rounded-full bg-emerald-500"
+                onPress={() => setPeriod(item.id)}
+                className={`mr-3 px-5 py-3.5 rounded-full border shadow-sm ${period === item.id
+                  ? 'bg-white border-white shadow-slate-200'
+                  : 'bg-white/40 border-white/40 shadow-transparent'
+                  }`}
               >
-                <Feather name="plus" size={14} color="#fff" />
-                <Text className="text-white text-xs font-bold">Cập nhật</Text>
+                <Text className={`text-[15px] font-bold ${period === item.id ? 'text-slate-800' : 'text-slate-500'
+                  }`}>{item.label}</Text>
               </TouchableOpacity>
-            </View>
+            )}
+          />
+        </View>
+      </BlurView>
 
-            <View className="bg-white rounded-[22px] p-5 border border-slate-100 shadow-sm shadow-slate-200">
-              {/* Current weight big display */}
-              <View className="flex-row justify-between items-center mb-5">
-                <View>
-                  <Text className="text-[11px] font-semibold text-slate-400 mb-0.5">Hiện tại</Text>
-                  <View className="flex-row items-baseline gap-1">
-                    <Text className="text-4xl font-black text-slate-800">{currentWeight}</Text>
-                    <Text className="text-base font-semibold text-slate-400">kg</Text>
-                  </View>
-                </View>
-                {goalWeight > 0 && (
-                  <View className="items-end">
-                    <Text className="text-[11px] font-semibold text-slate-400 mb-0.5">Mục tiêu</Text>
-                    <View className="flex-row items-baseline gap-1">
-                      <Text className="text-2xl font-black text-violet-500">{goalWeight}</Text>
-                      <Text className="text-sm font-semibold text-slate-400">kg</Text>
-                    </View>
-                  </View>
-                )}
-              </View>
+      <Animated.ScrollView
+        onScroll={scrollHandler}
+        scrollEventThrottle={16}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingTop: insets.top + 130, paddingBottom: 140, paddingHorizontal: 20 }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchAllStats(); }} tintColor="#10B981" />}
+      >
 
-              {chartLineData.length > 0 ? (
-                <LineChart
-                  data={chartLineData}
-                  color="#10B981"
-                  thickness={3}
-                  dataPointsColor="#10B981"
-                  dataPointsRadius={5}
-                  startFillColor="#10B981"
-                  endFillColor="#10B981"
-                  startOpacity={0.2}
-                  endOpacity={0.01}
-                  areaChart
-                  curved
-                  hideRules
-                  hideYAxisText
-                  yAxisColor="transparent"
-                  xAxisColor="#F1F5F9"
-                  xAxisThickness={1}
-                  xAxisLabelTextStyle={{ fontSize: 11, color: '#94A3B8', fontWeight: '600' }}
-                  height={160}
-                  width={CHART_WIDTH}
-                  spacing={Math.max(48, Math.floor(CHART_WIDTH / Math.max(chartLineData.length, 2)))}
-                  initialSpacing={16}
-                  endSpacing={16}
-                />
-              ) : (
-                <View className="h-36 justify-center items-center">
-                  <MaterialCommunityIcons name="chart-line-variant" size={36} color="#E2E8F0" />
-                  <Text className="text-slate-400 text-sm mt-2 font-medium">Chưa có dữ liệu theo dõi</Text>
-                  <Text className="text-slate-300 text-xs mt-1">Nhấn "Cập nhật" để ghi lần đầu</Text>
-                </View>
-              )}
-            </View>
-          </Animated.View>
 
-          {/* ===== 3. Calorie Bar Chart ===== */}
-          <Animated.View entering={FadeInDown.delay(300).duration(500)} className="mb-5">
-            <SectionHeader title="Năng lượng 7 ngày qua" subtitle="So sánh với TDEE của bạn" />
+        {loading && (
+          <View className="py-6 items-center">
+            <ActivityIndicator size="small" color="#10B981" />
+          </View>
+        )}
 
-            <View className="bg-white rounded-[22px] p-5 border border-slate-100 shadow-sm shadow-slate-200">
-              {/* TDEE reference */}
-              <View className="flex-row items-center justify-between mb-4">
-                <View className="flex-row items-center gap-2">
-                  <View className="w-2.5 h-2.5 rounded-full bg-amber-400" />
-                  <Text className="text-xs font-semibold text-slate-500">TDEE: {tdeeVal} kcal</Text>
-                </View>
-                <View className="flex-row gap-4">
-                  <View className="flex-row items-center gap-1.5">
-                    <View className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
-                    <Text className="text-[11px] text-slate-400 font-medium">Đạt</Text>
-                  </View>
-                  <View className="flex-row items-center gap-1.5">
-                    <View className="w-2.5 h-2.5 rounded-full bg-rose-400" />
-                    <Text className="text-[11px] text-slate-400 font-medium">Vượt</Text>
-                  </View>
-                </View>
-              </View>
 
-              {barData.length > 0 ? (
-                <BarChart
-                  data={barData}
-                  barWidth={22}
-                  spacing={Math.max(16, Math.floor((CHART_WIDTH - 22 * barData.length) / Math.max(barData.length - 1, 1)))}
-                  roundedTop
-                  roundedBottom
-                  hideRules
-                  yAxisThickness={0}
-                  xAxisThickness={1}
-                  xAxisColor="#F1F5F9"
-                  hideYAxisText
-                  showGradient
-                  xAxisLabelTextStyle={{ fontSize: 11, color: '#94A3B8', fontWeight: '600' }}
-                  showReferenceLine1
-                  referenceLine1Position={tdeeVal}
-                  referenceLine1Config={{
-                    color: '#F59E0B',
-                    dashWidth: 4,
-                    dashGap: 4,
-                    thickness: 1.5,
-                    labelText: 'TDEE',
-                    labelTextStyle: { color: '#F59E0B', fontSize: 10, fontWeight: '700' },
-                  }}
-                  height={160}
-                  width={CHART_WIDTH}
-                  initialSpacing={16}
-                  endSpacing={16}
-                  noOfSections={4}
-                />
-              ) : (
-                <View className="h-40 justify-center items-center">
-                  <MaterialCommunityIcons name="chart-bar" size={36} color="#E2E8F0" />
-                  <Text className="text-slate-400 text-sm mt-2 font-medium">Chưa có dữ liệu tuần này</Text>
-                </View>
-              )}
-            </View>
-          </Animated.View>
 
-          {/* ===== 4. Weekly Summary Strip ===== */}
-          {calorieStats.length > 0 && (
-            <Animated.View entering={FadeInDown.delay(400).duration(500)} className="mb-5">
-              <SectionHeader title="Tổng kết tuần" subtitle="Dữ liệu 7 ngày gần nhất" />
-              <View className="flex-row gap-3">
-                {/* Days on target */}
-                <View className="flex-1 bg-emerald-50 rounded-2xl p-4 items-center border border-emerald-100">
-                  <MaterialCommunityIcons name="check-circle-outline" size={24} color="#059669" />
-                  <Text className="text-2xl font-black text-emerald-600 mt-2">
-                    {calorieStats.filter(d => d.calories > 0 && d.calories <= d.tdee).length}
-                  </Text>
-                  <Text className="text-[11px] font-semibold text-emerald-500 text-center mt-0.5">Ngày đạt mục tiêu</Text>
-                </View>
-                {/* Days over */}
-                <View className="flex-1 bg-rose-50 rounded-2xl p-4 items-center border border-rose-100">
-                  <MaterialCommunityIcons name="alert-circle-outline" size={24} color="#E11D48" />
-                  <Text className="text-2xl font-black text-rose-500 mt-2">
-                    {calorieStats.filter(d => d.calories > d.tdee).length}
-                  </Text>
-                  <Text className="text-[11px] font-semibold text-rose-400 text-center mt-0.5">Ngày vượt mức</Text>
-                </View>
-                {/* Avg cal */}
-                <View className="flex-1 bg-orange-50 rounded-2xl p-4 items-center border border-orange-100">
-                  <MaterialCommunityIcons name="fire" size={24} color="#EA580C" />
-                  <Text className="text-2xl font-black text-orange-600 mt-2">{avgCal}</Text>
-                  <Text className="text-[11px] font-semibold text-orange-400 text-center mt-0.5">TB Kcal/ngày</Text>
-                </View>
-              </View>
-            </Animated.View>
+        {/* ── XU HƯỚNG ĂN UỐNG ── */}
+        <View className="mb-5 mt-4">
+          <Text className="text-[22px] font-black text-slate-800 tracking-tight">Xu hướng ăn uống</Text>
+        </View>
+
+        {/* Nutrition Card – không có title trong card */}
+        <Animated.View entering={FadeInDown.delay(200).springify()} className="mb-6">
+
+
+          <Text className="text-xs text-slate-400 font-bold mb-3">Mục tiêu: {nutrition?.target.calories || 0} kcal/ngày</Text>
+
+          {nutritionBarData.length > 0 ? (() => {
+            const barW = 18;
+            const chartW = width - 40; // padding 20*2
+            const n = nutritionBarData.length;
+            const spacing = Math.max(10, Math.floor((chartW - n * barW - 20) / Math.max(1, n)));
+            return (
+              <BarChart
+                data={nutritionBarData}
+                barWidth={barW}
+                spacing={spacing}
+                width={chartW}
+                roundedTop hideRules yAxisThickness={0} xAxisThickness={1}
+                xAxisColor="#E2E8F0" hideYAxisText showGradient
+                xAxisLabelTextStyle={{ fontSize: 10, color: '#94A3B8', fontWeight: 'bold' }}
+                showReferenceLine1 referenceLine1Position={nutrition?.target.calories || 0}
+                referenceLine1Config={{ color: '#94A3B8', dashWidth: 4, dashGap: 4, thickness: 1 }}
+                height={150} initialSpacing={10} endSpacing={10}
+              />
+            );
+          })() : (
+            <View className="py-8 items-center"><Text className="text-slate-400 font-bold">Chưa có dữ liệu calories</Text></View>
           )}
-        </ScrollView>
-      )}
 
-      {/* ===== MODAL CẬP NHẬT CÂN NẶNG ===== */}
-      <Modal visible={modalVisible} transparent animationType="slide" onRequestClose={() => setModalVisible(false)}>
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} className="flex-1">
-          <View className="flex-1 bg-slate-900/50 justify-end">
-            <TouchableOpacity className="flex-1" onPress={() => setModalVisible(false)} />
-            <View className="bg-white rounded-t-[32px] px-6 pb-10 pt-4">
-              {/* Handle */}
-              <View className="w-10 h-1 rounded-full bg-slate-200 self-center mb-6" />
-
-              <View className="flex-row justify-between items-center mb-4">
-                <View>
-                  <Text className="text-xl font-black text-slate-800">Ghi cân nặng</Text>
-                  <Text className="text-xs text-slate-400 font-medium mt-0.5">Cập nhật tiến độ hôm nay</Text>
+          {/* Macro Legend – icon và màu theo trang chủ */}
+          <View className="flex-row items-center pt-4 border-t border-slate-50">
+            <PieChart data={nutritionPieData} donut radius={56} innerRadius={35} showText textColor="white" textSize={10} textBackgroundRadius={12} />
+            <View className="flex-1 ml-6 gap-y-4">
+              {[
+                { label: 'Đạm', val: nutrition?.macroSplit.protein || 0, color: '#3B82F6', Icon: Beef },
+                { label: 'Tinh bột', val: nutrition?.macroSplit.carb || 0, color: '#10B981', Icon: Wheat },
+                { label: 'Chất béo', val: nutrition?.macroSplit.fat || 0, color: '#EAB308', Icon: Droplet },
+              ].map(m => (
+                <View key={m.label} className="flex-row items-center justify-between">
+                  <View className="flex-row items-center gap-2">
+                    <m.Icon size={11} color={m.color} />
+                    <Text className="text-xs font-semibold text-slate-500">{m.label}</Text>
+                  </View>
+                  <Text className="text-xs font-black text-slate-700">{m.val}g</Text>
                 </View>
-                <TouchableOpacity onPress={() => setModalVisible(false)} className="w-9 h-9 rounded-xl bg-slate-100 items-center justify-center">
-                  <Feather name="x" size={18} color="#64748B" />
-                </TouchableOpacity>
-              </View>
-
-              {/* Scale icon */}
-              <View className="items-center mb-6">
-                <View className="w-16 h-16 rounded-[20px] bg-emerald-50 border border-emerald-100 items-center justify-center mb-4">
-                  <MaterialCommunityIcons name="scale-bathroom" size={36} color="#10B981" />
-                </View>
-                <View className="items-center">
-                  <TextInput
-                    className="text-6xl font-black text-emerald-500 border-b-2 border-slate-100 py-2 text-center"
-                    style={{ minWidth: 180 }}
-                    value={newWeight}
-                    onChangeText={setNewWeight}
-                    keyboardType="numeric"
-                    placeholder="0.0"
-                    placeholderTextColor="#E2E8F0"
-                    autoFocus
-                  />
-                  <Text className="text-slate-400 font-bold mt-2 uppercase tracking-widest text-xs">Kilogram</Text>
-                </View>
-              </View>
-
-              <TouchableOpacity
-                onPress={handleLogWeight}
-                disabled={logging}
-                className="rounded-2xl overflow-hidden"
-              >
-                <LinearGradient
-                  colors={['#10B981', '#059669']}
-                  start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-                  className="py-4 items-center flex-row justify-center gap-2"
-                >
-                  {logging
-                    ? <ActivityIndicator color="#fff" size="small" />
-                    : <>
-                      <MaterialCommunityIcons name="check-bold" size={18} color="#fff" />
-                      <Text className="text-white font-black text-base">Lưu chỉ số</Text>
-                    </>
-                  }
-                </LinearGradient>
-              </TouchableOpacity>
+              ))}
             </View>
           </View>
-        </KeyboardAvoidingView>
-      </Modal>
+        </Animated.View>
 
-      {/* ===== CELEBRATION MODAL ===== */}
-      <Modal visible={showCelebration} transparent animationType="fade">
-        <View className="flex-1 bg-slate-900/80 justify-center px-6">
-          <View className="bg-white rounded-[32px] items-center p-8">
-            {/* Trophy */}
-            <LinearGradient
-              colors={['#FEF3C7', '#FDE68A']}
-              className="w-24 h-24 rounded-[28px] items-center justify-center mb-6 border-4 border-amber-200"
-            >
-              <MaterialCommunityIcons name="trophy-outline" size={48} color="#D97706" />
-            </LinearGradient>
-
-            <Text className="text-2xl font-black text-slate-800 mb-2 text-center">Xin chúc mừng!</Text>
-            <Text className="text-center text-slate-500 text-base mb-6 leading-6">
-              Bạn đã đạt được mục tiêu cân nặng{' '}
-              <Text className="font-bold text-slate-800">{profile?.UserProfile?.goal_weight}kg</Text>!{' '}
-              Hãy tự hào về hành trình tuyệt vời này.
-            </Text>
-
-            <View className="bg-slate-50 p-4 rounded-2xl mb-6 w-full border border-slate-100">
-              <Text className="text-center text-slate-600 text-sm font-medium leading-5">
-                Bạn có muốn chuyển sang chế độ{' '}
-                <Text className="font-bold text-emerald-600">Giữ cân (Maintenance)</Text>{' '}
-                để duy trì vóc dáng này không?
-              </Text>
-            </View>
-
-            <View className="flex-row gap-3 w-full">
-              <TouchableOpacity
-                onPress={() => setShowCelebration(false)}
-                className="flex-1 py-4 bg-white border border-slate-200 rounded-2xl items-center"
-              >
-                <Text className="text-slate-500 font-bold">Để sau</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={handleSwitchToMaintain}
-                className="flex-1 py-4 rounded-2xl items-center overflow-hidden bg-emerald-500"
-              >
-                <Text className="text-white font-black">Đồng ý</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
+        {/* ── CƠ THỂ ── */}
+        <View className="mb-5 mt-2">
+          <Text className="text-[22px] font-black text-slate-800 tracking-tight">Cân nặng</Text>
         </View>
-      </Modal>
+
+        <Animated.View entering={FadeInDown.delay(280).springify()} className="mb-6">
+
+          <View className="flex-row justify-between items-center mb-4">
+            <Text className="text-sm font-bold text-slate-400">Hiện tại: <Text className="text-slate-800 font-black">{bodyStats?.currentWeight || 0} kg</Text></Text>
+            <Text className="text-sm font-black text-emerald-500">Mục tiêu: {bodyStats?.goalWeight || 0} kg</Text>
+          </View>
+
+          {lineData.length > 0 ? (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-4">
+              <LineChart
+                data={lineData}
+                color="#10B981" thickness={3}
+                dataPointsColor="#059669"
+                startFillColor="#10B981" endFillColor="#10B981"
+                startOpacity={0.2} endOpacity={0.01}
+                areaChart curved hideRules hideYAxisText
+                yAxisColor="transparent" xAxisColor="#E2E8F0" xAxisThickness={1}
+                xAxisLabelTextStyle={{ fontSize: 9, color: '#94A3B8' }}
+                height={160}
+                spacing={Math.max(45, Math.floor((width - 80) / Math.max(lineData.length, 2)))}
+                initialSpacing={20}
+              />
+            </ScrollView>
+          ) : (
+            <View className="py-8 items-center"><Text className="text-slate-400 font-bold">Chưa có dữ liệu cân nặng</Text></View>
+          )}
+
+          <View className="flex-row gap-6 pt-4 border-t border-slate-50">
+            {/* BMI */}
+            <View className="flex-1">
+              <Text className="text-xs font-black text-slate-400 uppercase tracking-wider mb-1">BMI</Text>
+              <Text className="text-2xl font-[900] text-slate-800 tracking-tighter">{bodyStats?.bmi || 0}</Text>
+              {(() => {
+                const bmi = bodyStats?.bmi || 0;
+                const info = bmi < 18.5 ? { label: 'Thiếu cân', color: '#3B82F6' }
+                  : bmi < 23 ? { label: 'Bình thường', color: '#10B981' }
+                    : bmi < 25 ? { label: 'Thừa cân', color: '#F59E0B' }
+                      : { label: 'Béo phì', color: '#EF4444' };
+                return bmi > 0
+                  ? <Text className="text-xs font-black mt-0.5" style={{ color: info.color }}>{info.label}</Text>
+                  : null;
+              })()}
+            </View>
+
+            {/* Tốc độ thay đổi */}
+            <View className="flex-1">
+              <Text className="text-xs font-black text-slate-400 uppercase tracking-wider mb-1">Thay đổi</Text>
+              {(() => {
+                const rate = bodyStats?.changeRatePerWeek || 0;
+                const abs = Math.abs(rate);
+                const label = rate < 0 ? `Giảm ${abs} kg/tuần` : rate > 0 ? `Tăng ${abs} kg/tuần` : 'Ổn định';
+                const color = rate < 0 ? '#10B981' : rate > 0 ? '#F97316' : '#94A3B8';
+                return <Text className="text-base font-black tracking-tight" style={{ color }}>{label}</Text>;
+              })()}
+            </View>
+          </View>
+        </Animated.View>
+
+        {/* ── THÓI QUEN ĂN UỐNG ── */}
+        <View className="mb-5 mt-2">
+          <Text className="text-[22px] font-black text-slate-800 tracking-tight">Thói quen ăn uống</Text>
+        </View>
+
+        {/* Phân bổ bữa ăn – card riêng, không có title */}
+        <Animated.View entering={FadeInDown.delay(360).springify()} className="mb-6">
+
+          {foodPieData.length > 0 ? (
+            <View className="flex-row items-center">
+              <PieChart data={foodPieData} donut radius={58} innerRadius={36} showText textColor="white" textSize={10} textBackgroundRadius={12} />
+              <View className="flex-1 ml-5 gap-y-3">
+                {foodPieData.map((item: any, idx: number) => {
+                  const meta = MEAL_META[item.label];
+                  return (
+                    <View key={`${item.label}-${idx}`} className="flex-row items-center justify-between">
+                      <View className="flex-row items-center gap-2">
+                        <MaterialCommunityIcons
+                          name={(meta?.icon || 'food') as any}
+                          size={13} color={item.color}
+                        />
+                        <Text className="text-xs font-semibold text-slate-500">{meta?.label || item.label}</Text>
+                      </View>
+                      <Text className="text-xs font-black text-slate-700">{item.value} kcal</Text>
+                    </View>
+                  );
+                })}
+              </View>
+            </View>
+          ) : (
+            <View className="py-8 items-center"><Text className="text-slate-400 font-bold">Chưa có dữ liệu bữa ăn</Text></View>
+          )}
+        </Animated.View>
+
+        {/* Món ăn hay dùng */}
+        <View className="mb-5 mt-2">
+          <Text className="text-[22px] font-black text-slate-800 tracking-tight">Món ăn hay dùng</Text>
+        </View>
+
+        <Animated.View entering={FadeInDown.delay(420).springify()} className="mb-6">
+          {foodInsights?.topFoods && foodInsights.topFoods.length > 0 ? (
+            <View className="gap-y-3">
+              {foodInsights.topFoods.slice(0, 5).map((food, index) => {
+                const imageUri = resolveImg(food.image);
+                return (
+                  <View key={food.id} className="flex-row items-center py-3 px-4 rounded-[22px] border border-slate-50" style={{ backgroundColor: 'rgba(255,255,255,0.7)' }}>
+                    <Text className="w-6 font-black text-slate-300 text-base mr-3">#{index + 1}</Text>
+                    <View className="w-11 h-11 bg-slate-100 rounded-[16px] overflow-hidden mr-3">
+                      {imageUri
+                        ? <Image source={{ uri: imageUri }} className="w-full h-full" />
+                        : <View className="flex-1 items-center justify-center"><MaterialCommunityIcons name="food-apple" size={20} color="#94A3B8" /></View>
+                      }
+                    </View>
+                    <View className="flex-1">
+                      <Text className="text-[14px] font-black text-slate-800" numberOfLines={1}>{food.name}</Text>
+                      <Text className="text-xs font-bold text-slate-400">{Math.round(food.calories)} kcal</Text>
+                    </View>
+                    <View className="bg-indigo-50 px-2.5 py-1 rounded-full border border-indigo-100">
+                      <Text className="text-sm font-black text-indigo-500">{food.timesEaten} lần</Text>
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
+          ) : (
+            <View className="py-10 items-center">
+              <MaterialCommunityIcons name="food-off" size={40} color="#E2E8F0" />
+              <Text className="text-slate-300 font-black mt-3">Chưa có dữ liệu món ăn</Text>
+            </View>
+          )}
+        </Animated.View>
+
+
+
+      </Animated.ScrollView>
     </View>
   );
 }

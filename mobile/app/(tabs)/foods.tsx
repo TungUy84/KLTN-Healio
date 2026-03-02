@@ -7,7 +7,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, { FadeInDown, FadeInRight, useSharedValue, useAnimatedStyle, interpolate, Extrapolation, useAnimatedScrollHandler } from 'react-native-reanimated';
+import Animated, { FadeInDown, FadeInRight, LinearTransition, useSharedValue, useAnimatedStyle, interpolate, Extrapolation, useAnimatedScrollHandler } from 'react-native-reanimated';
 import { BlurView } from 'expo-blur';
 import Svg, { Defs, RadialGradient as SvgRadialGradient, Rect, Stop, Path } from 'react-native-svg';
 import { foodService, Food } from '../../services/foodService';
@@ -15,6 +15,7 @@ import { userService } from '../../services/userService';
 
 const { width } = Dimensions.get('window');
 const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
+const AnimatedTouchableOpacity = Animated.createAnimatedComponent(TouchableOpacity);
 
 // --- CẤU HÌNH CATEGORIES ---
 const CATEGORIES = [
@@ -254,7 +255,7 @@ export default function FoodsScreen() {
 
             {/* 4. Main List Title */}
             <View className="px-5 mb-5 mt-6">
-                <Text className="text-[24px] font-black text-slate-800 tracking-tight">
+                <Text className="text-[22px] font-black text-slate-800 tracking-tight">
                     {activeCategory === 'all' ? 'Gợi ý hôm nay' :
                         CATEGORIES.find(c => c.id === activeCategory)?.name + ' dinh dưỡng'}
                 </Text>
@@ -296,12 +297,13 @@ export default function FoodsScreen() {
                         keyExtractor={i => i.id}
                         contentContainerStyle={{ paddingRight: 20 }}
                         renderItem={({ item }) => (
-                            <TouchableOpacity
+                            <AnimatedTouchableOpacity
+                                layout={LinearTransition.springify()}
                                 onPress={() => setActiveCategory(item.id)}
                                 className={`mr-3 px-5 py-3.5 rounded-full border shadow-sm ${activeCategory === item.id ? 'bg-white border-white shadow-slate-200' : 'bg-white/40 border-white/40 shadow-transparent'}`}
                             >
                                 <Text className={`text-[15px] font-bold ${activeCategory === item.id ? 'text-slate-800' : 'text-slate-500'}`}>{item.name}</Text>
-                            </TouchableOpacity>
+                            </AnimatedTouchableOpacity>
                         )}
                     />
                 </View>
@@ -309,6 +311,7 @@ export default function FoodsScreen() {
 
             <Animated.FlatList
                 data={foods}
+                itemLayoutAnimation={LinearTransition.springify()}
                 keyExtractor={(item) => 'food_' + item.id.toString()}
                 ListHeaderComponent={renderHeader}
                 contentContainerStyle={{ paddingBottom: 120, paddingTop: insets.top + 150 }}

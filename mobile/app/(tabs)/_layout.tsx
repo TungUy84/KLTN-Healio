@@ -18,19 +18,27 @@ const CustomTabBar = ({ state, descriptors, navigation }: { state: any, descript
   const insets = useSafeAreaInsets();
 
   return (
-    <View className="absolute bottom-6 w-full items-center pointer-events-box-none">
+    <View className="absolute bottom-4 w-full items-center pointer-events-box-none">
       <View
-        className="bg-[#1A1A1A] flex-row h-[70px] w-[90%] items-center justify-around rounded-[35px] shadow-2xl pl-2 pr-2 overflow-visible"
         style={{
-          elevation: 10,
+          flexDirection: 'row',
+          height: 58,
+          width: '88%',
+          alignItems: 'center',
+          justifyContent: 'space-around',
+          borderRadius: 36,
+          backgroundColor: 'rgba(255,255,255,0.8)',
+          paddingHorizontal: 8,
+          elevation: 20,
           marginBottom: Platform.OS === 'ios' ? insets.bottom / 2 : 0,
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 10 },
-          shadowOpacity: 0.3,
-          shadowRadius: 20,
+          shadowColor: '#10B981',
+          shadowOffset: { width: 0, height: 8 },
+          shadowOpacity: 0.15,
+          shadowRadius: 24,
+          borderWidth: 1,
+          borderColor: 'rgba(255,255,255,0.6)',
         }}
       >
-        {/* Render 5 tabs evenly */}
         {state.routes.map((route: any, index: number) => {
           const item = TABS.find(t => t.name === route.name);
           if (!item) return null;
@@ -43,7 +51,6 @@ const CustomTabBar = ({ state, descriptors, navigation }: { state: any, descript
               target: route.key,
               canPreventDefault: true,
             });
-
             if (!isFocused && !event.defaultPrevented) {
               navigation.navigate(route.name);
             }
@@ -53,12 +60,25 @@ const CustomTabBar = ({ state, descriptors, navigation }: { state: any, descript
             <TouchableOpacity
               key={route.key}
               onPress={onPress}
-              className="w-12 h-12 items-center justify-center rounded-full active:bg-white/10"
+              activeOpacity={0.8}
+              style={{
+                width: 48,
+                height: 48,
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: 24,
+                backgroundColor: isFocused ? '#10B981' : 'transparent',
+                shadowColor: isFocused ? '#10B981' : 'transparent',
+                shadowOffset: { width: 0, height: 6 },
+                shadowOpacity: isFocused ? 0.4 : 0,
+                shadowRadius: 12,
+                elevation: isFocused ? 8 : 0,
+              }}
             >
               <Feather
                 name={item.icon as any}
-                size={22}
-                color={isFocused ? '#ffffff' : '#6b7280'}
+                size={21}
+                color={isFocused ? '#ffffff' : '#94A3B8'}
               />
             </TouchableOpacity>
           );

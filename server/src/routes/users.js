@@ -48,6 +48,14 @@ router.put('/daily-log/:id', userController.updateDailyLog);
 router.delete('/daily-log/:id', userController.deleteDailyLog);
 
 // Stats
-router.get('/stats/calories', userController.getWeeklyStats);
+const userStatsController = require('../controllers/userStatsController');
+
+router.get('/stats/calories', userController.getWeeklyStats); // Cũ (nếu cần giữ lại)
+
+// New User Epic Stats Redesign
+router.get('/stats/dashboard', userStatsController.getDashboardStats);
+router.get('/stats/nutrition', userStatsController.getNutritionStats);
+router.get('/stats/body', userStatsController.getBodyStats);
+router.get('/stats/food-insights', userStatsController.getFoodInsights);
 
 module.exports = router;
