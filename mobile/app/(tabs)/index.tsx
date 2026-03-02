@@ -12,6 +12,15 @@ import { foodService, Food } from '../../services/foodService';
 
 const { width } = Dimensions.get('window');
 
+const API_URL = (process.env.EXPO_PUBLIC_API_URL || 'http://10.0.2.2:3000/api');
+const resolveImg = (path: string | null | undefined) => {
+  if (!path) return null;
+  if (path.startsWith('http')) return path;
+  const base = API_URL.replace(/\/api$/, '');
+  return `${base}${path.startsWith('/') ? '' : '/'}${path}`;
+};
+
+
 // --- COMPONENTS CŨ PHỤC HỒI ---
 const AnimatedView = Animated.createAnimatedComponent(View);
 
@@ -163,7 +172,7 @@ export default function SuperAppHomeScreen() {
   });
 
   const avatarAnimatedStyle = useAnimatedStyle(() => {
-    const size = interpolate(scrollY.value, [0, 40], [56, 0], Extrapolation.CLAMP);
+    const size = interpolate(scrollY.value, [0, 40], [48, 0], Extrapolation.CLAMP);
     const opacity = interpolate(scrollY.value, [0, 30], [1, 0], Extrapolation.CLAMP);
     const margin = interpolate(scrollY.value, [0, 40], [12, 0], Extrapolation.CLAMP);
     return {
@@ -305,9 +314,14 @@ export default function SuperAppHomeScreen() {
 
         <View className="flex-row justify-between items-center">
           {/* Avatar User (Sẽ biến mất khi cuộn) */}
-          <Animated.View style={[avatarAnimatedStyle, { borderRadius: 28, overflow: 'hidden', borderWidth: 2, borderColor: 'white', backgroundColor: '#F1F5F9' }]}>
+          <Animated.View style={[avatarAnimatedStyle, { borderRadius: 26, overflow: 'hidden', backgroundColor: '#F1F5F9' }]}>
             <TouchableOpacity onPress={() => router.push('/profile')} className="w-full h-full">
-              <Image source={{ uri: userProfile?.avatar || 'https://ui-avatars.com/api/?background=10B981&color=fff' }} className="w-full h-full object-cover" />
+              <Image
+                source={{
+                  uri: resolveImg(userProfile?.avatar) || 'https://ui-avatars.com/api/?background=10B981&color=fff&name='
+                }}
+                className="w-full h-full object-cover"
+              />
             </TouchableOpacity>
           </Animated.View>
 
@@ -332,12 +346,6 @@ export default function SuperAppHomeScreen() {
       >
         {/* KHỐI 1 + 2: GREETING (Đã di chuyển Avatar lên header) */}
         <Animated.View entering={FadeInDown.delay(100).springify()} className="px-6 mb-2">
-
-          {/* TITLE Bự Riêng Biệt Phía Dưới */}
-          {/* <Text className="text-4xl font-black text-slate-700 mt-4 leading-[40px] tracking-tight">
-            Ăn gì hôm nay để khỏe mạnh mỗi ngày?
-          </Text> */}
-
         </Animated.View>
 
         {/* KHỐI 3: HERO CALORIES SIÊU BỰ NHƯ THIẾT KẾ #1 */}
@@ -410,7 +418,7 @@ export default function SuperAppHomeScreen() {
         {/* KHỐI 4: MENU 4 MÓN 1 HÀNG */}
         <Animated.View entering={FadeInDown.delay(400).springify()} className="px-4 mb-6">
           <View className="flex-row justify-between items-start">
-            <TouchableOpacity onPress={() => router.push('/calendar')} activeOpacity={0.7} className="items-center w-[18%]">
+            <TouchableOpacity onPress={() => router.push('/diary')} activeOpacity={0.7} className="items-center w-[18%]">
               <View className="w-[56px] h-[56px] rounded-[15px] bg-green-100 items-center justify-center mb-1.5 shadow-sm shadow-emerald-200">
                 <Ionicons name="calendar" size={26} color="#047857" />
               </View>

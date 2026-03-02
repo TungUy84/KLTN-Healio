@@ -7,9 +7,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // CẤU HÌNH MENU - Sử dụng Feather Icons
 const TABS = [
-  { name: 'index', title: 'Nhật ký', icon: 'book-open' },
+  { name: 'index', title: 'Trang chủ', icon: 'home' },
   { name: 'foods', title: 'Thực đơn', icon: 'coffee' },
-  { name: 'calendar', title: 'Lịch', icon: 'calendar' },
+  { name: 'diary', title: 'Nhật ký', icon: 'book-open' },
   { name: 'progress', title: 'Thống kê', icon: 'bar-chart-2' },
   { name: 'profile', title: 'Tài khoản', icon: 'user' },
 ];
@@ -74,9 +74,9 @@ export default function TabLayout() {
       tabBar={props => <CustomTabBar {...props} />}
       screenOptions={{ headerShown: false }}
     >
-      <Tabs.Screen name="index" options={{ title: 'Nhật ký' }} />
+      <Tabs.Screen name="index" options={{ title: 'Trang chủ' }} />
       <Tabs.Screen name="foods" options={{ title: 'Thực đơn' }} />
-      <Tabs.Screen name="calendar" options={{ title: 'Lịch' }} />
+      <Tabs.Screen name="diary" options={{ title: 'Nhật ký' }} />
       <Tabs.Screen name="progress" options={{ title: 'Thống kê' }} />
       <Tabs.Screen name="profile" options={{ title: 'Tài khoản' }} />
     </Tabs>

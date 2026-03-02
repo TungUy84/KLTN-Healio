@@ -230,7 +230,7 @@ export default function FoodsScreen() {
             {activeCategory === 'all' && popularFoods.length > 0 && (
                 <View className="mb-6">
                     <View className="flex-row justify-between items-end px-5 mb-5 mt-2">
-                        <Text className="text-[24px] font-black text-slate-800 tracking-tight">Món ăn nổi bật</Text>
+                        <Text className="text-[22px] font-black text-slate-800 tracking-tight">Món ăn nổi bật</Text>
                         <TouchableOpacity onPress={() => router.push('/food/food-search')}>
                             <Text className="text-[13px] font-bold text-slate-500 mb-1">Xem tất cả</Text>
                         </TouchableOpacity>
@@ -309,7 +309,7 @@ export default function FoodsScreen() {
 
             <Animated.FlatList
                 data={foods}
-                keyExtractor={(item) => item.id.toString()}
+                keyExtractor={(item) => 'food_' + item.id.toString()}
                 ListHeaderComponent={renderHeader}
                 contentContainerStyle={{ paddingBottom: 120, paddingTop: insets.top + 150 }}
                 showsVerticalScrollIndicator={false}

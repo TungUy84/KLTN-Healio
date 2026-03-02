@@ -576,7 +576,7 @@ exports.getDailyLog = async (req, res) => {
 
         const logs = await UserDailyLog.findAll({
             where: { user_id: userId, date: date },
-            include: [{ model: Food, as: 'food', attributes: ['name', 'image', 'serving_unit'] }]
+            include: [{ model: Food, as: 'food', attributes: ['name', 'image', 'serving_unit', 'micronutrients'] }]
         });
 
         res.json(logs);

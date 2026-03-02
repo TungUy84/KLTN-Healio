@@ -17,11 +17,14 @@ const { seedDietPresets } = require('./src/controllers/userController');
 // Require models để đảm bảo chúng được sync
 require('./src/models/RawFood');
 require('./src/models/Food');
-require('./src/models/FoodIngredient'); // Junction table for Meal <-> RawFood relationship
-require('./src/models/UserFavoriteFood'); // PB_19: Favorites
-require('./src/models/UserDailyLog'); // PB_23: Diary
-require('./src/models/UserWeightLog'); // PB_27: Weight History
-require('./src/models/FoodDietPreset'); // Link Food <-> DietPreset
+require('./src/models/FoodIngredient');
+require('./src/models/UserProfile');
+require('./src/models/UserNutritionTarget');
+require('./src/models/DietPreset');
+require('./src/models/UserFavoriteFood');
+require('./src/models/UserDailyLog');
+require('./src/models/UserWeightLog');
+require('./src/models/FoodDietPreset');
 
 const app = express();
 
