@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
-    Search,
     Bell,
     Menu,
     LogOut,
@@ -19,6 +18,7 @@ import { useNavigate } from 'react-router-dom';
 import { authService } from '../services/authService';
 import { useNotifications } from '../context/NotificationContext';
 import toast from 'react-hot-toast';
+import { GlobalSearch } from './GlobalSearch';
 
 interface NavbarProps {
     onToggleSidebar: () => void;
@@ -29,7 +29,6 @@ const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar }) => {
     const { notifications, removeNotification } = useNotifications();
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [isNotificationOpen, setIsNotificationOpen] = useState(false);
-    const [isSearchFocused, setIsSearchFocused] = useState(false);
 
     // Modal States
     const [showSettingsModal, setShowSettingsModal] = useState(false);
@@ -166,20 +165,8 @@ const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar }) => {
                     </button>
                 </div>
 
-                {/* 2. CENTER: Search Bar */}
-                <div className={`
-                    flex items-center flex-1 max-w-xl bg-gray-50 rounded-full px-4 py-2 mx-6 transition-all duration-300 border
-                    ${isSearchFocused ? 'border-emerald-300 bg-white shadow-sm ring-2 ring-emerald-50' : 'border-transparent'}
-                `}>
-                    <Search size={20} className={`mr-3 ${isSearchFocused ? 'text-emerald-500' : 'text-gray-400'}`} />
-                    <input
-                        type="text"
-                        placeholder="Tìm kiếm"
-                        className="bg-transparent border-none outline-none w-full text-sm text-gray-700 placeholder-gray-400 font-medium"
-                        onFocus={() => setIsSearchFocused(true)}
-                        onBlur={() => setIsSearchFocused(false)}
-                    />
-                </div>
+                {/* 2. CENTER: Global Search Bar */}
+                <GlobalSearch />
 
                 {/* 3. RIGHT: Actions & Profile */}
                 <div className="flex items-center gap-6">
