@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, Image, Modal,
-  TextInput, Alert, ActivityIndicator, Dimensions, StatusBar
+  TextInput, Alert, ActivityIndicator, Dimensions, StatusBar, Linking
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -337,6 +337,15 @@ export default function ProfileScreen() {
             <MenuRow
               icon="lock" label="Đổi mật khẩu" color="#EF4444"
               onPress={() => { setPwForm({ current: '', newPw: '', confirm: '' }); setEditMode('password'); setModalVisible(true); }}
+            />
+            <View className="h-[1px] bg-slate-100/80 mx-5" />
+            <MenuRow
+              icon="mail" label="Hỗ trợ & Góp ý" color="#0EA5E9"
+              onPress={() => {
+                const email = 'tunguykim@gmail.com';
+                const subject = `Góp ý ứng dụng Healio Wellness - ${profile?.full_name || 'Người dùng'}`;
+                Linking.openURL(`mailto:${email}?subject=${encodeURIComponent(subject)}`);
+              }}
             />
             <View className="h-[1px] bg-slate-100/80 mx-5" />
             <MenuRow icon="log-out" label="Đăng xuất" isDestructive onPress={handleLogout} />
