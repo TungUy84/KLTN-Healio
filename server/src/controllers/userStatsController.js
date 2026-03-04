@@ -35,7 +35,7 @@ exports.getDashboardStats = async (req, res) => {
 
         // 2. Lấy cân nặng hiện tại
         const profile = await UserProfile.findOne({ where: { user_id: userId } });
-        
+
         let currentWeight = profile?.current_weight || 0;
         if (!currentWeight) {
             const lastWeight = await UserWeightLog.findOne({
@@ -66,7 +66,7 @@ exports.getDashboardStats = async (req, res) => {
             const cal = parseFloat(log.get('total_calories') || 0);
             totalCal += cal;
             // Đạt mục tiêu nếu không vượt quá (hoặc nằm trong biên độ 10%)
-            if (cal <= targetCalories * 1.1) { 
+            if (cal <= targetCalories * 1.1) {
                 daysMetTarget++;
             }
         });
@@ -81,16 +81,16 @@ exports.getDashboardStats = async (req, res) => {
             group: ['date'],
             order: [['date', 'DESC']]
         });
-        
+
         let streak = 0;
         let checkDate = moment().startOf('day');
-        
+
         // Nếu hôm nay chưa có, lùi về hôm qua kiểm tra trước
         const todayStr = checkDate.format('YYYY-MM-DD');
         const yesterdayStr = moment(checkDate).subtract(1, 'days').format('YYYY-MM-DD');
-        
+
         const loggedDates = allLogsDates.map(l => l.date);
-        
+
         let currentDateIdx = 0;
         if (loggedDates.includes(todayStr)) {
             checkDate = moment(todayStr); // Bắt đầu đếm từ hôm nay
@@ -136,7 +136,7 @@ exports.getNutritionStats = async (req, res) => {
         const { startDate, endDate } = getDatesRange(period);
 
         const target = await UserNutritionTarget.findOne({ where: { user_id: userId } });
-        
+
         const logs = await UserDailyLog.findAll({
             where: { user_id: userId, date: { [Op.between]: [startDate, endDate] } },
             attributes: [
@@ -206,8 +206,14 @@ exports.getBodyStats = async (req, res) => {
         const period = req.query.period || '3m';
         const { startDate, endDate } = getDatesRange(period);
 
+        // Gọi hàm dự đoán và đồng bộ cân nặng
+        const userController = require('./userController');
+        if (userController.predictAndSyncWeight) {
+            await userController.predictAndSyncWeight(userId);
+        }
+
         const profile = await UserProfile.findOne({ where: { user_id: userId } });
-        
+
         const weightLogs = await UserWeightLog.findAll({
             where: { user_id: userId, date: { [Op.between]: [startDate, endDate] } },
             order: [['date', 'ASC']],
@@ -215,14 +221,14 @@ exports.getBodyStats = async (req, res) => {
         });
 
         // Logic tính tốc độ giảm cân
-        let weightChangeRate = 0; 
+        let weightChangeRate = 0;
         if (weightLogs.length >= 2) {
             const firstW = weightLogs[0].weight;
             const lastW = weightLogs[weightLogs.length - 1].weight;
-            const daysDiff = moment(weightLogs[weightLogs.length-1].date).diff(moment(weightLogs[0].date), 'days');
+            const daysDiff = moment(weightLogs[weightLogs.length - 1].date).diff(moment(weightLogs[0].date), 'days');
             if (daysDiff > 0) {
                 // Tốc độ thay đổi theo tuần
-                weightChangeRate = ((lastW - firstW) / daysDiff) * 7; 
+                weightChangeRate = ((lastW - firstW) / daysDiff) * 7;
             }
         }
 

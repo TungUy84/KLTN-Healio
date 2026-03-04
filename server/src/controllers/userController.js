@@ -79,6 +79,22 @@ exports.updateProfile = async (req, res) => {
         if (goal_weight !== undefined) updateData.goal_weight = goal_weight;
         if (allergies !== undefined) updateData.allergies = allergies;
 
+        // Tự động điều chỉnh goal_type nếu thay đổi cân nặng mục tiêu hoặc cân nặng hiện tại
+        if (current_weight !== undefined || goal_weight !== undefined) {
+            const finalCurrentWeight = current_weight !== undefined ? current_weight : profile.current_weight;
+            const finalGoalWeight = goal_weight !== undefined ? goal_weight : profile.goal_weight;
+
+            if (finalCurrentWeight && finalGoalWeight) {
+                if (finalGoalWeight > finalCurrentWeight) {
+                    updateData.goal_type = 'gain_weight';
+                } else if (finalGoalWeight < finalCurrentWeight) {
+                    updateData.goal_type = 'lose_weight';
+                } else {
+                    updateData.goal_type = 'maintain';
+                }
+            }
+        }
+
         await profile.update(updateData);
 
         // 3. PB_30 AC4: Recalculate BMR/TDEE & Nutrition Target
@@ -101,7 +117,7 @@ exports.updateProfile = async (req, res) => {
 
                 // Nutrition logic (simplified): 
                 // Lose weight: -500, Gain weight: +500
-                const pGoal = goal_type || profile.goal_type;
+                const pGoal = updateData.goal_type || profile.goal_type;
                 let targetCalories = tdee;
                 if (pGoal === 'lose_weight') targetCalories -= 500;
                 else if (pGoal === 'gain_weight') targetCalories += 500;
@@ -183,12 +199,31 @@ exports.logWeight = async (req, res) => {
 
         const logDate = date || new Date();
 
-        // 1. Create Log
-        await UserWeightLog.create({
-            user_id: userId,
-            weight: parseFloat(weight),
-            date: logDate
+        // 1. Create or Update Log for the specific date
+        const dateStr = logDate.toISOString().split('T')[0];
+
+        // Tìm xem ngày này đã có log cân nặng chưa
+        let weightLog = await UserWeightLog.findOne({
+            where: {
+                user_id: userId,
+                date: {
+                    [Op.gte]: new Date(dateStr + 'T00:00:00.000Z'),
+                    [Op.lte]: new Date(dateStr + 'T23:59:59.999Z')
+                }
+            }
         });
+
+        if (weightLog) {
+            // Nếu có rồi thì ghi đè (Cập nhật điểm cũ)
+            await weightLog.update({ weight: parseFloat(weight) });
+        } else {
+            // Nếu chưa có thì tạo mới
+            await UserWeightLog.create({
+                user_id: userId,
+                weight: parseFloat(weight),
+                date: logDate
+            });
+        }
 
         // 2. Update Current Weight in Profile
         // This will trigger 'updateProfile' logic if we called it, but here we do it manually or call updateProfile?
@@ -212,10 +247,40 @@ exports.logWeight = async (req, res) => {
             else if (pGoal === 'gain_weight') targetCalories += 500;
             if (targetCalories < 1200) targetCalories = 1200;
 
+            let currentTargetCalories = targetCalories;
+            let currentTdee = tdee;
+            let goalReached = false;
+            let currentGoalType = pGoal;
+
+            if (profile.goal_weight) {
+                const w = parseFloat(weight);
+                if (pGoal === 'lose_weight' && w <= profile.goal_weight) {
+                    goalReached = true;
+                } else if (pGoal === 'gain_weight' && w >= profile.goal_weight) {
+                    goalReached = true;
+                }
+            }
+
+            // Tự động chuyển về Giữ cân nếu đã đạt mục tiêu
+            if (goalReached) {
+                currentGoalType = 'maintain';
+                currentTargetCalories = currentTdee; // Trở về mức tdee để giữ cân
+
+                // Lưu lại thay đổi vào Profile
+                await profile.update({ goal_type: 'maintain' });
+            }
+
             const nutrition = await UserNutritionTarget.findOne({ where: { user_id: userId } });
             if (nutrition) {
-                await nutrition.update({ tdee, target_calories: targetCalories });
+                await nutrition.update({ tdee: currentTdee, target_calories: currentTargetCalories });
             }
+
+            return res.json({
+                success: true,
+                message: 'Đã cập nhật cân nặng',
+                goalReached,
+                currentGoalType
+            });
         }
 
         res.json({ success: true, message: 'Đã cập nhật cân nặng' });
@@ -227,7 +292,7 @@ exports.logWeight = async (req, res) => {
 };
 
 // Helper: Predict and Sync Weight based on Calories
-const predictAndSyncWeight = async (userId) => {
+exports.predictAndSyncWeight = async (userId) => {
     try {
         // 1. Get the very last weight log
         const lastWeightLog = await UserWeightLog.findOne({
@@ -265,25 +330,23 @@ const predictAndSyncWeight = async (userId) => {
             });
 
             // Logic: Only update if user tracked food (e.g., > 500 calories to imply usage)
-            // If they didn't use the app, we hold the weight constant (or could apply BMR burn, but risky)
+            // If they didn't use the app, we hold the weight constant
             if (totalCals && totalCals > 500) {
                 const diff = totalCals - tdee;
                 // 7700 kcal = 1kg
                 const weightChange = diff / 7700;
                 currentWeight += weightChange;
-
-                newLogs.push({
-                    user_id: userId,
-                    weight: parseFloat(currentWeight.toFixed(2)),
-                    date: dateStr,
-                    is_predicted: true // If we had this field
-                });
             } else {
-                // If no data, keep weight same as previous day?
-                // Or just skip logging?
-                // Let's Skip logging to keep chart clean -> No, user wants continuous line. 
-                // Let's NOT log if no data (assume constant) - Chart will connect lines.
+                // currentWeight.
             }
+
+            // Always add a log for the predicted day to maintain continuous chart
+            newLogs.push({
+                user_id: userId,
+                weight: parseFloat(currentWeight.toFixed(2)),
+                date: dateStr,
+                is_predicted: true // Not actually used yet but good to mark as virtual
+            });
 
             currentDate.setDate(currentDate.getDate() + 1);
         }
@@ -311,7 +374,7 @@ exports.getWeightHistory = async (req, res) => {
         const userId = req.user.id;
 
         // Trigger Auto-Sync before fetching
-        await predictAndSyncWeight(userId);
+        await exports.predictAndSyncWeight(userId);
 
         const logs = await UserWeightLog.findAll({
             where: { user_id: userId },

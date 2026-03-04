@@ -16,9 +16,11 @@ import {
   getDashboardStats, DashboardStats,
   getNutritionStats, NutritionStats,
   getBodyStats, BodyStats,
-  getFoodInsights, FoodInsights
+  getFoodInsights, FoodInsights,
+  logWeight
 } from '../../services/statsService';
 import { BlurView } from 'expo-blur';
+import { Modal, TextInput, KeyboardAvoidingView, Alert } from 'react-native';
 import Svg, { Defs, RadialGradient as SvgRadialGradient, Rect, Stop } from 'react-native-svg';
 import { BarChart, LineChart, PieChart } from 'react-native-gifted-charts';
 
@@ -106,6 +108,14 @@ export default function ProgressScreen() {
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
+  // States for Weight Log Modal
+  const [showWeightModal, setShowWeightModal] = useState(false);
+  const [weightInput, setWeightInput] = useState('');
+  const [isSubmittingWeight, setIsSubmittingWeight] = useState(false);
+
+  // States for Goal Reached Modal
+  const [showGoalReachedModal, setShowGoalReachedModal] = useState(false);
+
   // Animated header
   const scrollY = useSharedValue(0);
   const scrollHandler = useAnimatedScrollHandler({ onScroll: (e) => { scrollY.value = e.contentOffset.y; } });
@@ -131,6 +141,33 @@ export default function ProgressScreen() {
   };
 
   useFocusEffect(useCallback(() => { fetchAllStats(); }, [period]));
+
+  const handleLogWeight = async () => {
+    if (!weightInput || isNaN(Number(weightInput))) {
+      Alert.alert('Lỗi', 'Vui lòng nhập số cân nặng hợp lệ');
+      return;
+    }
+
+    setIsSubmittingWeight(true);
+    try {
+      const res = await logWeight(Number(weightInput));
+      setShowWeightModal(false);
+      setWeightInput('');
+
+      // Refresh to update chart and current weight visually
+      fetchAllStats();
+
+      if (res && res.goalReached) {
+        // Goal reached, show the modal directly because backend already switched it to "maintain"
+        setTimeout(() => setShowGoalReachedModal(true), 600);
+      }
+    } catch (error) {
+      console.error(error);
+      Alert.alert('Lỗi', 'Không thể cập nhật cân nặng lúc này');
+    } finally {
+      setIsSubmittingWeight(false);
+    }
+  };
 
   // Helper: gộp raw daily data theo period rồi tính trung bình
   const aggregateByPeriod = useCallback((
@@ -399,9 +436,18 @@ export default function ProgressScreen() {
           </View>
         </Animated.View>
 
-        {/* ── CƠ THỂ ── */}
-        <View className="mb-5 mt-2">
+        <View className="mb-5 mt-2 flex-row justify-between items-center">
           <Text className="text-[22px] font-black text-slate-800 tracking-tight">Cân nặng</Text>
+          <TouchableOpacity
+            onPress={() => {
+              setWeightInput(bodyStats?.currentWeight?.toString() || '');
+              setShowWeightModal(true);
+            }}
+            className="flex-row items-center bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-100"
+          >
+            <MaterialCommunityIcons name="weight-kilogram" size={16} color="#059669" />
+            <Text className="text-[13px] font-black text-emerald-700 ml-1">Cập nhật</Text>
+          </TouchableOpacity>
         </View>
 
         <Animated.View entering={FadeInDown.delay(280).springify()} className="mb-6">
@@ -537,6 +583,174 @@ export default function ProgressScreen() {
 
 
       </Animated.ScrollView>
+
+      {/* --- CẬP NHẬT CÂN NẶNG MODAL --- */}
+      <Modal
+        visible={showWeightModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowWeightModal(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          className="flex-1 justify-center items-center px-5"
+        >
+          {/* Nền tối phía sau */}
+          <TouchableOpacity
+            activeOpacity={1}
+            onPress={() => setShowWeightModal(false)}
+            style={{ position: 'absolute', top: 0, left: 0, bottom: 0, right: 0, backgroundColor: 'rgba(15, 23, 42, 0.6)' }}
+          />
+
+          <Animated.View
+            entering={ZoomIn.duration(200).springify()}
+            className="bg-white w-full rounded-[32px] overflow-hidden"
+            style={{
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 24 },
+              shadowOpacity: 0.15,
+              shadowRadius: 32,
+              elevation: 10
+            }}
+          >
+            {/* Header */}
+            <View className="bg-emerald-50 px-6 py-5 flex-row justify-between items-center border-b border-emerald-100">
+              <View className="flex-row items-center">
+                <View className="w-10 h-10 bg-emerald-100 rounded-full items-center justify-center mr-3">
+                  <MaterialCommunityIcons name="weight-kilogram" size={24} color="#059669" />
+                </View>
+                <Text className="text-[19px] font-[900] text-emerald-900 tracking-tight">Cân nặng hôm nay</Text>
+              </View>
+              <TouchableOpacity onPress={() => setShowWeightModal(false)} className="w-8 h-8 items-center justify-center bg-white rounded-full shadow-sm">
+                <Feather name="x" size={16} color="#64748B" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Input Area */}
+            <View className="px-6 py-8 items-center">
+              <Text className="text-sm text-slate-400 font-bold mb-6 text-center">
+                Cập nhật số cân nặng mới nhất để hệ thống theo dõi tiến độ chính xác.
+              </Text>
+
+              <View className="flex-row items-end justify-center w-full relative">
+                <TextInput
+                  value={weightInput}
+                  onChangeText={(text) => {
+                    // Chỉ cho chép nhập số và dấu chấm
+                    const cleaned = text.replace(/[^0-9.]/g, '');
+                    setWeightInput(cleaned);
+                  }}
+                  keyboardType="decimal-pad"
+                  placeholder="00.0"
+                  placeholderTextColor="#CBD5E1"
+                  className="text-[64px] font-[900] text-slate-800 tracking-tighter text-center p-0 h-[80px]"
+                  autoFocus
+                  selectionColor="#10B981"
+                />
+                <Text className="text-[28px] font-bold text-slate-300 ml-2 mb-2 tracking-tighter">kg</Text>
+              </View>
+
+              <View className="h-1.5 w-32 bg-slate-100 rounded-full mt-2 overflow-hidden">
+                <View className="h-full w-full bg-emerald-400 rounded-full" />
+              </View>
+            </View>
+
+            {/* Action Area */}
+            <View className="px-6 pb-6 w-full gap-y-3">
+              <TouchableOpacity
+                onPress={handleLogWeight}
+                disabled={isSubmittingWeight}
+                className={`w-full py-4 rounded-[20px] items-center justify-center ${isSubmittingWeight ? 'bg-emerald-300' : 'bg-emerald-500'}`}
+                style={{
+                  shadowColor: '#10B981',
+                  shadowOffset: { width: 0, height: 8 },
+                  shadowOpacity: 0.3,
+                  shadowRadius: 16,
+                  elevation: 4
+                }}
+              >
+                {isSubmittingWeight ? (
+                  <ActivityIndicator color="white" />
+                ) : (
+                  <Text className="text-white font-[900] text-[17px] tracking-wide">XÁC NHẬN CHỈ SỐ</Text>
+                )}
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() => setShowWeightModal(false)}
+                className="w-full py-3.5 rounded-[20px] items-center justify-center bg-slate-50 border border-slate-100 mt-3"
+              >
+                <Text className="text-slate-500 font-bold text-[15px]">Để sau</Text>
+              </TouchableOpacity>
+            </View>
+          </Animated.View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* --- CÔNG NHẬN ĐẠT MỤC TIÊU MODAL --- */}
+      <Modal
+        visible={showGoalReachedModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowGoalReachedModal(false)}
+      >
+        <View className="flex-1 justify-center items-center px-5">
+          <BlurView intensity={40} tint="dark" className="absolute inset-0" />
+          <TouchableOpacity
+            activeOpacity={1}
+            onPress={() => setShowGoalReachedModal(false)}
+            className="absolute inset-0 bg-slate-900/60"
+          />
+
+          <Animated.View
+            entering={FadeInDown.duration(400).delay(100)}
+            className="w-[90%] bg-white rounded-[32px] overflow-hidden"
+            style={{
+              shadowColor: '#F59E0B',
+              shadowOffset: { width: 0, height: 20 },
+              shadowOpacity: 0.15,
+              shadowRadius: 30,
+              elevation: 10
+            }}
+          >
+            {/* Header Ribbon */}
+            <View className="bg-amber-400 px-6 py-8 items-center justify-center">
+              <Text className="text-[26px] font-[900] text-white tracking-tight text-center">
+                ĐẠT MỤC TIÊU!
+              </Text>
+            </View>
+
+            {/* Content Area */}
+            <View className="px-6 py-8 items-center">
+              <Text className="text-[16px] text-slate-600 font-bold text-center leading-relaxed mb-6">
+                Tuyệt vời! Bạn đã <Text className="text-emerald-500 font-black">đạt được</Text> mục tiêu cân nặng mong muốn.
+              </Text>
+
+              <View className="bg-amber-50 p-4 rounded-[16px] w-full flex-row items-center border border-amber-100 mb-8">
+                <MaterialCommunityIcons name="information" size={24} color="#F59E0B" className="mr-3" />
+                <Text className="text-sm font-bold text-slate-500 flex-1 ml-3">
+                  App đã chuyển sang chế độ <Text className="text-amber-600 font-black">Giữ Cân</Text> để giúp bạn duy trì vóc dáng.
+                </Text>
+              </View>
+
+              <TouchableOpacity
+                onPress={() => setShowGoalReachedModal(false)}
+                className="w-full py-4 rounded-[18px] items-center justify-center bg-amber-500"
+                style={{
+                  shadowColor: '#F59E0B',
+                  shadowOffset: { width: 0, height: 6 },
+                  shadowOpacity: 0.3,
+                  shadowRadius: 12,
+                  elevation: 4
+                }}
+              >
+                <Text className="text-white font-black text-[16px] tracking-widest uppercase">Đã Hiểu</Text>
+              </TouchableOpacity>
+            </View>
+          </Animated.View>
+        </View>
+      </Modal>
+
     </View>
   );
 }
