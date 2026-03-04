@@ -3,66 +3,29 @@ import { View, Text, ScrollView, TouchableOpacity, StatusBar, RefreshControl, Im
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Feather, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Wheat, Beef, Droplet, Flame } from 'lucide-react-native';
-import Animated, { FadeInDown, FadeInUp, useSharedValue, useAnimatedStyle, withSpring, interpolate, useAnimatedScrollHandler, Extrapolation } from 'react-native-reanimated';
+import Animated, { FadeInDown, FadeInUp, FadeInLeft, FadeInRight, LinearTransition, useSharedValue, useAnimatedStyle, withSpring, interpolate, useAnimatedScrollHandler, Extrapolation } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import Svg, { Defs, RadialGradient as SvgRadialGradient, Rect, Stop, Path } from 'react-native-svg';
+import Svg, { Defs, RadialGradient as SvgRadialGradient, Rect, Stop } from 'react-native-svg';
 import { userService, CalculatedMetrics } from '../../services/userService';
 import { foodService, Food } from '../../services/foodService';
+import { AnimatedProgressBar } from '../../components/ui/AnimatedProgressBar';
+import { AnimatedCalorieGauge } from '../../components/ui/AnimatedCalorieGauge';
 
 const { width } = Dimensions.get('window');
 
+const API_URL = (process.env.EXPO_PUBLIC_API_URL || 'http://10.0.2.2:3000/api');
+const resolveImg = (path: string | null | undefined) => {
+  if (!path) return null;
+  if (path.startsWith('http')) return path;
+  const base = API_URL.replace(/\/api$/, '');
+  return `${base}${path.startsWith('/') ? '' : '/'}${path}`;
+};
+
+
 // --- COMPONENTS CŨ PHỤC HỒI ---
 const AnimatedView = Animated.createAnimatedComponent(View);
-
-// Component Gauge Arc 270° bằng react-native-svg (gap ở dưới, hiện đại)
-const CalorieGauge = ({ value, target }: { value: number; target: number }) => {
-  const SIZE = 122;
-  const STROKE = 13;
-  const r = (SIZE - STROKE) / 2; // bán kính
-  const cx = SIZE / 2; // tâm x
-  const cy = SIZE / 2; // tâm y
-  const pct = Math.min(Math.max((value / (target || 1)) * 100, 0), 100);
-  const TOTAL = 235;  // tổng cung 235°
-  const START = 360 - TOTAL / 2; // tự động cân đối quanh 12 o'clock
-
-  // Chuyển độ sang toạ độ SVG
-  const pt = (deg: number) => {
-    const rad = ((deg - 90) * Math.PI) / 180;
-    return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
-  };
-
-  // Tạo SVG path cho cung tròn
-  const arc = (from: number, to: number) => {
-    if (to - from <= 0) return '';
-    const s = pt(from);
-    const e = pt(to);
-    const large = to - from > 180 ? 1 : 0;
-    return `M ${s.x.toFixed(2)} ${s.y.toFixed(2)} A ${r} ${r} 0 ${large} 1 ${e.x.toFixed(2)} ${e.y.toFixed(2)}`;
-  };
-
-  const bgArc = arc(START, START + TOTAL);
-  const progressDeg = (pct / 100) * TOTAL;
-  const fgArc = arc(START, START + progressDeg);
-  // Màu dựa theo % (xanh lá nếu đầy đủ, cam nếu vừa, hồng nếu thiếu)
-  const fgColor = pct >= 90 ? '#10B981' : pct >= 60 ? '#fb923c' : '#fb7185';
-
-  return (
-    <View style={{ width: SIZE, height: SIZE, alignItems: 'center', justifyContent: 'center' }}>
-      <Svg width={SIZE} height={SIZE} style={{ position: 'absolute' }}>
-        {/* Vòng nền xám */}
-        <Path d={bgArc} fill="none" stroke="#f1f5f9" strokeWidth={STROKE} strokeLinecap="round" />
-        {/* Vòng tiến độ */}
-        {fgArc ? <Path d={fgArc} fill="none" stroke={fgColor} strokeWidth={STROKE} strokeLinecap="round" /> : null}
-      </Svg>
-      {/* Text trung tâm */}
-      <View style={{ alignItems: 'center', marginTop: -8 }}>
-        <Text style={{ fontSize: 26, fontWeight: '900', color: '#1e293b', lineHeight: 30 }}>{Math.round(value)}</Text>
-        <Text style={{ fontSize: 11, fontWeight: '700', color: fgColor, lineHeight: 15 }}>{Math.round(pct)}%</Text>
-      </View>
-    </View>
-  );
-};
+const AnimatedTouchableOpacity = Animated.createAnimatedComponent(TouchableOpacity);
 
 // 2. Calories Hero & Summary Cards
 const CaloriesHero = ({ target, eaten, dailyLog, tCarb, tProt, tFat }: any) => {
@@ -70,7 +33,7 @@ const CaloriesHero = ({ target, eaten, dailyLog, tCarb, tProt, tFat }: any) => {
   const left = Math.max(target - eaten, 0);
 
   return (
-    <View className="px-6 mt-6 mb-8">
+    <View className="px-6 mt-2 mb-8">
       {/* Calories Massive Typography */}
       <View>
         <Text className="text-slate-500 font-bold mb-1">Năng lượng hôm nay</Text>
@@ -85,11 +48,16 @@ const CaloriesHero = ({ target, eaten, dailyLog, tCarb, tProt, tFat }: any) => {
             <Text className="text-slate-400">Đã nạp {Math.round(percent)}%</Text>
             <Text className="text-slate-400">Còn lại {Math.round(left).toLocaleString()} kcal</Text>
           </View>
-          <View className="h-4 w-full bg-slate-100 rounded-full relative p-0.5 shadow-inner">
-            <View className="h-full bg-[#10B981] rounded-full relative" style={{ width: `${percent}%` }}>
-              <View className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-4 h-4 bg-white rounded-full shadow-sm border-2 border-emerald-500" />
-            </View>
-          </View>
+          <AnimatedProgressBar
+            progress={percent}
+            height={16}
+            color="#10B981"
+            backgroundColor="#F1F5F9"
+            containerClassName="shadow-inner"
+            showThumb={true}
+            delay={300}
+            duration={1200}
+          />
         </View>
       </View>
 
@@ -163,7 +131,7 @@ export default function SuperAppHomeScreen() {
   });
 
   const avatarAnimatedStyle = useAnimatedStyle(() => {
-    const size = interpolate(scrollY.value, [0, 40], [56, 0], Extrapolation.CLAMP);
+    const size = interpolate(scrollY.value, [0, 40], [48, 0], Extrapolation.CLAMP);
     const opacity = interpolate(scrollY.value, [0, 30], [1, 0], Extrapolation.CLAMP);
     const margin = interpolate(scrollY.value, [0, 40], [12, 0], Extrapolation.CLAMP);
     return {
@@ -196,7 +164,8 @@ export default function SuperAppHomeScreen() {
 
   const fetchMetrics = async () => {
     try {
-      const dateStr = new Date().toISOString().split('T')[0];
+      const tzOffset = new Date().getTimezoneOffset() * 60000;
+      const dateStr = new Date(Date.now() - tzOffset).toISOString().split('T')[0];
       const [metricsData, logsData, profile] = await Promise.all([
         userService.getCalculatedMetrics(),
         foodService.getDailyLog(dateStr),
@@ -305,9 +274,14 @@ export default function SuperAppHomeScreen() {
 
         <View className="flex-row justify-between items-center">
           {/* Avatar User (Sẽ biến mất khi cuộn) */}
-          <Animated.View style={[avatarAnimatedStyle, { borderRadius: 28, overflow: 'hidden', borderWidth: 2, borderColor: 'white', backgroundColor: '#F1F5F9' }]}>
+          <Animated.View style={[avatarAnimatedStyle, { borderRadius: 26, overflow: 'hidden', backgroundColor: '#F1F5F9' }]}>
             <TouchableOpacity onPress={() => router.push('/profile')} className="w-full h-full">
-              <Image source={{ uri: userProfile?.avatar || 'https://ui-avatars.com/api/?background=10B981&color=fff' }} className="w-full h-full object-cover" />
+              <Image
+                source={{
+                  uri: resolveImg(userProfile?.avatar) || 'https://ui-avatars.com/api/?background=10B981&color=fff&name='
+                }}
+                className="w-full h-full object-cover"
+              />
             </TouchableOpacity>
           </Animated.View>
 
@@ -332,12 +306,6 @@ export default function SuperAppHomeScreen() {
       >
         {/* KHỐI 1 + 2: GREETING (Đã di chuyển Avatar lên header) */}
         <Animated.View entering={FadeInDown.delay(100).springify()} className="px-6 mb-2">
-
-          {/* TITLE Bự Riêng Biệt Phía Dưới */}
-          {/* <Text className="text-4xl font-black text-slate-700 mt-4 leading-[40px] tracking-tight">
-            Ăn gì hôm nay để khỏe mạnh mỗi ngày?
-          </Text> */}
-
         </Animated.View>
 
         {/* KHỐI 3: HERO CALORIES SIÊU BỰ NHƯ THIẾT KẾ #1 */}
@@ -349,7 +317,7 @@ export default function SuperAppHomeScreen() {
 
               {/* Trái: Gauge Calo 270° */}
               <View style={{ width: '40%', alignItems: 'center', top: 10, justifyContent: 'center' }}>
-                <CalorieGauge value={dailyLog.eaten} target={target} />
+                <AnimatedCalorieGauge value={dailyLog.eaten} target={target} delay={400} />
               </View>
 
               {/* Separator dọc */}
@@ -368,9 +336,7 @@ export default function SuperAppHomeScreen() {
                       {Math.round(dailyLog.protein)}<Text className="text-slate-400 font-medium"> /{Math.round(tProt)}g</Text>
                     </Text>
                   </View>
-                  <View className="bg-slate-100 rounded-full overflow-hidden" style={{ height: 6 }}>
-                    <View className="bg-blue-400 rounded-full" style={{ height: 6, width: `${Math.min((dailyLog.protein / (tProt || 1)) * 100, 100)}%` }} />
-                  </View>
+                  <AnimatedProgressBar progress={(dailyLog.protein / (tProt || 1)) * 100} color="#60A5FA" delay={500} />
                 </View>
                 {/* Tinh bột */}
                 <View>
@@ -383,9 +349,7 @@ export default function SuperAppHomeScreen() {
                       {Math.round(dailyLog.carbs)}<Text className="text-slate-400 font-medium"> /{Math.round(tCarb)}g</Text>
                     </Text>
                   </View>
-                  <View className="bg-slate-100 rounded-full overflow-hidden" style={{ height: 6 }}>
-                    <View className="bg-emerald-400 rounded-full" style={{ height: 6, width: `${Math.min((dailyLog.carbs / (tCarb || 1)) * 100, 100)}%` }} />
-                  </View>
+                  <AnimatedProgressBar progress={(dailyLog.carbs / (tCarb || 1)) * 100} color="#10B981" delay={600} />
                 </View>
                 {/* Chất béo */}
                 <View>
@@ -398,9 +362,7 @@ export default function SuperAppHomeScreen() {
                       {Math.round(dailyLog.fat)}<Text className="text-slate-400 font-medium"> /{Math.round(tFat)}g</Text>
                     </Text>
                   </View>
-                  <View className="bg-slate-100 rounded-full overflow-hidden" style={{ height: 6 }}>
-                    <View className="bg-yellow-400 rounded-full" style={{ height: 6, width: `${Math.min((dailyLog.fat / (tFat || 1)) * 100, 100)}%` }} />
-                  </View>
+                  <AnimatedProgressBar progress={(dailyLog.fat / (tFat || 1)) * 100} color="#FACC15" delay={700} />
                 </View>
               </View>
             </View>
@@ -410,7 +372,7 @@ export default function SuperAppHomeScreen() {
         {/* KHỐI 4: MENU 4 MÓN 1 HÀNG */}
         <Animated.View entering={FadeInDown.delay(400).springify()} className="px-4 mb-6">
           <View className="flex-row justify-between items-start">
-            <TouchableOpacity onPress={() => router.push('/calendar')} activeOpacity={0.7} className="items-center w-[18%]">
+            <TouchableOpacity onPress={() => router.push('/diary')} activeOpacity={0.7} className="items-center w-[18%]">
               <View className="w-[56px] h-[56px] rounded-[15px] bg-green-100 items-center justify-center mb-1.5 shadow-sm shadow-emerald-200">
                 <Ionicons name="calendar" size={26} color="#047857" />
               </View>
@@ -467,7 +429,8 @@ export default function SuperAppHomeScreen() {
 
               {/* Card LỚN - style ai-plan: ImageBackground + dark gradient */}
               {suggestedFoods[0] && (
-                <TouchableOpacity
+                <AnimatedTouchableOpacity
+                  entering={FadeInLeft.delay(200).springify()}
                   onPress={() => router.push(`/food/food-detail?id=${suggestedFoods[0].id}`)}
                   activeOpacity={0.9}
                   style={{ flex: 1, borderRadius: 24, overflow: 'hidden', backgroundColor: '#CBD5E1' }}
@@ -508,13 +471,14 @@ export default function SuperAppHomeScreen() {
                       </View>
                     </LinearGradient>
                   )}
-                </TouchableOpacity>
+                </AnimatedTouchableOpacity>
               )}
 
               {/* 2 Card nhỏ - style ai-plan side items */}
               <View style={{ width: '42%', gap: 12 }}>
-                {suggestedFoods.slice(1, 3).map((item) => (
-                  <TouchableOpacity
+                {suggestedFoods.slice(1, 3).map((item, index) => (
+                  <AnimatedTouchableOpacity
+                    entering={FadeInRight.delay(index * 150 + 300).springify()}
                     key={item.id}
                     onPress={() => router.push(`/food/food-detail?id=${item.id}`)}
                     activeOpacity={0.9}
@@ -534,17 +498,17 @@ export default function SuperAppHomeScreen() {
                         <Text className="text-orange-600 font-black" style={{ fontSize: 10 }}>{Math.round(item.calories)} kcal</Text>
                       </View>
                     </View>
-                  </TouchableOpacity>
+                  </AnimatedTouchableOpacity>
                 ))}
               </View>
             </View>
           )}
         </Animated.View>
 
-        {/* KHỐI 6: ĐƯỢC NHIỀU NGƯỜI CHỌN */}
-        <Animated.View entering={FadeInDown.delay(600).springify()} className="mb-6">
+        {/* KHỐI 6: MÓN ĂN NỔI BẬT */}
+        <Animated.View entering={FadeInDown.delay(600).springify()} className="mt-6 mb-6">
           <View className="px-5 flex-row justify-between items-center mb-4">
-            <Text className="text-xl font-black text-slate-800 tracking-tight">Được nhiều người chọn</Text>
+            <Text className="text-xl font-black text-slate-800 tracking-tight">Món ăn nổi bật</Text>
             <TouchableOpacity onPress={() => router.push('/foods')} className="flex-row items-center py-1 px-3 rounded-full shadow-sm shadow-slate-100">
               <Text className="text-slate-600 font-bold text-sm mr-1">Xem tất cả</Text>
               <Feather name="arrow-right" size={12} color="#1E293B" />
@@ -593,7 +557,8 @@ export default function SuperAppHomeScreen() {
                 const rank = originalIndex + 1;
 
                 return (
-                  <TouchableOpacity
+                  <AnimatedTouchableOpacity
+                    entering={FadeInRight.delay(originalIndex * 100).springify()}
                     key={`${food.id}-${index}`}
                     onPress={() => router.push(`/food/food-detail?id=${food.id}`)}
                     activeOpacity={0.92}
@@ -665,7 +630,7 @@ export default function SuperAppHomeScreen() {
                         </View>
                       </LinearGradient>
                     )}
-                  </TouchableOpacity>
+                  </AnimatedTouchableOpacity>
                 );
               })}
             </ScrollView>

@@ -7,22 +7,25 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated, { FadeInDown, FadeInRight, LinearTransition, useSharedValue, useAnimatedStyle, interpolate, Extrapolation, useAnimatedScrollHandler } from 'react-native-reanimated';
+import { BlurView } from 'expo-blur';
+import Svg, { Defs, RadialGradient as SvgRadialGradient, Rect, Stop, Path } from 'react-native-svg';
 import { foodService, Food } from '../../services/foodService';
 import { userService } from '../../services/userService';
 
 const { width } = Dimensions.get('window');
-const CARD_W = (width - 48) / 2;
+const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
+const AnimatedTouchableOpacity = Animated.createAnimatedComponent(TouchableOpacity);
 
 // --- CẤU HÌNH CATEGORIES ---
 const CATEGORIES = [
-    { id: 'all', name: 'Gợi ý', icon: 'star', activeColor: '#10B981', activeBg: 'bg-emerald-500', type: 'all' },
-    { id: 'breakfast', name: 'Sáng', icon: 'sunrise', activeColor: '#F97316', activeBg: 'bg-orange-500', type: 'meal' },
-    { id: 'lunch', name: 'Trưa', icon: 'sun', activeColor: '#EAB308', activeBg: 'bg-yellow-500', type: 'meal' },
-    { id: 'dinner', name: 'Tối', icon: 'moon', activeColor: '#6366F1', activeBg: 'bg-indigo-500', type: 'meal' },
-    { id: 'snack', name: 'Phụ', icon: 'coffee', activeColor: '#EC4899', activeBg: 'bg-pink-500', type: 'meal' },
-    { id: 'high_protein', name: 'Giàu Đạm', icon: 'activity', activeColor: '#EF4444', activeBg: 'bg-red-500', type: 'sort', param: 'protein' },
-    { id: 'low_carb', name: 'Ít Carb', icon: 'zap', activeColor: '#8B5CF6', activeBg: 'bg-violet-500', type: 'tag', param: 'low_carb' },
+    { id: 'all', name: 'Gợi ý', type: 'all' },
+    { id: 'breakfast', name: 'Sáng', type: 'meal' },
+    { id: 'lunch', name: 'Trưa', type: 'meal' },
+    { id: 'dinner', name: 'Tối', type: 'meal' },
+    { id: 'snack', name: 'Phụ', type: 'meal' },
+    { id: 'high_protein', name: 'Giàu Đạm', type: 'sort', param: 'protein' },
+    { id: 'low_carb', name: 'Ít Carb', type: 'tag', param: 'low_carb' },
 ];
 
 const getMealByTime = () => {
@@ -33,15 +36,6 @@ const getMealByTime = () => {
     return 'dinner';
 };
 
-const getGreeting = () => {
-    const h = new Date().getHours();
-    if (h < 6) return 'Buổi sáng sớm';
-    if (h < 11) return 'Chào buổi sáng';
-    if (h < 14) return 'Giờ ăn trưa rồi';
-    if (h < 18) return 'Chào buổi chiều';
-    return 'Chào buổi tối';
-};
-
 const resolveImg = (path: string | null | undefined) => {
     if (!path) return null;
     if (path.startsWith('http')) return path;
@@ -49,77 +43,93 @@ const resolveImg = (path: string | null | undefined) => {
     return `${base}${path.startsWith('/') ? '' : '/'}${path}`;
 };
 
-// --- CATEGORY TAB ---
-const CategoryTab = ({ item, isActive, onPress }: any) => (
-    <TouchableOpacity
-        onPress={onPress}
-        activeOpacity={0.75}
-        className={`flex-row items-center mr-2.5 py-2 px-3.5 rounded-full border-[1.5px] ${isActive ? `${item.activeBg} border-transparent` : 'bg-white border-slate-200'}`}
-    >
-        <Feather name={item.icon as any} size={14} color={isActive ? '#fff' : item.activeColor} />
-        <Text className={`text-[13px] font-bold ml-1.5 ${isActive ? 'text-white' : 'text-slate-500'}`}>
-            {item.name}
-        </Text>
-    </TouchableOpacity>
+// --- BACKGROUND AMBIENT GLOW ---
+const AmbientGlowBackground = () => (
+    <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} pointerEvents="none">
+        <Svg height="100%" width="100%">
+            <Defs>
+                <SvgRadialGradient id="grad1" cx="0%" cy="0%" rx="60%" ry="60%" fx="0%" fy="0%">
+                    <Stop offset="0%" stopColor="#EA580C" stopOpacity="0.18" />
+                    <Stop offset="100%" stopColor="#EA580C" stopOpacity="0" />
+                </SvgRadialGradient>
+                <SvgRadialGradient id="grad2" cx="100%" cy="25%" rx="50%" ry="50%" fx="100%" fy="25%">
+                    <Stop offset="0%" stopColor="#FB923C" stopOpacity="0.12" />
+                    <Stop offset="100%" stopColor="#FB923C" stopOpacity="0" />
+                </SvgRadialGradient>
+                <SvgRadialGradient id="grad3" cx="0%" cy="60%" rx="50%" ry="50%" fx="0%" fy="60%">
+                    <Stop offset="0%" stopColor="#F97316" stopOpacity="0.1" />
+                    <Stop offset="100%" stopColor="#F97316" stopOpacity="0" />
+                </SvgRadialGradient>
+            </Defs>
+            <Rect x="0" y="0" width="100%" height="100%" fill="url(#grad1)" />
+            <Rect x="0" y="0" width="100%" height="100%" fill="url(#grad2)" />
+            <Rect x="0" y="0" width="100%" height="100%" fill="url(#grad3)" />
+        </Svg>
+    </View>
 );
 
-// --- FOOD CARD ---
-const FoodCard = ({ item, index, onPress }: { item: Food; index: number; onPress: () => void }) => {
+// --- SQUARE CARD (POPULAR FOODS) ---
+const PopularFoodCard = ({ item, index, onPress }: { item: Food, index: number, onPress: () => void }) => {
     const img = resolveImg(item.image as string | undefined);
     return (
-        <Animated.View entering={FadeInDown.delay(index * 50).springify()} style={{ width: CARD_W, marginBottom: 16 }}>
+        <Animated.View entering={FadeInRight.delay(index * 100).springify()} className="mr-4 mb-2 mt-4 text-center">
             <TouchableOpacity
                 onPress={onPress}
-                activeOpacity={0.88}
-                className="bg-white rounded-[24px] overflow-hidden border-[1.5px] border-slate-100 shadow-sm shadow-slate-200"
+                activeOpacity={0.8}
+                className="bg-white/80 rounded-[32px] p-4 pb-5 items-center border border-white/60"
+                style={{ width: width * 0.45, shadowColor: '#94a3b8', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.15, shadowRadius: 15 }}
             >
-                {/* Ảnh */}
-                <View className="h-32 bg-slate-100 relative">
+                <View className="w-32 h-32 rounded-full mb-5 shadow-lg shadow-slate-300 bg-slate-100" style={{ marginTop: -20, shadowColor: '#334155', shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.2, shadowRadius: 12 }}>
                     {img ? (
-                        <Image source={{ uri: img }} className="w-full h-full" resizeMode="cover" />
+                        <Image source={{ uri: img }} className="w-full h-full rounded-full" />
                     ) : (
-                        <View className="flex-1 items-center justify-center bg-emerald-50">
+                        <View className="flex-1 items-center justify-center bg-emerald-50 rounded-full">
                             <MaterialCommunityIcons name="food-variant" size={40} color="#A7F3D0" />
                         </View>
                     )}
-                    {/* Gradient scrim */}
-                    <LinearGradient
-                        colors={['transparent', 'rgba(0,0,0,0.42)']}
-                        className="absolute bottom-0 left-0 right-0 h-14"
-                    />
-                    {/* Calo badge trên ảnh */}
-                    <View className="absolute bottom-2 left-2 bg-white/90 rounded-xl px-2 py-0.5 flex-row items-center gap-1">
-                        <MaterialCommunityIcons name="fire" size={12} color="#F97316" />
-                        <Text className="text-[12px] font-black text-orange-500">{Math.round(item.calories)}</Text>
-                        <Text className="text-[10px] text-slate-400 font-semibold">kcal</Text>
-                    </View>
                 </View>
-
-                {/* Info */}
-                <View className="p-3">
-                    <Text className="text-sm font-black text-slate-800 leading-5 mb-2" numberOfLines={2}>
-                        {item.name}
+                <Text className="text-[15px] font-black text-slate-800 text-center mb-1 w-full" numberOfLines={1}>{item.name}</Text>
+                <View className="flex-row items-center justify-center gap-1 mt-1 w-full">
+                    <MaterialCommunityIcons name="fire" size={14} color="#F97316" />
+                    <Text className="text-[14px] font-black text-slate-700">{Math.round(item.calories)}
+                        <Text className="text-[11px] text-slate-400 font-bold"> kcal</Text>
                     </Text>
+                </View>
+            </TouchableOpacity>
+        </Animated.View>
+    );
+};
 
-                    {/* Macro chips */}
-                    <View className="flex-row flex-wrap gap-1 mb-2.5">
-                        <View className="bg-amber-50 rounded-md px-1.5 py-0.5 border border-amber-100">
-                            <Text className="text-[10px] font-bold text-amber-600">C {Math.round(item.carb)}g</Text>
+// --- HORIZONTAL WIDE CARD (SPECIALS) ---
+const SpecialFoodCard = ({ item, index, onPress }: { item: Food, index: number, onPress: () => void }) => {
+    const img = resolveImg(item.image as string | undefined);
+    return (
+        <Animated.View entering={FadeInDown.delay(index * 50).springify()} className="px-5 mb-4">
+            <TouchableOpacity
+                onPress={onPress}
+                activeOpacity={0.8}
+                className="bg-white/70 rounded-[28px] p-3 pl-3 pr-5 flex-row items-center border border-white/60"
+                style={{ shadowColor: '#94a3b8', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.12, shadowRadius: 12 }}
+            >
+                <View className="w-[88px] h-[88px] rounded-full bg-slate-100 shadow-md shadow-slate-200 mr-4" style={{ shadowColor: '#334155', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.15, shadowRadius: 8 }}>
+                    {img ? (
+                        <Image source={{ uri: img }} className="w-full h-full rounded-full" />
+                    ) : (
+                        <View className="flex-1 items-center justify-center bg-emerald-50 rounded-full">
+                            <MaterialCommunityIcons name="food-variant" size={30} color="#A7F3D0" />
                         </View>
-                        <View className="bg-blue-50 rounded-md px-1.5 py-0.5 border border-blue-100">
-                            <Text className="text-[10px] font-bold text-blue-600">P {Math.round(item.protein)}g</Text>
-                        </View>
-                        <View className="bg-rose-50 rounded-md px-1.5 py-0.5 border border-rose-100">
-                            <Text className="text-[10px] font-bold text-rose-500">F {Math.round(item.fat)}g</Text>
-                        </View>
-                    </View>
-
-                    {/* Bottom row */}
-                    <View className="flex-row items-center justify-between">
-                        <Text className="text-[11px] text-slate-400 font-medium">1 {item.serving_unit || 'suất'}</Text>
-                        <View className="w-7 h-7 rounded-lg bg-emerald-50 items-center justify-center border border-emerald-100">
-                            <Feather name="plus" size={15} color="#10B981" />
-                        </View>
+                    )}
+                </View>
+                <View className="flex-1 py-1">
+                    <Text className="text-[16px] font-black text-slate-800 mb-1" numberOfLines={2}>{item.name}</Text>
+                    <Text className="text-[12px] text-slate-500 mb-2 leading-4" numberOfLines={2}>
+                        {item.description || item.cooking || "Chưa có mô tả chi tiết cho món ăn này."}
+                    </Text>
+                    <View className="flex-row items-center gap-1">
+                        <MaterialCommunityIcons name="fire" size={14} color="#F97316" />
+                        <Text className="text-[14px] font-black text-slate-700">{Math.round(item.calories)}
+                            <Text className="text-[11px] text-slate-400 font-bold"> kcal</Text>
+                        </Text>
                     </View>
                 </View>
             </TouchableOpacity>
@@ -136,11 +146,20 @@ export default function FoodsScreen() {
         params.meal ? params.meal as string : 'all'
     );
     const [foods, setFoods] = useState<Food[]>([]);
+    const [popularFoods, setPopularFoods] = useState<Food[]>([]);
     const [loading, setLoading] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
     const [page, setPage] = useState(1);
     const [hasMore, setHasMore] = useState(true);
     const [userDietMode, setUserDietMode] = useState<string>('balanced');
+
+    const scrollY = useSharedValue(0);
+    const scrollHandler = useAnimatedScrollHandler({
+        onScroll: (e) => { scrollY.value = e.contentOffset.y; }
+    });
+    const headerBlurStyle = useAnimatedStyle(() => ({
+        opacity: interpolate(scrollY.value, [0, 50], [0, 1], Extrapolation.CLAMP)
+    }));
 
     useEffect(() => {
         userService.getProfile().then(user => {
@@ -148,13 +167,16 @@ export default function FoodsScreen() {
                 setUserDietMode(user.UserNutritionTarget.DietPreset.code);
             }
         }).catch(() => { });
+
+        // Fetch popular foods once
+        foodService.getPopularFoods(8).then(res => setPopularFoods(res || [])).catch(() => { });
     }, []);
 
     const fetchFoods = async (isLoadMore = false) => {
         if (loading) return;
         try {
             setLoading(true);
-            const filterParams: any = { limit: 20, page: isLoadMore ? page : 1 };
+            const filterParams: any = { limit: 10, page: isLoadMore ? page : 1 };
             const category = CATEGORIES.find(c => c.id === activeCategory);
             if (category) {
                 if (category.id === 'all') {
@@ -165,9 +187,9 @@ export default function FoodsScreen() {
                 } else if (category.type === 'meal') {
                     filterParams.meal_category = category.id;
                 } else if (category.type === 'sort') {
-                    filterParams.sort = (category as any).param; filterParams.order = 'DESC';
+                    filterParams.sort = category.param; filterParams.order = 'DESC';
                 } else if (category.type === 'tag') {
-                    filterParams.diet_tag = (category as any).param;
+                    filterParams.diet_tag = category.param;
                 }
             }
             const res = await foodService.search(filterParams);
@@ -184,114 +206,159 @@ export default function FoodsScreen() {
 
     useEffect(() => { setPage(1); setFoods([]); setHasMore(true); fetchFoods(false); }, [activeCategory]);
     useEffect(() => { if (page > 1) fetchFoods(true); }, [page]);
-    const onRefresh = () => { setRefreshing(true); setPage(1); setHasMore(true); fetchFoods(false); };
+
+    const onRefresh = async () => {
+        setRefreshing(true);
+        setPage(1);
+        setHasMore(true);
+        await foodService.getPopularFoods(8).then(res => setPopularFoods(res || [])).catch(() => { });
+        fetchFoods(false);
+    };
     const loadMore = () => { if (!loading && hasMore && foods.length > 0) setPage(p => p + 1); };
 
-    const activeCat = CATEGORIES.find(c => c.id === activeCategory);
+    const getContextMeal = () => {
+        let contextMeal = 'snack';
+        const cat = CATEGORIES.find(c => c.id === activeCategory);
+        if (cat && cat.type === 'meal') contextMeal = cat.id;
+        else contextMeal = getMealByTime();
+        return contextMeal;
+    };
+
+    const renderHeader = () => (
+        <View>
+
+            {/* 3. Popular Foods (Horizontal) */}
+            {activeCategory === 'all' && popularFoods.length > 0 && (
+                <View className="mb-6">
+                    <View className="flex-row justify-between items-end px-5 mb-5 mt-2">
+                        <Text className="text-[22px] font-black text-slate-800 tracking-tight">Món ăn nổi bật</Text>
+                        <TouchableOpacity onPress={() => router.push('/food/food-search')}>
+                            <Text className="text-[13px] font-bold text-slate-500 mb-1">Xem tất cả</Text>
+                        </TouchableOpacity>
+                    </View>
+                    <FlatList
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={{ paddingLeft: 20, paddingRight: 6 }}
+                        data={popularFoods}
+                        keyExtractor={i => 'pop_' + i.id}
+                        renderItem={({ item, index }) => (
+                            <PopularFoodCard
+                                item={item}
+                                index={index}
+                                onPress={() => router.push({ pathname: '/food/food-detail', params: { id: item.id, mealType: getContextMeal() } })}
+                            />
+                        )}
+                    />
+                </View>
+            )}
+
+            {/* 4. Main List Title */}
+            <View className="px-5 mb-5 mt-6">
+                <Text className="text-[22px] font-black text-slate-800 tracking-tight">
+                    {activeCategory === 'all' ? 'Gợi ý hôm nay' :
+                        CATEGORIES.find(c => c.id === activeCategory)?.name + ' dinh dưỡng'}
+                </Text>
+            </View>
+        </View>
+    );
 
     return (
-        <View className="flex-1 bg-slate-50">
+        <View className="flex-1 bg-white">
             <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
+            <AmbientGlowBackground />
 
-            {/* Header */}
-            <View className="px-5 bg-white border-b border-slate-100" style={{ paddingTop: insets.top + 12, paddingBottom: 14 }}>
-                {/* Title row */}
-                <View className="flex-row justify-between items-start mb-4">
-                    <View>
-                        <Text className="text-[11px] font-bold text-emerald-500 tracking-widest mb-1">KHÁM PHÁ</Text>
-                        <Text className="text-xl font-black text-slate-900">{getGreeting()}</Text>
-                        <Text className="text-sm text-slate-400 font-medium mt-0.5">Hôm nay bạn muốn ăn gì?</Text>
+            {/* Sticky Header Blur Overlay */}
+            <BlurView tint="light" intensity={90} style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10, paddingTop: insets.top + 16, paddingBottom: 16 }}>
+                {/* 1. Header Navigation */}
+                <View className="flex-row justify-between items-center px-5 mb-6">
+                    <TouchableOpacity onPress={() => router.back()} className="w-11 h-11 rounded-full bg-white/60 items-center justify-center border border-white/60 shadow-sm shadow-slate-200">
+                        <Feather name="arrow-left" size={20} color="#334155" />
+                    </TouchableOpacity>
+
+                    <View className="flex-row items-center gap-2">
+                        <Text className="text-[22px] font-black text-slate-800 tracking-tight">Món Ăn</Text>
                     </View>
-                    <TouchableOpacity
-                        onPress={() => router.push('/food/favorites')}
-                        className="w-11 h-11 rounded-2xl bg-rose-50 border-[1.5px] border-rose-100 items-center justify-center"
-                    >
+
+                    <TouchableOpacity className="w-11 h-11 rounded-full bg-white/60 items-center justify-center border border-white/60 shadow-sm shadow-slate-200" onPress={() => router.push('/food/favorites')}>
                         <Feather name="heart" size={20} color="#F43F5E" />
                     </TouchableOpacity>
                 </View>
 
-                {/* Search bar */}
-                <TouchableOpacity
-                    activeOpacity={0.9}
-                    onPress={() => router.push('/food/food-search')}
-                    className="flex-row items-center bg-slate-50 rounded-2xl px-4 py-3 border-[1.5px] border-slate-200 mb-4 gap-3"
-                >
-                    <View className="w-8 h-8 rounded-xl bg-emerald-100 items-center justify-center">
-                        <Feather name="search" size={16} color="#10B981" />
-                    </View>
-                    <Text className="flex-1 text-[15px] text-slate-400 font-medium">Tìm kiếm món ăn...</Text>
-                    <View className="bg-white rounded-lg px-2 py-1 border border-slate-200">
-                        <Text className="text-[11px] font-bold text-slate-500">Tìm</Text>
-                    </View>
-                </TouchableOpacity>
-
-                {/* Category Tabs */}
-                <FlatList
-                    data={CATEGORIES}
-                    keyExtractor={i => i.id}
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={{ paddingRight: 16 }}
-                    renderItem={({ item }) => (
-                        <CategoryTab
-                            item={item}
-                            isActive={activeCategory === item.id}
-                            onPress={() => setActiveCategory(item.id)}
-                        />
-                    )}
-                />
-            </View>
-
-            {/* Count row */}
-            <View className="flex-row items-center px-5 py-3">
-                <View className="flex-1 h-px bg-slate-100" />
-                <View className="mx-3 px-3 py-1 rounded-lg" style={{ backgroundColor: activeCat?.activeColor + '20' }}>
-                    <Text className="text-xs font-bold" style={{ color: activeCat?.activeColor }}>
-                        {foods.length} món
-                    </Text>
+                {/* 2. Scrollable Filters */}
+                <View className="px-5 flex-row items-center">
+                    <TouchableOpacity onPress={() => router.push('/food/food-search')} className="w-[48px] h-[48px] rounded-full bg-white/60 items-center justify-center border border-white/60 shadow-sm shadow-slate-200 mr-3">
+                        <Feather name="search" size={20} color="#334155" />
+                    </TouchableOpacity>
+                    <FlatList
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        data={CATEGORIES}
+                        keyExtractor={i => i.id}
+                        contentContainerStyle={{ paddingRight: 20 }}
+                        renderItem={({ item }) => (
+                            <AnimatedTouchableOpacity
+                                layout={LinearTransition.springify()}
+                                onPress={() => setActiveCategory(item.id)}
+                                className={`mr-3 px-5 py-3.5 rounded-full border shadow-sm ${activeCategory === item.id ? 'bg-white border-white shadow-slate-200' : 'bg-white/40 border-white/40 shadow-transparent'}`}
+                            >
+                                <Text className={`text-[15px] font-bold ${activeCategory === item.id ? 'text-slate-800' : 'text-slate-500'}`}>{item.name}</Text>
+                            </AnimatedTouchableOpacity>
+                        )}
+                    />
                 </View>
-                <View className="flex-1 h-px bg-slate-100" />
-            </View>
+            </BlurView>
 
-            {/* Food Grid */}
-            <FlatList
+            <Animated.FlatList
                 data={foods}
-                keyExtractor={item => item.id.toString()}
-                numColumns={2}
-                columnWrapperStyle={{ justifyContent: 'space-between', paddingHorizontal: 20 }}
-                contentContainerStyle={{ paddingBottom: 110, paddingTop: 4 }}
+                itemLayoutAnimation={LinearTransition.springify()}
+                keyExtractor={(item) => 'food_' + item.id.toString()}
+                ListHeaderComponent={renderHeader}
+                contentContainerStyle={{ paddingBottom: 120, paddingTop: insets.top + 150 }}
                 showsVerticalScrollIndicator={false}
-                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#10B981" />}
+                onScroll={scrollHandler}
+                scrollEventThrottle={16}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#10B981" progressViewOffset={insets.top + 20} />}
                 onEndReached={loadMore}
                 onEndReachedThreshold={0.5}
                 renderItem={({ item, index }) => (
-                    <FoodCard
+                    <SpecialFoodCard
                         item={item}
                         index={index}
-                        onPress={() => {
-                            let contextMeal = 'snack';
-                            const cat = CATEGORIES.find(c => c.id === activeCategory);
-                            if (cat && cat.type === 'meal') contextMeal = cat.id;
-                            else contextMeal = getMealByTime();
-                            router.push({ pathname: '/food/food-detail', params: { id: item.id, mealType: contextMeal } });
-                        }}
+                        onPress={() => router.push({ pathname: '/food/food-detail', params: { id: item.id, mealType: getContextMeal() } })}
                     />
                 )}
                 ListEmptyComponent={
-                    !loading ? (
-                        <Animated.View entering={FadeInDown.duration(400)} className="items-center pt-16">
-                            <View className="w-20 h-20 rounded-[24px] bg-emerald-50 items-center justify-center mb-4">
-                                <MaterialCommunityIcons name="food-off-outline" size={40} color="#A7F3D0" />
-                            </View>
-                            <Text className="text-lg font-black text-slate-500 mb-1.5">Không có món ăn nào</Text>
-                            <Text className="text-sm text-slate-400 text-center">Thử chọn bữa ăn khác hoặc kéo xuống làm mới</Text>
+                    loading ? (
+                        <Animated.View entering={FadeInDown.duration(300)} className="pt-1">
+                            {[1, 2, 3, 4, 5].map(k => (
+                                <View key={k} className="px-5 mb-4">
+                                    <View className="bg-white/50 rounded-[28px] p-3 flex-row items-center border border-white/60">
+                                        <View className="w-[88px] h-[88px] rounded-full bg-slate-200/80 mr-4" />
+                                        <View className="flex-1 py-1">
+                                            <View className="w-3/4 h-[18px] bg-slate-200/80 rounded mb-2.5" />
+                                            <View className="w-full h-3 bg-slate-200/80 rounded mb-1.5" />
+                                            <View className="w-5/6 h-3 bg-slate-200/80 rounded mb-3" />
+                                            <View className="w-1/3 h-[14px] bg-slate-200/80 rounded" />
+                                        </View>
+                                    </View>
+                                </View>
+                            ))}
                         </Animated.View>
-                    ) : null
+                    ) : (
+                        <Animated.View entering={FadeInDown.duration(400)} className="items-center pt-10">
+                            <View className="w-20 h-20 rounded-full bg-white/60 items-center justify-center mb-4 border border-white">
+                                <MaterialCommunityIcons name="food-off-outline" size={40} color="#94A3B8" />
+                            </View>
+                            <Text className="text-[17px] font-black text-slate-800 mb-1.5">Chưa tìm thấy món ăn</Text>
+                            <Text className="text-[14px] text-slate-500 text-center px-10">Đang cập nhật thêm thực đơn cho ngày hôm nay</Text>
+                        </Animated.View>
+                    )
                 }
                 ListFooterComponent={
                     loading
                         ? <View className="py-6 items-center"><ActivityIndicator size="small" color="#10B981" /></View>
-                        : <View className="h-2" />
+                        : <View className="h-4" />
                 }
             />
         </View>

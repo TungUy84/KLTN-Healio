@@ -1,16 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import {
-    View, Text, TouchableOpacity, ScrollView, Alert,
-    TextInput, Image, ActivityIndicator, Modal, Platform, StatusBar
+    View, Text, TouchableOpacity, ScrollView, Alert, FlatList,
+    TextInput, Image, ActivityIndicator, Modal, Platform, StatusBar, Dimensions
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Beef, Wheat, Droplet, Flame } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
+import Svg, { Defs, RadialGradient as SvgRadialGradient, Rect, Stop } from 'react-native-svg';
+import Animated, { FadeInDown, ZoomIn } from 'react-native-reanimated';
+
 import { foodService, Food } from '../../services/foodService';
 import { userService } from '../../services/userService';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import { AnimatedProgressBar } from '../../components/ui/AnimatedProgressBar';
+
+const { width } = Dimensions.get('window');
 
 // --- HELPERS ---
 const resolveImg = (path: string | null | undefined) => {
@@ -21,27 +28,61 @@ const resolveImg = (path: string | null | undefined) => {
 };
 
 const MEAL_TYPES = [
-    { id: 'breakfast', label: 'Bữa Sáng', icon: 'food-croissant', color: '#F97316', gradColors: ['#F97316', '#FB923C'] as [string, string] },
-    { id: 'lunch', label: 'Bữa Trưa', icon: 'silverware-fork-knife', color: '#3B82F6', gradColors: ['#3B82F6', '#60A5FA'] as [string, string] },
-    { id: 'dinner', label: 'Bữa Tối', icon: 'pot-steam-outline', color: '#8B5CF6', gradColors: ['#8B5CF6', '#A78BFA'] as [string, string] },
-    { id: 'snack', label: 'Bữa Phụ', icon: 'food-apple-outline', color: '#F43F5E', gradColors: ['#F43F5E', '#FB7185'] as [string, string] },
+    { id: 'breakfast', label: 'Sáng', icon: 'weather-sunset-up', color: '#3B82F6' },
+    { id: 'lunch', label: 'Trưa', icon: 'white-balance-sunny', color: '#F59E0B' },
+    { id: 'dinner', label: 'Tối', icon: 'weather-night', color: '#8B5CF6' },
+    { id: 'snack', label: 'Phụ', icon: 'cookie', color: '#10B981' },
 ];
 
 // --- MÃ MACRO BAR ---
-const MacroBar = ({ label, value, total, color, barClassName }: any) => {
+const MacroBar = ({ label, IconComponent, value, total, color, barClassName }: any) => {
     const pct = total > 0 ? Math.min(Math.round((value / total) * 100), 100) : 0;
     return (
-        <View className="mb-4">
-            <View className="flex-row justify-between mb-1.5">
-                <Text className="text-slate-500 text-sm font-semibold">{label}</Text>
-                <Text className="text-sm font-bold" style={{ color }}>{value}g <Text className="text-slate-400 font-medium">({pct}%)</Text></Text>
+        <View>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                    <IconComponent size={11} color={color} />
+                    <Text className="text-slate-500 text-xs font-semibold">{label}</Text>
+                </View>
+                <Text className="text-slate-700 font-black text-xs">
+                    {value}g
+                </Text>
             </View>
-            <View className="h-2 bg-slate-100 rounded-full">
-                <View className={`h-full rounded-full ${barClassName}`} style={{ width: `${pct}%` }} />
-            </View>
+            <AnimatedProgressBar progress={pct} color={color} height={6} delay={300} />
         </View>
     );
 };
+
+// --- BACKGROUND AMBIENT GLOW ---
+const AmbientGlowBackground = () => (
+    <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} pointerEvents="none">
+        <Svg height="100%" width="100%">
+            <Defs>
+                <SvgRadialGradient id="grad1" cx="0%" cy="0%" rx="60%" ry="60%" fx="0%" fy="0%">
+                    <Stop offset="0%" stopColor="#EA580C" stopOpacity="0.18" />
+                    <Stop offset="100%" stopColor="#EA580C" stopOpacity="0" />
+                </SvgRadialGradient>
+                <SvgRadialGradient id="grad2" cx="100%" cy="25%" rx="50%" ry="50%" fx="100%" fy="25%">
+                    <Stop offset="0%" stopColor="#FB923C" stopOpacity="0.12" />
+                    <Stop offset="100%" stopColor="#FB923C" stopOpacity="0" />
+                </SvgRadialGradient>
+                <SvgRadialGradient id="grad3" cx="0%" cy="60%" rx="50%" ry="50%" fx="0%" fy="60%">
+                    <Stop offset="0%" stopColor="#F97316" stopOpacity="0.1" />
+                    <Stop offset="100%" stopColor="#F97316" stopOpacity="0" />
+                </SvgRadialGradient>
+            </Defs>
+            <Rect x="0" y="0" width="100%" height="100%" fill="url(#grad1)" />
+            <Rect x="0" y="0" width="100%" height="100%" fill="url(#grad2)" />
+            <Rect x="0" y="0" width="100%" height="100%" fill="url(#grad3)" />
+        </Svg>
+        {/* Gradient Fade To White */}
+        <LinearGradient
+            colors={['transparent', 'rgba(255,255,255,0.7)', 'rgba(255,255,255,1)', 'rgba(255,255,255,1)']}
+            locations={[0, 0.45, 0.6, 1]}
+            style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+        />
+    </View>
+);
 
 // --- MAIN ---
 export default function FoodDetailScreen() {
@@ -53,10 +94,20 @@ export default function FoodDetailScreen() {
     const [showAddModal, setShowAddModal] = useState(false);
     const [showMicros, setShowMicros] = useState(false);
 
+    // Form States
+    const getCurrentMealType = () => {
+        const hour = new Date().getHours();
+        if (hour >= 5 && hour < 11) return 'breakfast';
+        if (hour >= 11 && hour < 14) return 'lunch';
+        if (hour >= 14 && hour < 18) return 'snack';
+        if (hour >= 18 && hour < 23) return 'dinner';
+        return 'snack'; // Late night
+    };
+
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [amount, setAmount] = useState('1');
-    const [selectedMeal, setSelectedMeal] = useState<string>((params.mealType as string) || 'breakfast');
+    const [selectedMeal, setSelectedMeal] = useState<string>((params.mealType as string) || getCurrentMealType());
     const [userAllergies, setUserAllergies] = useState<string[]>([]);
 
     useEffect(() => {
@@ -86,22 +137,25 @@ export default function FoodDetailScreen() {
 
     const handleToggleFavorite = async () => {
         if (!food) return;
-        try { await foodService.toggleFavorite(food.id); setIsFavorite(f => !f); } catch { }
+        try {
+            await foodService.toggleFavorite(food.id);
+            setIsFavorite(f => !f);
+        } catch { }
     };
 
     const addToDiaryLogic = async () => {
         if (!food) return;
         try {
+            const tzOffset = selectedDate.getTimezoneOffset() * 60000;
+            const localDateStr = new Date(selectedDate.getTime() - tzOffset).toISOString().split('T')[0];
+
             await foodService.addToDiary({
                 food_id: food.id, meal_type: selectedMeal,
                 quantity: parseFloat(amount), unit_name: food.serving_unit || 'suất',
-                date: selectedDate.toISOString().split('T')[0],
+                date: localDateStr,
             });
             setShowAddModal(false);
-            Alert.alert('Thêm thành công', `Đã thêm ${food.name} vào nhật ký.`, [
-                { text: 'Xem Lịch Biểu', onPress: () => router.navigate('/(tabs)/calendar') },
-                { text: 'Tiếp tục', style: 'cancel' },
-            ]);
+            Alert.alert('Thêm thành công', `Đã ghi nhận ${amount} ${food.serving_unit || 'suất'} ${food.name} vào nhật ký.`);
         } catch { Alert.alert('Lỗi', 'Không thể thêm vào nhật ký'); }
     };
 
@@ -126,8 +180,9 @@ export default function FoodDetailScreen() {
     if (loading || !food) {
         return (
             <View className="flex-1 justify-center items-center bg-slate-50">
-                <ActivityIndicator size="large" color="#10B981" />
-                <Text className="mt-3 text-slate-400 font-medium">Đang tải...</Text>
+                <AmbientGlowBackground />
+                <ActivityIndicator size="large" color="#F97316" />
+                <Text className="mt-3 text-slate-500 font-medium">Đang tải...</Text>
             </View>
         );
     }
@@ -141,326 +196,324 @@ export default function FoodDetailScreen() {
     const imgUri = resolveImg(food.image as string | undefined);
     const activeMeal = MEAL_TYPES.find(m => m.id === selectedMeal) || MEAL_TYPES[0];
 
+    const PLATE_SIZE = width * 0.65;
+
     return (
-        <View className="flex-1 bg-slate-50">
-            <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+        <View className="flex-1 bg-white">
+            <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
+            <AmbientGlowBackground />
 
-            {/* Hero Image */}
-            <View className="h-72 relative">
-                {imgUri ? (
-                    <Image source={{ uri: imgUri }} className="w-full h-full" resizeMode="cover" />
-                ) : (
-                    <LinearGradient colors={['#ECFDF5', '#D1FAE5']} className="flex-1 items-center justify-center">
-                        <MaterialCommunityIcons name="food-variant" size={80} color="#6EE7B7" />
-                    </LinearGradient>
-                )}
-                {/* Scrim gradient */}
-                <LinearGradient
-                    colors={['rgba(0,0,0,0.45)', 'transparent', 'rgba(0,0,0,0.3)']}
-                    locations={[0, 0.4, 1]}
-                    className="absolute inset-0"
-                />
-                {/* Nav buttons */}
-                <View className="absolute left-4 right-4 flex-row justify-between" style={{ top: insets.top + 8 }}>
-                    <TouchableOpacity
-                        onPress={() => router.back()}
-                        className="w-10 h-10 rounded-xl items-center justify-center bg-black/35"
-                    >
-                        <Feather name="arrow-left" size={20} color="#fff" />
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        onPress={handleToggleFavorite}
-                        className="w-10 h-10 rounded-xl items-center justify-center bg-black/35"
-                    >
-                        <Feather name="heart" size={20} color={isFavorite ? '#F43F5E' : '#fff'} />
-                    </TouchableOpacity>
-                </View>
-                {/* Calo badge */}
-                <View className="absolute bottom-4 right-4 bg-white/95 rounded-2xl px-3 py-2 flex-row items-center gap-1.5 shadow-sm shadow-black/20">
-                    <MaterialCommunityIcons name="fire" size={18} color="#F97316" />
-                    <Text className="text-lg font-black text-orange-500">{dispCal}</Text>
-                    <Text className="text-xs font-semibold text-slate-400">kcal</Text>
-                </View>
-            </View>
+            {/* HEADER NAVIGATION */}
+            <View className="z-50 px-5 flex-row justify-between items-center" style={{ paddingTop: insets.top + 16, paddingBottom: 16 }}>
+                <TouchableOpacity onPress={() => router.back()} className="w-11 h-11 rounded-full bg-white/60 items-center justify-center border border-white/60 shadow-sm shadow-slate-200">
+                    <Feather name="chevron-left" size={24} color="#F97316" />
+                </TouchableOpacity>
 
-            <ScrollView
-                className="flex-1 -mt-5"
-                contentContainerStyle={{ paddingBottom: 110 }}
-                showsVerticalScrollIndicator={false}
-            >
-                <View className="bg-slate-50 rounded-t-[24px] pt-6 px-5">
+                <Animated.Text entering={FadeInDown.delay(100).springify()} className="text-[17px] font-bold text-slate-800 tracking-wide">
+                    Chi tiết
+                </Animated.Text>
 
-                    {/* Name + Stepper */}
-                    <View className="flex-row justify-between items-start mb-6">
-                        <View className="flex-1 mr-4">
-                            <Text className="text-2xl font-black text-slate-900 leading-8">{food.name}</Text>
-                            <Text className="text-sm text-slate-400 font-medium mt-1">1 {food.serving_unit || 'suất'}</Text>
-                        </View>
-                        {/* Amount Stepper */}
-                        <View className="flex-row items-center bg-white rounded-2xl border-[1.5px] border-slate-200 overflow-hidden">
-                            <TouchableOpacity
-                                onPress={() => setAmount((Math.max(0.5, parseFloat(amount) - 0.5)).toString())}
-                                className="w-10 h-11 items-center justify-center bg-slate-50"
-                            >
-                                <Feather name="minus" size={16} color="#64748B" />
-                            </TouchableOpacity>
-                            <View className="px-3 items-center">
-                                <TextInput
-                                    value={amount} onChangeText={setAmount} keyboardType="numeric"
-                                    className="text-lg font-black text-slate-800 text-center min-w-[28px]"
-                                />
-                            </View>
-                            <TouchableOpacity
-                                onPress={() => setAmount((parseFloat(amount) + 0.5).toString())}
-                                className="w-10 h-11 items-center justify-center bg-emerald-50"
-                            >
-                                <Feather name="plus" size={16} color="#10B981" />
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-
-                    {/* NUTRITION CARD */}
-                    <View className="bg-white rounded-[22px] p-5 border border-slate-100 mb-4 shadow-sm shadow-slate-200">
-                        <Text className="text-xs font-bold text-slate-400 tracking-widest mb-4">BẢNG DINH DƯỠNG</Text>
-
-                        {/* 3 Pills */}
-                        <View className="flex-row gap-3 mb-5">
-                            <View className="flex-1 bg-blue-50 rounded-2xl p-3 items-center border border-blue-100">
-                                <Text className="text-2xl font-black text-blue-600">{dispProt}</Text>
-                                <Text className="text-[11px] font-semibold text-blue-400">g</Text>
-                                <Text className="text-xs font-semibold text-slate-400 mt-1">Protein</Text>
-                            </View>
-                            <View className="flex-1 bg-amber-50 rounded-2xl p-3 items-center border border-amber-100">
-                                <Text className="text-2xl font-black text-amber-500">{dispCarb}</Text>
-                                <Text className="text-[11px] font-semibold text-amber-400">g</Text>
-                                <Text className="text-xs font-semibold text-slate-400 mt-1">Carbs</Text>
-                            </View>
-                            <View className="flex-1 bg-rose-50 rounded-2xl p-3 items-center border border-rose-100">
-                                <Text className="text-2xl font-black text-rose-500">{dispFat}</Text>
-                                <Text className="text-[11px] font-semibold text-rose-400">g</Text>
-                                <Text className="text-xs font-semibold text-slate-400 mt-1">Fat</Text>
-                            </View>
-                        </View>
-
-                        {/* Progress Bars */}
-                        <MacroBar label="Protein" value={dispProt} total={totalM} color="#3B82F6" barClassName="bg-blue-500" />
-                        <MacroBar label="Carbohydrate" value={dispCarb} total={totalM} color="#F59E0B" barClassName="bg-amber-400" />
-                        <MacroBar label="Fat" value={dispFat} total={totalM} color="#F43F5E" barClassName="bg-rose-500" />
-                    </View>
-
-                    {/* Micronutrients */}
-                    {food.micronutrients && Object.keys(food.micronutrients).length > 0 && (
-                        <View className="bg-white rounded-[22px] border border-slate-100 mb-4 overflow-hidden">
-                            <TouchableOpacity
-                                onPress={() => setShowMicros(!showMicros)}
-                                className="flex-row items-center p-4 gap-3"
-                            >
-                                <View className="w-9 h-9 rounded-xl bg-emerald-50 items-center justify-center">
-                                    <MaterialCommunityIcons name="flask-outline" size={20} color="#10B981" />
-                                </View>
-                                <Text className="flex-1 text-base font-bold text-slate-800">Vi chất dinh dưỡng</Text>
-                                <Feather name={showMicros ? 'chevron-up' : 'chevron-down'} size={18} color="#94A3B8" />
-                            </TouchableOpacity>
-                            {showMicros && (
-                                <View className="px-4 pb-3">
-                                    {Object.entries(food.micronutrients).map(([key, value], idx, arr) => (
-                                        <View key={key} className={`flex-row justify-between py-2.5 ${idx < arr.length - 1 ? 'border-b border-slate-50' : ''}`}>
-                                            <Text className="text-sm text-slate-500 font-medium capitalize">
-                                                {key === 'fiber' ? 'Chất xơ' : key === 'sugar' ? 'Đường' : key === 'sodium' ? 'Natri' : key === 'cholesterol' ? 'Cholesterol' : key}
-                                            </Text>
-                                            <Text className="text-sm font-bold text-slate-800">
-                                                {Math.round((value as number) * mult * 10) / 10}
-                                                {['sodium', 'cholesterol', 'potassium', 'calcium'].includes(key) ? 'mg' : 'g'}
-                                            </Text>
-                                        </View>
-                                    ))}
-                                </View>
-                            )}
-                        </View>
-                    )}
-
-                    {/* Ingredients */}
-                    {food.ingredients && food.ingredients.length > 0 && (
-                        <View className="bg-white rounded-[22px] p-5 border border-slate-100 mb-4">
-                            <Text className="text-base font-bold text-slate-800 mb-3">Nguyên liệu ({food.ingredients.length})</Text>
-                            {food.ingredients.map((ing, idx) => {
-                                const ingImg = resolveImg(ing.image as string | undefined);
-                                return (
-                                    <View key={idx} className={`flex-row items-center py-2.5 ${idx < food.ingredients!.length - 1 ? 'border-b border-slate-50' : ''}`}>
-                                        <View className="w-11 h-11 rounded-xl overflow-hidden bg-slate-100 mr-3">
-                                            {ingImg
-                                                ? <Image source={{ uri: ingImg }} className="w-full h-full" resizeMode="cover" />
-                                                : <View className="flex-1 items-center justify-center"><MaterialCommunityIcons name="food-variant" size={22} color="#CBD5E1" /></View>
-                                            }
-                                        </View>
-                                        <Text className="flex-1 text-sm font-semibold text-slate-700">{ing.name}</Text>
-                                        {ing.FoodIngredient?.amount_in_grams && (
-                                            <View className="bg-emerald-50 px-3 py-1 rounded-lg border border-emerald-100">
-                                                <Text className="text-sm font-bold text-emerald-600">
-                                                    {Math.round(ing.FoodIngredient.amount_in_grams * mult)}g
-                                                </Text>
-                                            </View>
-                                        )}
-                                    </View>
-                                );
-                            })}
-                        </View>
-                    )}
-
-                    {/* Description */}
-                    {(food.cooking || food.description) && (
-                        <View className="bg-white rounded-[22px] p-5 border border-slate-100 mb-4">
-                            <Text className="text-base font-bold text-slate-800 mb-3">Mô tả & Cách làm</Text>
-                            <Text className="text-[15px] text-slate-600 leading-6">{food.cooking || food.description}</Text>
-                        </View>
-                    )}
-                </View>
-            </ScrollView>
-
-            {/* Bottom CTA */}
-            <View className="absolute bottom-0 left-0 right-0 px-5 bg-white border-t border-slate-100" style={{ paddingBottom: insets.bottom + 12, paddingTop: 12 }}>
-                <TouchableOpacity onPress={() => setShowAddModal(true)} className="rounded-2xl overflow-hidden">
-                    <LinearGradient
-                        colors={['#10B981', '#059669']}
-                        start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-                        className="flex-row items-center justify-center py-4 gap-2.5"
-                    >
-                        <MaterialCommunityIcons name="plus-circle-outline" size={22} color="#fff" />
-                        <Text className="text-base font-black text-white">Thêm vào Nhật ký</Text>
-                    </LinearGradient>
+                <TouchableOpacity onPress={handleToggleFavorite} className="w-11 h-11 rounded-full bg-white/60 items-center justify-center border border-white/60 shadow-sm shadow-slate-200">
+                    <MaterialCommunityIcons name={isFavorite ? 'heart' : 'heart-outline'} size={22} color="#F43F5E" />
                 </TouchableOpacity>
             </View>
 
-            {/* ==== MODAL THÊM NHẬT KÝ ==== */}
+            <ScrollView
+                className="flex-1"
+                contentContainerStyle={{ paddingBottom: 140 }}
+                showsVerticalScrollIndicator={false}
+            >
+                {/* 1. FLOATING FOOD PLATE */}
+                <View className="items-center mt-4 mb-8">
+                    <Animated.View
+                        entering={ZoomIn.duration(600).springify()}
+                        className="rounded-full bg-slate-100"
+                        style={{
+                            width: PLATE_SIZE, height: PLATE_SIZE,
+                            shadowColor: '#334155', shadowOffset: { width: 0, height: 20 }, shadowOpacity: 0.25, shadowRadius: 24,
+                            elevation: 10
+                        }}
+                    >
+                        {imgUri ? (
+                            <Image source={{ uri: imgUri }} className="w-full h-full rounded-full" />
+                        ) : (
+                            <View className="flex-1 items-center justify-center bg-orange-50 rounded-full border-[6px] border-white focus:outline-none">
+                                <MaterialCommunityIcons name="food-variant" size={60} color="#FDBA74" />
+                            </View>
+                        )}
+                    </Animated.View>
+                </View>
+
+                {/* 2. TITLE & CALORIES BADGE */}
+                <Animated.View entering={FadeInDown.delay(200).springify()} className="px-6 mb-6 flex-row justify-between items-start">
+                    <View className="flex-1 mr-4">
+                        <Text className="text-[28px] font-black text-slate-900 leading-[34px] tracking-tight">{food.name}</Text>
+                        <Text className="text-[15px] font-semibold text-slate-500 mt-2">1 {food.serving_unit || 'suất'}</Text>
+                        <Text className="text-[14px] font-medium text-slate-400 mt-1.5 leading-5 items-center">
+                            {food.description || food.cooking || 'Món ăn ngon và đủ dưỡng chất, thích hợp cho kế hoạch ăn uống của bạn.'}
+                        </Text>
+                    </View>
+
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 4, paddingVertical: 6, borderRadius: 20 }}>
+                        <Flame size={20} color="#F97316" />
+                        <Text style={{ color: '#F97316', fontWeight: '900', fontSize: 22 }}>
+                            {Math.round(food.calories)} <Text style={{ fontSize: 13, fontWeight: '700' }}>kcal</Text>
+                        </Text>
+                    </View>
+                </Animated.View>
+
+                {/* 3. NUTRITION MACROS (KHÔNG KHUNG BỌC) */}
+                <Animated.View entering={FadeInDown.delay(250).springify()} className="px-6 mb-8 mt-2" style={{ gap: 12 }}>
+                    {/* Progress Bars */}
+                    <MacroBar label="Đạm" IconComponent={Beef} value={dispProt} total={totalM} color="#3B82F6" barClassName="bg-blue-400" />
+                    <MacroBar label="Tinh bột" IconComponent={Wheat} value={dispCarb} total={totalM} color="#10B981" barClassName="bg-emerald-400" />
+                    <MacroBar label="Chất béo" IconComponent={Droplet} value={dispFat} total={totalM} color="#EAB308" barClassName="bg-yellow-400" />
+                </Animated.View>
+
+                {/* 4. HORIZONTAL INGREDIENTS LIST */}
+                {food.ingredients && food.ingredients.length > 0 && (
+                    <Animated.View entering={FadeInDown.delay(280).springify()} className="mb-8">
+                        <Text className="text-[18px] font-bold text-slate-800 px-6 mb-4">Nguyên liệu</Text>
+                        <FlatList
+                            horizontal
+                            showsHorizontalScrollIndicator={false}
+                            contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 10 }}
+                            data={food.ingredients}
+                            keyExtractor={(item, index) => `${item.id}_${index}`}
+                            renderItem={({ item, index }) => (
+                                <View className="items-center mr-3 bg-white w-[88px] pb-4 pt-3 rounded-[24px] border border-slate-100" style={{ shadowColor: '#94A3B8', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.1, shadowRadius: 12 }}>
+                                    <View className="w-14 h-14 rounded-full bg-slate-50 mb-3" style={{ shadowColor: '#475569', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.15, shadowRadius: 8 }}>
+                                        {resolveImg(item.image) ? (
+                                            <Image source={{ uri: resolveImg(item.image) as string }} className="w-full h-full rounded-full" />
+                                        ) : (
+                                            <View className="flex-1 items-center justify-center bg-orange-50 rounded-full">
+                                                <MaterialCommunityIcons name="food-apple" size={24} color="#FDBA74" />
+                                            </View>
+                                        )}
+                                    </View>
+                                    <Text className="text-[13px] font-bold text-slate-700 text-center px-2" numberOfLines={2}>
+                                        {item.name}
+                                    </Text>
+                                    {item.FoodIngredient?.amount_in_grams && (
+                                        <Text className="text-[11px] font-semibold text-slate-400 mt-1">{item.FoodIngredient.amount_in_grams}g</Text>
+                                    )}
+                                </View>
+                            )}
+                        />
+                    </Animated.View>
+                )}
+
+                {/* 5. MEAL AND DIET INFO */}
+                <Animated.View entering={FadeInDown.delay(290).springify()} className="px-6 mb-8 mt-2">
+                    {food.meal_categories && food.meal_categories.length > 0 ? (
+                        <Text className="text-[14px] text-slate-500 mb-1.5 font-medium">
+                            Phù hợp với: <Text className="font-bold text-slate-700">
+                                {food.meal_categories.map(m => {
+                                    if (m.toLowerCase() === 'breakfast') return 'bữa sáng';
+                                    if (m.toLowerCase() === 'lunch') return 'bữa trưa';
+                                    if (m.toLowerCase() === 'dinner') return 'bữa tối';
+                                    if (m.toLowerCase() === 'snack') return 'ăn vặt';
+                                    return m;
+                                }).join(', ')}
+                            </Text>
+                        </Text>
+                    ) : (
+                        <Text className="text-[14px] text-slate-500 mb-1.5 font-medium">
+                            Phù hợp với: <Text className="font-bold text-slate-700">Mọi bữa ăn</Text>
+                        </Text>
+                    )}
+
+                    <Text className="text-[14px] text-slate-500 font-medium">
+                        Chế độ ăn phù hợp: <Text className="font-bold text-slate-700">
+                            {food.dietPresets && food.dietPresets.length > 0 ? food.dietPresets.map(d => d.name).join(', ') : 'Cân bằng'}
+                        </Text>
+                    </Text>
+                </Animated.View>
+
+                {/* 6. MICRONUTRIENTS CHIPS (COLLAPSIBLE) */}
+                {food.micronutrients && Object.keys(food.micronutrients).length > 0 && (
+                    <Animated.View entering={FadeInDown.delay(300).springify()} className="px-6 mb-8">
+                        <Text className="text-[17px] font-bold text-slate-800 mb-4 tracking-tight">Vi chất dinh dưỡng</Text>
+                        <View className="flex-row flex-wrap gap-2.5 items-center">
+                            {(showMicros ? Object.entries(food.micronutrients) : Object.entries(food.micronutrients).slice(0, 3)).map(([key, value]) => {
+                                const map: any = {
+                                    fiber: { n: 'Chất xơ', i: 'leaf', c: '#10B981' },
+                                    sugar: { n: 'Đường', i: 'cube-outline', c: '#F43F5E' },
+                                    sodium: { n: 'Natri', i: 'shaker-outline', c: '#64748B' },
+                                    cholesterol: { n: 'Cholest.', i: 'heart-pulse', c: '#F43F5E' },
+                                    potassium: { n: 'Kali', i: 'lightning-bolt', c: '#EAB308' },
+                                    calcium: { n: 'Canxi', i: 'bone', c: '#94A3B8' },
+                                    iron: { n: 'Sắt', i: 'weight', c: '#475569' },
+                                    vitamin_a: { n: 'Vit A', i: 'eye-outline', c: '#F97316' },
+                                    vit_a: { n: 'Vit A', i: 'eye-outline', c: '#F97316' },
+                                    vitamin_c: { n: 'Vit C', i: 'fruit-citrus', c: '#F59E0B' },
+                                    vit_c: { n: 'Vit C', i: 'fruit-citrus', c: '#F59E0B' },
+                                    vitamin_d: { n: 'Vit D', i: 'white-balance-sunny', c: '#FBBF24' },
+                                    vit_d: { n: 'Vit D', i: 'white-balance-sunny', c: '#FBBF24' },
+                                };
+                                const cleanKey = key.toLowerCase().replace(/_mg$|_g$|_mcg$|_iu$/, '');
+                                const meta = map[cleanKey] || { n: key.replace(/_MG|_G|_IU/i, ''), i: 'water-outline', c: '#3B82F6' };
+                                const unit = ['sodium', 'cholesterol', 'potassium', 'calcium'].includes(cleanKey) || key.toLowerCase().includes('_mg') ? 'mg' : 'g';
+                                const val = Math.round((value as number) * mult * 10) / 10;
+
+                                return (
+                                    <View key={key} className="flex-row items-center bg-white/70 border border-white rounded-[18px] pl-2 pr-3 py-2 shadow-sm shadow-slate-200/50">
+                                        <View className="w-7 h-7 rounded-full bg-white items-center justify-center mr-2 shadow-sm shadow-slate-100">
+                                            <MaterialCommunityIcons name={meta.i} size={14} color={meta.c} />
+                                        </View>
+                                        <View>
+                                            <Text className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-0.5">{meta.n}</Text>
+                                            <View className="flex-row items-baseline gap-0.5">
+                                                <Text className="text-[13px] font-black text-slate-700">{val}</Text>
+                                                <Text className="text-[10px] font-bold text-slate-500">{unit}</Text>
+                                            </View>
+                                        </View>
+                                    </View>
+                                );
+                            })}
+
+                            {/* Toggle Button */}
+                            {Object.keys(food.micronutrients).length > 3 && (
+                                <TouchableOpacity
+                                    onPress={() => setShowMicros(!showMicros)}
+                                    className="w-10 h-10 rounded-full bg-slate-100/80 items-center justify-center border border-white shadow-sm shadow-slate-200/50"
+                                >
+                                    <Feather name={showMicros ? 'chevron-up' : 'chevron-down'} size={18} color="#94A3B8" />
+                                </TouchableOpacity>
+                            )}
+                        </View>
+                    </Animated.View>
+                )}
+
+            </ScrollView>
+
+            {/* 4. BOTTOM ADD TO ORDER BAR */}
+            <BlurView
+                tint="light"
+                intensity={95}
+                className="absolute bottom-0 left-0 right-0 pt-4 px-5 flex-row items-center border-t border-slate-200/50"
+                style={{ paddingBottom: (insets.bottom || 16) + 8, backgroundColor: 'rgba(255,255,255,0.85)' }}
+            >
+                {/* Stepper */}
+                <View className="flex-row items-center bg-white rounded-full border border-slate-100 px-2 h-[52px] shadow-sm shadow-slate-200 mr-4">
+                    <TouchableOpacity
+                        onPress={() => setAmount((Math.max(0.5, parseFloat(amount) - 0.5)).toString())}
+                        className="w-10 h-10 items-center justify-center rounded-full active:bg-slate-50"
+                    >
+                        <Feather name="minus" size={18} color="#F97316" />
+                    </TouchableOpacity>
+
+                    <TextInput
+                        value={amount} onChangeText={setAmount} keyboardType="numeric"
+                        className="text-[17px] font-bold text-slate-800 text-center min-w-[32px] mx-1"
+                    />
+
+                    <TouchableOpacity
+                        onPress={() => setAmount((parseFloat(amount) + 0.5).toString())}
+                        className="w-10 h-10 items-center justify-center rounded-full active:bg-orange-50"
+                    >
+                        <Feather name="plus" size={18} color="#F97316" />
+                    </TouchableOpacity>
+                </View>
+
+                {/* Add Button */}
+                <TouchableOpacity
+                    onPress={() => setShowAddModal(true)}
+                    className="flex-1 h-[52px]"
+                    style={{ shadowColor: '#EA580C', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 8, elevation: 4 }}
+                    activeOpacity={0.8}
+                >
+                    <LinearGradient
+                        colors={['#FB923C', '#EA580C']}
+                        start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+                        style={{ width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center', borderRadius: 999 }}
+                    >
+                        <Text className="text-[16px] font-bold text-white tracking-wide">Thêm món ăn</Text>
+                    </LinearGradient>
+                </TouchableOpacity>
+            </BlurView>
+
+            {/* ==== DIARY MODAL (GIỮ LẠI LOGIC CHỈ CẢI TIẾN NHẸ UI) ==== */}
             <Modal visible={showAddModal} transparent animationType="slide" onRequestClose={() => setShowAddModal(false)}>
                 <View className="flex-1 justify-end bg-black/50">
-                    <View className="bg-slate-50 rounded-t-[32px]" style={{ maxHeight: '84%' }}>
-                        {/* Handle */}
-                        <View className="items-center pt-3 mb-1">
-                            <View className="w-10 h-1 rounded-full bg-slate-200" />
-                        </View>
+                    <View className="bg-white rounded-t-[32px]" style={{ maxHeight: '84%' }}>
+                        <View className="items-center pt-3 mb-1"><View className="w-10 h-1 rounded-full bg-slate-200" /></View>
 
-                        {/* Modal Header */}
-                        <View className="flex-row justify-between items-center px-5 py-4 border-b border-slate-100">
+                        <View className="flex-row justify-between items-center px-6 py-4 border-b border-slate-100">
                             <View>
-                                <Text className="text-lg font-black text-slate-900">Thêm vào Nhật ký</Text>
-                                <Text className="text-xs text-slate-400 mt-0.5">{food.name}</Text>
+                                <Text className="text-[19px] font-black text-slate-900">Thêm vào Nhật ký</Text>
+                                <Text className="text-[13px] text-slate-500 mt-1 font-medium">{food.name}</Text>
                             </View>
-                            <TouchableOpacity
-                                onPress={() => setShowAddModal(false)}
-                                className="w-9 h-9 rounded-xl bg-slate-100 items-center justify-center"
-                            >
+                            <TouchableOpacity onPress={() => setShowAddModal(false)} className="w-9 h-9 rounded-full bg-slate-100 items-center justify-center">
                                 <Feather name="x" size={18} color="#64748B" />
                             </TouchableOpacity>
                         </View>
 
-                        <ScrollView contentContainerStyle={{ padding: 20 }} showsVerticalScrollIndicator={false}>
-                            {/* Chọn bữa ăn */}
-                            <Text className="text-xs font-bold text-slate-400 tracking-widest mb-3">CHỌN BỮA ĂN</Text>
-                            <View className="flex-row flex-wrap gap-2.5 mb-6">
+                        <ScrollView contentContainerStyle={{ padding: 24 }} showsVerticalScrollIndicator={false}>
+                            <Text className="text-[12px] font-black text-slate-400 tracking-widest mb-3">CHỌN BỮA ĂN</Text>
+                            <View className="flex-row justify-between items-center mb-6">
                                 {MEAL_TYPES.map(m => (
                                     <TouchableOpacity
                                         key={m.id}
                                         onPress={() => setSelectedMeal(m.id)}
-                                        className={`flex-row items-center gap-2 py-2.5 px-4 rounded-2xl border-[1.5px] ${selectedMeal === m.id ? 'border-transparent' : 'bg-white border-slate-200'}`}
+                                        className={`flex-1 flex-row items-center justify-center gap-1.5 py-3 mx-1 rounded-2xl border-[1.5px] ${selectedMeal === m.id ? 'border-transparent' : 'bg-white border-slate-200'}`}
                                         style={selectedMeal === m.id ? { backgroundColor: m.color, borderColor: m.color } : {}}
                                     >
                                         <MaterialCommunityIcons name={m.icon as any} size={16} color={selectedMeal === m.id ? '#fff' : m.color} />
-                                        <Text className={`text-sm font-bold ${selectedMeal === m.id ? 'text-white' : 'text-slate-600'}`}>{m.label}</Text>
+                                        <Text className={`text-[13px] font-bold ${selectedMeal === m.id ? 'text-white' : 'text-slate-600'}`}>{m.label}</Text>
                                     </TouchableOpacity>
                                 ))}
                             </View>
 
-                            {/* Chọn ngày */}
-                            <Text className="text-xs font-bold text-slate-400 tracking-widest mb-3">CHỌN NGÀY</Text>
-                            <TouchableOpacity
-                                onPress={() => setShowDatePicker(true)}
-                                className="flex-row items-center gap-3 bg-white rounded-2xl p-4 border-[1.5px] border-slate-200 mb-5"
-                            >
-                                <View className="w-9 h-9 rounded-xl bg-emerald-50 items-center justify-center">
-                                    <Feather name="calendar" size={16} color="#10B981" />
+                            <Text className="text-[12px] font-black text-slate-400 tracking-widest mb-3">CHỌN NGÀY</Text>
+                            <TouchableOpacity onPress={() => setShowDatePicker(true)} className="flex-row items-center gap-3 bg-white rounded-2xl p-4 border-[1.5px] border-slate-200 mb-6">
+                                <View className="w-10 h-10 rounded-xl bg-orange-50 items-center justify-center">
+                                    <Feather name="calendar" size={18} color="#F97316" />
                                 </View>
-                                <Text className="flex-1 text-base font-bold text-slate-800">
+                                <Text className="flex-1 text-[16px] font-bold text-slate-800">
                                     {selectedDate.toLocaleDateString('vi-VN', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' })}
                                 </Text>
-                                <Feather name="chevron-right" size={16} color="#94A3B8" />
+                                <Feather name="chevron-right" size={18} color="#94A3B8" />
                             </TouchableOpacity>
 
                             {showDatePicker && (
-                                <View className="mb-5">
+                                <View className="mb-6 bg-slate-50 rounded-2xl p-2 border border-slate-100">
                                     <DateTimePicker
-                                        value={selectedDate} mode="date"
-                                        display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                                        onChange={(_, date) => {
-                                            if (Platform.OS === 'android') setShowDatePicker(false);
-                                            if (date) setSelectedDate(date);
-                                        }}
-                                        textColor="black"
+                                        value={selectedDate} mode="date" display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                                        themeVariant="light"
+                                        onChange={(_, date) => { if (Platform.OS === 'android') setShowDatePicker(false); if (date) setSelectedDate(date); }}
                                     />
                                     {Platform.OS === 'ios' && (
-                                        <TouchableOpacity onPress={() => setShowDatePicker(false)} className="items-center py-2.5 bg-emerald-50 rounded-xl mt-2">
-                                            <Text className="text-emerald-600 font-bold">Xong</Text>
+                                        <TouchableOpacity onPress={() => setShowDatePicker(false)} className="items-center py-3 bg-white rounded-xl mt-2 border border-slate-200 shadow-sm shadow-slate-100">
+                                            <Text className="text-slate-800 font-black">Xác nhận ngày</Text>
                                         </TouchableOpacity>
                                     )}
                                 </View>
                             )}
 
-                            {/* Số lượng */}
-                            <Text className="text-xs font-bold text-slate-400 tracking-widest mb-3">SỐ LƯỢNG</Text>
-                            <View className="flex-row items-center justify-between bg-white rounded-2xl p-4 border-[1.5px] border-slate-200 mb-5">
-                                <TouchableOpacity
-                                    onPress={() => setAmount((Math.max(0.5, parseFloat(amount) - 0.5)).toString())}
-                                    className="w-10 h-10 rounded-xl bg-slate-100 items-center justify-center"
-                                >
-                                    <Feather name="minus" size={18} color="#64748B" />
-                                </TouchableOpacity>
-                                <View className="items-center">
-                                    <TextInput
-                                        value={amount} onChangeText={setAmount} keyboardType="numeric"
-                                        className="text-3xl font-black text-slate-800 text-center min-w-[64px]"
-                                    />
-                                    <Text className="text-sm text-slate-400 font-semibold">{food.serving_unit || 'suất'}</Text>
+                            <Text className="text-[12px] font-black text-slate-400 tracking-widest mb-3">TỔNG NĂNG LƯỢNG</Text>
+                            <View className="flex-row items-center justify-between bg-white rounded-2xl p-4 border-[1.5px] border-slate-200 mb-6">
+                                <View className="flex-row items-baseline gap-1.5">
+                                    <Text className="text-slate-800 text-[20px] font-black">{amount}</Text>
+                                    <Text className="text-slate-500 text-[15px] font-bold">{food.serving_unit || 'suất'}</Text>
                                 </View>
-                                <TouchableOpacity
-                                    onPress={() => setAmount((parseFloat(amount) + 0.5).toString())}
-                                    className="w-10 h-10 rounded-xl bg-emerald-50 items-center justify-center"
-                                >
-                                    <Feather name="plus" size={18} color="#10B981" />
-                                </TouchableOpacity>
-                            </View>
 
-                            {/* Dark preview card */}
-                            <View className="bg-slate-900 rounded-2xl p-4 flex-row items-center justify-between mb-5">
-                                <View>
-                                    <Text className="text-slate-400 text-xs font-semibold">Năng lượng</Text>
-                                    <View className="flex-row items-baseline gap-1.5 mt-1">
-                                        <Text className="text-emerald-400 text-3xl font-black">{dispCal}</Text>
-                                        <Text className="text-emerald-300 text-sm font-bold">kcal</Text>
-                                    </View>
-                                </View>
-                                <View className="gap-1.5">
-                                    <Text className="text-amber-300 text-xs font-bold">C: {dispCarb}g</Text>
-                                    <Text className="text-blue-300 text-xs font-bold">P: {dispProt}g</Text>
-                                    <Text className="text-pink-300 text-xs font-bold">F: {dispFat}g</Text>
+                                <View className="flex-row items-baseline gap-1.5">
+                                    <Text className="text-orange-500 text-[24px] font-black">{dispCal}</Text>
+                                    <Text className="text-orange-400 text-[15px] font-bold">kcal</Text>
                                 </View>
                             </View>
 
-                            {/* Confirm button */}
-                            <TouchableOpacity onPress={handleAddToDiary} className="rounded-2xl overflow-hidden">
-                                <LinearGradient
-                                    colors={activeMeal.gradColors}
-                                    start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-                                    className="flex-row items-center justify-center py-4 gap-2.5"
-                                >
-                                    <Feather name="check-circle" size={20} color="#fff" />
-                                    <Text className="text-base font-black text-white">Lưu vào {activeMeal.label}</Text>
+                            <TouchableOpacity onPress={handleAddToDiary} className="h-[52px]" style={{ shadowColor: '#EA580C', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 8, elevation: 4 }} activeOpacity={0.8}>
+                                <LinearGradient colors={['#FB923C', '#EA580C']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={{ width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center', borderRadius: 999 }}>
+                                    <Text className="text-[16px] font-bold text-white tracking-wide">Xác nhận Thêm</Text>
                                 </LinearGradient>
                             </TouchableOpacity>
-                            <View className="h-6" />
+                            <View className="h-4" />
                         </ScrollView>
                     </View>
                 </View>
             </Modal>
-        </View>
+        </View >
     );
 }

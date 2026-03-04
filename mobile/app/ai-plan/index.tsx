@@ -9,6 +9,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { userService, CalculatedMetrics } from '../../services/userService';
 import { foodService } from '../../services/foodService';
 import { aiService, MealPlanSuggestion } from '../../services/aiService';
+import { AnimatedProgressBar } from '../../components/ui/AnimatedProgressBar';
+import { AnimatedCalorieGauge } from '../../components/ui/AnimatedCalorieGauge';
 
 const CACHE_KEY = '@ai_meal_plan_cache';
 const IMAGE_BASE_URL = process.env.EXPO_PUBLIC_API_URL?.replace('/api', '') || 'http://10.0.2.2:5000';
@@ -17,55 +19,6 @@ const IMAGE_BASE_URL = process.env.EXPO_PUBLIC_API_URL?.replace('/api', '') || '
 const getImageUri = (image: string | undefined | null): string | null => {
     if (!image) return null;
     return image.startsWith('http') ? image : `${IMAGE_BASE_URL}${image}`;
-};
-
-// Component Gauge Arc 270° bằng react-native-svg (gap ở dưới, hiện đại)
-const CalorieGauge = ({ value, target }: { value: number; target: number }) => {
-    const SIZE = 122;
-    const STROKE = 13;
-    const r = (SIZE - STROKE) / 2; // bán kính
-    const cx = SIZE / 2; // tâm x
-    const cy = SIZE / 2; // tâm y
-    const pct = Math.min(Math.max((value / (target || 1)) * 100, 0), 100);
-    const TOTAL = 235;  // tổng cung 235°
-    const START = 360 - TOTAL / 2; // tự động cân đối quanh 12 o'clock
-
-    // Chuyển độ sang toạ độ SVG
-    const pt = (deg: number) => {
-        const rad = ((deg - 90) * Math.PI) / 180;
-        return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
-    };
-
-    // Tạo SVG path cho cung tròn
-    const arc = (from: number, to: number) => {
-        if (to - from <= 0) return '';
-        const s = pt(from);
-        const e = pt(to);
-        const large = to - from > 180 ? 1 : 0;
-        return `M ${s.x.toFixed(2)} ${s.y.toFixed(2)} A ${r} ${r} 0 ${large} 1 ${e.x.toFixed(2)} ${e.y.toFixed(2)}`;
-    };
-
-    const bgArc = arc(START, START + TOTAL);
-    const progressDeg = (pct / 100) * TOTAL;
-    const fgArc = arc(START, START + progressDeg);
-    // Màu dựa theo % giống trang chủ (xanh lá nếu đầy đủ, cam nếu vừa, hồng nếu thiếu)
-    const fgColor = pct >= 90 ? '#10B981' : pct >= 60 ? '#fb923c' : '#fb7185';
-
-    return (
-        <View style={{ width: SIZE, height: SIZE, alignItems: 'center', justifyContent: 'center' }}>
-            <Svg width={SIZE} height={SIZE} style={{ position: 'absolute' }}>
-                {/* Vòng nền xám */}
-                <Path d={bgArc} fill="none" stroke="#f1f5f9" strokeWidth={STROKE} strokeLinecap="round" />
-                {/* Vòng tiến độ */}
-                {fgArc ? <Path d={fgArc} fill="none" stroke={fgColor} strokeWidth={STROKE} strokeLinecap="round" /> : null}
-            </Svg>
-            {/* Text trung tâm */}
-            <View style={{ alignItems: 'center', marginTop: -8 }}>
-                <Text style={{ fontSize: 26, fontWeight: '900', color: '#1e293b', lineHeight: 30 }}>{Math.round(value)}</Text>
-                <Text style={{ fontSize: 11, fontWeight: '700', color: fgColor, lineHeight: 15 }}>{Math.round(pct)}%</Text>
-            </View>
-        </View>
-    );
 };
 
 export default function AiPlanScreen() {
@@ -84,7 +37,8 @@ export default function AiPlanScreen() {
     const loadOrGeneratePlan = async (forceRegenerate = false) => {
         try {
             setAiLoading(true);
-            const todayStr = new Date().toISOString().split('T')[0];
+            const tzOffset = new Date().getTimezoneOffset() * 60000;
+            const todayStr = new Date(Date.now() - tzOffset).toISOString().split('T')[0];
             if (!forceRegenerate) {
                 const cachedDataStr = await AsyncStorage.getItem(CACHE_KEY);
                 if (cachedDataStr) {
@@ -111,7 +65,8 @@ export default function AiPlanScreen() {
         if (!mealPlan) return;
         setIsApplying(true);
         try {
-            const dateStr = new Date().toISOString().split('T')[0];
+            const tzOffset = new Date().getTimezoneOffset() * 60000;
+            const dateStr = new Date(Date.now() - tzOffset).toISOString().split('T')[0];
             const mealsStructure = [
                 { items: mealPlan.breakfast, type: 'breakfast' },
                 { items: mealPlan.lunch, type: 'lunch' },
@@ -206,7 +161,7 @@ export default function AiPlanScreen() {
                     </View>
                     <Text className="text-slate-700 font-bold text-xl mb-2">AI đang phân tích...</Text>
                     <Text className="text-slate-500 font-medium px-12 text-center leading-6 text-sm">
-                        Đang lục quét hàng ngàn món ăn để tìm thực đơn hoàn hảo nhất cho bạn hôm nay.
+                        Đang lên thực đơn phù hợp với bạn hôm nay.
                     </Text>
                 </View>
             ) : mealPlan ? (
@@ -222,7 +177,7 @@ export default function AiPlanScreen() {
 
                             {/* Trái: Gauge Calo 270° */}
                             <View style={{ width: '40%', alignItems: 'center', top: 10, justifyContent: 'center' }}>
-                                <CalorieGauge value={totalCalo} target={targetCalo} />
+                                <AnimatedCalorieGauge value={totalCalo} target={targetCalo} delay={400} />
                             </View>
 
                             {/* Separator dọc */}
@@ -241,9 +196,7 @@ export default function AiPlanScreen() {
                                             {totalProtein}<Text className="text-slate-400 font-medium"> /{targetProtein}g</Text>
                                         </Text>
                                     </View>
-                                    <View className="bg-slate-100 rounded-full overflow-hidden" style={{ height: 6 }}>
-                                        <View className="bg-blue-400 rounded-full" style={{ height: 6, width: `${Math.min((totalProtein / (targetProtein || 1)) * 100, 100)}%` }} />
-                                    </View>
+                                    <AnimatedProgressBar progress={(totalProtein / (targetProtein || 1)) * 100} color="#60A5FA" delay={500} />
                                 </View>
                                 {/* Tinh bột */}
                                 <View>
@@ -256,9 +209,7 @@ export default function AiPlanScreen() {
                                             {totalCarb}<Text className="text-slate-400 font-medium"> /{targetCarb}g</Text>
                                         </Text>
                                     </View>
-                                    <View className="bg-slate-100 rounded-full overflow-hidden" style={{ height: 6 }}>
-                                        <View className="bg-emerald-400 rounded-full" style={{ height: 6, width: `${Math.min((totalCarb / (targetCarb || 1)) * 100, 100)}%` }} />
-                                    </View>
+                                    <AnimatedProgressBar progress={(totalCarb / (targetCarb || 1)) * 100} color="#10B981" delay={600} />
                                 </View>
                                 {/* Chất béo */}
                                 <View>
@@ -271,9 +222,7 @@ export default function AiPlanScreen() {
                                             {totalFat}<Text className="text-slate-400 font-medium"> /{targetFat}g</Text>
                                         </Text>
                                     </View>
-                                    <View className="bg-slate-100 rounded-full overflow-hidden" style={{ height: 6 }}>
-                                        <View className="bg-yellow-400 rounded-full" style={{ height: 6, width: `${Math.min((totalFat / (targetFat || 1)) * 100, 100)}%` }} />
-                                    </View>
+                                    <AnimatedProgressBar progress={(totalFat / (targetFat || 1)) * 100} color="#FACC15" delay={700} />
                                 </View>
                             </View>
                         </View>

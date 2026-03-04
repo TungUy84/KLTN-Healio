@@ -4,6 +4,33 @@ import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { authService } from '../../services/authService';
+import Animated, { FadeInDown } from 'react-native-reanimated';
+import Svg, { Defs, RadialGradient as SvgRadialGradient, Rect, Stop } from 'react-native-svg';
+
+// --- BACKGROUND AMBIENT GLOW ---
+const AmbientGlowBackground = () => (
+    <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} pointerEvents="none">
+        <Svg height="100%" width="100%">
+            <Defs>
+                <SvgRadialGradient id="grad1" cx="0%" cy="0%" rx="60%" ry="60%" fx="0%" fy="0%">
+                    <Stop offset="0%" stopColor="#10B981" stopOpacity="0.15" />
+                    <Stop offset="100%" stopColor="#10B981" stopOpacity="0" />
+                </SvgRadialGradient>
+                <SvgRadialGradient id="grad2" cx="100%" cy="30%" rx="50%" ry="50%" fx="100%" fy="30%">
+                    <Stop offset="0%" stopColor="#34D399" stopOpacity="0.1" />
+                    <Stop offset="100%" stopColor="#34D399" stopOpacity="0" />
+                </SvgRadialGradient>
+                <SvgRadialGradient id="grad3" cx="0%" cy="80%" rx="55%" ry="55%" fx="0%" fy="80%">
+                    <Stop offset="0%" stopColor="#059669" stopOpacity="0.1" />
+                    <Stop offset="100%" stopColor="#059669" stopOpacity="0" />
+                </SvgRadialGradient>
+            </Defs>
+            <Rect x="0" y="0" width="100%" height="100%" fill="url(#grad1)" />
+            <Rect x="0" y="0" width="100%" height="100%" fill="url(#grad2)" />
+            <Rect x="0" y="0" width="100%" height="100%" fill="url(#grad3)" />
+        </Svg>
+    </View>
+);
 
 // Bật Animation cho Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -120,16 +147,17 @@ export default function SignUpScreen() {
 
     return (
         <View className="flex-1 bg-white">
-            <StatusBar barStyle="dark-content" />
+            <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
+            <AmbientGlowBackground />
             <SafeAreaView className="flex-1">
 
                 {/* Header với nút Back */}
-                <View className="px-6 py-2 z-10">
+                <View className="px-6 py-2 z-10 w-full flex-row">
                     <Pressable
                         onPress={() => router.back()}
-                        className="w-10 h-10 bg-gray-50 rounded-full items-center justify-center border border-gray-100 active:bg-gray-200"
+                        className="w-11 h-11 bg-white/60 rounded-full items-center justify-center border border-white/80 shadow-sm shadow-slate-200 active:bg-slate-50"
                     >
-                        <Ionicons name="arrow-back" size={24} color="#374151" />
+                        <Ionicons name="arrow-back" size={22} color="#334155" />
                     </Pressable>
                 </View>
 
@@ -139,53 +167,55 @@ export default function SignUpScreen() {
                 >
                     <ScrollView
                         showsVerticalScrollIndicator={false}
-                        contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 24, paddingBottom: 40 }}
+                        contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 28, paddingBottom: 40 }}
                     >
 
                         {/* Header Content */}
-                        <View className="items-center mb-8 mt-2">
-                            <Image
-                                source={require('../../assets/images/logohealio.png')}
-                                className="w-60 h-40 mb-4 rounded-3xl"
-                                resizeMode="contain"
-                            />
-                            <Text className="text-3xl font-bold text-gray-900 text-center">Tạo tài khoản</Text>
-                            <Text className="text-gray-500 mt-2 text-center">Bắt đầu hành trình sống khỏe cùng Healio</Text>
-                        </View>
+                        <Animated.View entering={FadeInDown.delay(100).springify()} className="items-center mb-10 mt-2">
+                            <View className="shadow-2xl shadow-emerald-200 bg-white rounded-[32px] mb-6 p-2 border border-emerald-50">
+                                <Image
+                                    source={require('../../assets/images/iconhealio.png')}
+                                    className="w-20 h-20 rounded-[24px]"
+                                    resizeMode="cover"
+                                />
+                            </View>
+                            <Text className="text-[28px] font-black text-slate-800 text-center tracking-tight">Tạo tài khoản</Text>
+                            <Text className="text-slate-500 mt-2 text-center font-medium">Bắt đầu hành trình sống khỏe cùng Healio</Text>
+                        </Animated.View>
 
-                        <View className="gap-5">
+                        <View className="gap-6">
                             {/* Email Field */}
-                            <View>
-                                <Text className="text-gray-700 font-medium mb-2 ml-1">Email</Text>
-                                <View className="flex-row items-center border border-gray-200 rounded-2xl px-4 h-14 bg-gray-50 focus:border-emerald-500 transition-colors">
-                                    <Ionicons name="mail-outline" size={20} color="#9ca3af" />
+                            <Animated.View entering={FadeInDown.delay(200).springify()}>
+                                <Text className="text-slate-700 font-bold mb-2 ml-1 text-sm tracking-tight">Email</Text>
+                                <View className="flex-row items-center border border-slate-200 rounded-[20px] px-4 h-14 bg-white/60 focus:border-emerald-500 focus:bg-white shadow-sm shadow-slate-100 transition-colors">
+                                    <Ionicons name="mail-outline" size={20} color="#94a3b8" />
                                     <TextInput
-                                        className="flex-1 ml-3 text-gray-900 text-base"
+                                        className="flex-1 ml-3 text-slate-800 text-[16px] font-medium"
                                         placeholder="email@domain.com"
                                         value={email}
                                         onChangeText={setEmail}
                                         keyboardType="email-address"
                                         autoCapitalize="none"
-                                        placeholderTextColor="#9ca3af"
+                                        placeholderTextColor="#94a3b8"
                                     />
                                 </View>
-                            </View>
+                            </Animated.View>
 
                             {/* Password Field */}
-                            <View>
-                                <Text className="text-gray-700 font-medium mb-2 ml-1">Mật khẩu</Text>
-                                <View className="flex-row items-center border border-gray-200 rounded-2xl px-4 h-14 bg-gray-50 focus:border-emerald-500 transition-colors">
-                                    <Ionicons name="lock-closed-outline" size={20} color="#9ca3af" />
+                            <Animated.View entering={FadeInDown.delay(300).springify()}>
+                                <Text className="text-slate-700 font-bold mb-2 ml-1 text-sm tracking-tight">Mật khẩu</Text>
+                                <View className="flex-row items-center border border-slate-200 rounded-[20px] px-4 h-14 bg-white/60 focus:border-emerald-500 focus:bg-white shadow-sm shadow-slate-100 transition-colors">
+                                    <Ionicons name="lock-closed-outline" size={20} color="#94a3b8" />
                                     <TextInput
-                                        className="flex-1 ml-3 text-gray-900 text-base"
+                                        className="flex-1 ml-3 text-slate-800 text-[16px] font-medium"
                                         placeholder="Trên 10 ký tự"
                                         value={password}
                                         onChangeText={setPassword}
                                         secureTextEntry={!showPassword}
-                                        placeholderTextColor="#9ca3af"
+                                        placeholderTextColor="#94a3b8"
                                     />
-                                    <Pressable onPress={() => setShowPassword(!showPassword)} className="p-2">
-                                        <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={20} color="#9ca3af" />
+                                    <Pressable onPress={() => setShowPassword(!showPassword)} className="p-2 -mr-2">
+                                        <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={20} color="#94a3b8" />
                                     </Pressable>
                                 </View>
 
@@ -194,55 +224,57 @@ export default function SignUpScreen() {
 
                                 {/* Gợi ý mật khẩu */}
                                 {password.length === 0 && (
-                                    <Text className="text-xs text-gray-400 mt-2 ml-1 italic">
+                                    <Text className="text-[11px] text-slate-400 mt-2 ml-1 font-medium">
                                         * Mật khẩu nên có chữ hoa, số và ký tự đặc biệt
                                     </Text>
                                 )}
-                            </View>
+                            </Animated.View>
 
                             {/* Confirm Password Field */}
-                            <View>
-                                <Text className="text-gray-700 font-medium mb-2 ml-1">Xác nhận mật khẩu</Text>
-                                <View className={`flex-row items-center border rounded-2xl px-4 h-14 bg-gray-50 transition-colors ${confirmPassword && password !== confirmPassword ? 'border-red-400 bg-red-50' : 'border-gray-200 focus:border-emerald-500'}`}>
-                                    <Ionicons name="shield-checkmark-outline" size={20} color={confirmPassword && password !== confirmPassword ? "#ef4444" : "#9ca3af"} />
+                            <Animated.View entering={FadeInDown.delay(400).springify()}>
+                                <Text className="text-slate-700 font-bold mb-2 ml-1 text-sm tracking-tight">Xác nhận mật khẩu</Text>
+                                <View className={`flex-row items-center border rounded-[20px] px-4 h-14 bg-white/60 transition-colors shadow-sm ${confirmPassword && password !== confirmPassword ? 'border-red-400 shadow-red-100' : 'border-slate-200 focus:border-emerald-500 focus:bg-white shadow-slate-100'}`}>
+                                    <Ionicons name="shield-checkmark-outline" size={20} color={confirmPassword && password !== confirmPassword ? "#ef4444" : "#94a3b8"} />
                                     <TextInput
-                                        className="flex-1 ml-3 text-gray-900 text-base"
+                                        className="flex-1 ml-3 text-slate-800 text-[16px] font-medium"
                                         placeholder="Nhập lại mật khẩu"
                                         value={confirmPassword}
                                         onChangeText={setConfirmPassword}
                                         secureTextEntry={!showPassword}
-                                        placeholderTextColor="#9ca3af"
+                                        placeholderTextColor="#94a3b8"
                                     />
                                 </View>
                                 {confirmPassword && password !== confirmPassword && (
                                     <View className="flex-row items-center mt-2 ml-1">
                                         <Ionicons name="alert-circle" size={14} color="#ef4444" />
-                                        <Text className="text-red-500 text-xs ml-1 font-medium">Mật khẩu không trùng khớp</Text>
+                                        <Text className="text-red-500 text-[12px] ml-1 font-bold">Mật khẩu không trùng khớp</Text>
                                     </View>
                                 )}
-                            </View>
+                            </Animated.View>
                         </View>
 
                         {/* Sign Up Button */}
-                        <Pressable
-                            onPress={loading ? undefined : handleSignUp}
-                            disabled={loading}
-                            className={`mt-10 h-14 rounded-full items-center justify-center shadow-lg shadow-emerald-500/20 transition-all ${loading ? 'bg-emerald-300' : 'bg-emerald-500 active:opacity-90 active:scale-[0.99]'}`}
-                        >
-                            {loading ? (
-                                <ActivityIndicator color="white" />
-                            ) : (
-                                <Text className="text-white text-lg font-bold">Đăng ký tài khoản</Text>
-                            )}
-                        </Pressable>
+                        <Animated.View entering={FadeInDown.delay(500).springify()}>
+                            <Pressable
+                                onPress={loading ? undefined : handleSignUp}
+                                disabled={loading}
+                                className={`mt-10 h-14 rounded-full items-center justify-center shadow-lg transition-all ${loading ? 'bg-emerald-300 shadow-emerald-200' : 'bg-emerald-500 shadow-emerald-500/30 active:opacity-80 active:scale-[0.98]'}`}
+                            >
+                                {loading ? (
+                                    <ActivityIndicator color="white" />
+                                ) : (
+                                    <Text className="text-white text-[17px] font-bold tracking-wide">Đăng ký tài khoản</Text>
+                                )}
+                            </Pressable>
+                        </Animated.View>
 
                         {/* Login Link */}
-                        <View className="flex-row justify-center mt-8 mb-4">
-                            <Text className="text-gray-500">Đã có tài khoản? </Text>
-                            <Pressable onPress={() => router.back()} className="active:opacity-70">
+                        <Animated.View entering={FadeInDown.delay(600).springify()} className="flex-row justify-center mt-8 mb-4">
+                            <Text className="text-slate-500 font-medium">Đã có tài khoản? </Text>
+                            <Pressable onPress={() => router.back()} className="px-1 active:opacity-60">
                                 <Text className="text-emerald-600 font-bold">Đăng nhập ngay</Text>
                             </Pressable>
-                        </View>
+                        </Animated.View>
 
                     </ScrollView>
                 </KeyboardAvoidingView>

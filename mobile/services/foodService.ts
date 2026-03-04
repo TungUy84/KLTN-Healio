@@ -25,6 +25,7 @@ export interface Food {
     status: string;
     meal_categories?: string[];
     diet_tags?: string[];
+    dietPresets?: { id: number, code: string, name: string }[];
     is_favorite?: boolean;
     ingredients?: Ingredient[];
     usage_count?: number; // Số lần được thêm vào nhật ký (dữ liệu thật từ DB)
