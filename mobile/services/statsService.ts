@@ -71,3 +71,10 @@ export const getFoodInsights = async (period = '30d'): Promise<FoodInsights> => 
     const { data } = await api.get(`/users/stats/food-insights?period=${period}`);
     return data;
 };
+
+// --- Thêm API Cập nhật cân nặng ---
+export const logWeight = async (weight: number, date?: string) => {
+    const payload = date ? { weight, date } : { weight };
+    const { data } = await api.post('/users/weight-log', payload);
+    return data;
+};
