@@ -9,6 +9,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Feather, MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { userService, UserProfileUpdate } from '../../services/userService';
+import { authService } from '../../services/authService';
 import { rawFoodService } from '../../services/rawFoodService';
 import { BlurView } from 'expo-blur';
 import Animated, {
@@ -151,6 +152,29 @@ export default function ProfileScreen() {
           await AsyncStorage.removeItem('userToken');
           await AsyncStorage.removeItem('userInfo');
           router.replace('/auth/sign-in');
+        }
+      }
+    ]);
+  };
+
+  const handleResetTutorials = async () => {
+    Alert.alert('Xem lại Hướng dẫn', 'Bạn có muốn xem lại toàn bộ Hướng dẫn của ứng dụng không?', [
+      { text: 'Hủy', style: 'cancel' },
+      {
+        text: 'Đồng ý', onPress: async () => {
+          try {
+            setLoading(true);
+            await authService.resetAllEpicTutorials(); // Xoá cờ Local mọi trang Epic
+            await userService.updateProfile({ has_seen_tutorial: false }); // Bật lại Cờ trên BackEnd (Chưa xem Tutorial gốc)
+            Alert.alert('Thành công', 'Đang điều hướng về Trang Chủ...');
+            setTimeout(() => {
+              router.replace('/');
+            }, 1000);
+          } catch (e) {
+            Alert.alert('Lỗi', 'Không thể khôi phục thao tác Hướng dẫn');
+          } finally {
+            setLoading(false);
+          }
         }
       }
     ]);
@@ -306,6 +330,7 @@ export default function ProfileScreen() {
             className="bg-white/75 rounded-[36px] border border-white/60 overflow-hidden"
             style={{ shadowColor: '#8B5CF6', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.08, shadowRadius: 20 }}
           >
+            <View className="h-[1px] bg-slate-100/80 mx-5" />
             <MenuRow
               icon="user" label="Thông tin cá nhân" color="#8B5CF6"
               onPress={() => {
@@ -346,6 +371,10 @@ export default function ProfileScreen() {
                 const subject = `Góp ý ứng dụng Healio Wellness - ${profile?.full_name || 'Người dùng'}`;
                 Linking.openURL(`mailto:${email}?subject=${encodeURIComponent(subject)}`);
               }}
+            />
+            <MenuRow
+              icon="help-circle" label="Xem lại Hướng dẫn App" color="#10B981"
+              onPress={handleResetTutorials}
             />
             <View className="h-[1px] bg-slate-100/80 mx-5" />
             <MenuRow icon="log-out" label="Đăng xuất" isDestructive onPress={handleLogout} />

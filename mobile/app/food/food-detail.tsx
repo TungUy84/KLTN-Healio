@@ -16,6 +16,9 @@ import Animated, { FadeInDown, ZoomIn } from 'react-native-reanimated';
 import { foodService, Food } from '../../services/foodService';
 import { userService } from '../../services/userService';
 import { AnimatedProgressBar } from '../../components/ui/AnimatedProgressBar';
+import { useWalkthrough } from '../../context/WalkthroughContext';
+import { authService } from '../../services/authService';
+import { InteractionManager } from 'react-native';
 
 const { width } = Dimensions.get('window');
 
@@ -93,6 +96,7 @@ export default function FoodDetailScreen() {
     const [isFavorite, setIsFavorite] = useState(false);
     const [showAddModal, setShowAddModal] = useState(false);
     const [showMicros, setShowMicros] = useState(false);
+    const mountTime = React.useRef(Date.now());
 
     // Form States
     const getCurrentMealType = () => {
@@ -109,6 +113,38 @@ export default function FoodDetailScreen() {
     const [amount, setAmount] = useState('1');
     const [selectedMeal, setSelectedMeal] = useState<string>((params.mealType as string) || getCurrentMealType());
     const [userAllergies, setUserAllergies] = useState<string[]>([]);
+
+    // Walkthrough Logic
+    const { startWalkthrough, registerStep, unregisterStep } = useWalkthrough();
+    const step1Ref = React.useRef<View>(null);
+    const step2Ref = React.useRef<View>(null);
+
+    useEffect(() => {
+        registerStep("food_detail_step1", step1Ref, () => { });
+        registerStep("food_detail_step2", step2Ref, () => { });
+
+        return () => {
+            unregisterStep("food_detail_step1");
+            unregisterStep("food_detail_step2");
+        };
+    }, []);
+
+    useEffect(() => {
+        const checkTutorial = async () => {
+            if (!loading && food) { // Chờ load xong data món ăn
+                const hasSeen = await authService.checkEpicTutorial('food_detail');
+                if (!hasSeen) {
+                    setTimeout(() => {
+                        startWalkthrough([
+                            { name: 'food_detail_step1', title: 'Tùy chỉnh Khẩu Phần', content: 'Kéo thả phần thập phân hoặc bấm +/- để báo hệ thống lượng thực tế bạn đã ăn. Calo và Dinh dưỡng sẽ tự nội suy theo.' },
+                            { name: 'food_detail_step2', title: 'Ghi chép ngay', content: 'Sau khi chọn lượng ăn, bấm vào đây để đưa món này vào khẩu phần Sáng, Trưa hoặc Tối của bạn.' }
+                        ], 'food_detail');
+                    }, 50);
+                }
+            }
+        };
+        checkTutorial();
+    }, [loading, food, startWalkthrough]);
 
     useEffect(() => {
         userService.getProfile().then(u => {
@@ -395,7 +431,7 @@ export default function FoodDetailScreen() {
                 style={{ paddingBottom: (insets.bottom || 16) + 8, backgroundColor: 'rgba(255,255,255,0.85)' }}
             >
                 {/* Stepper */}
-                <View className="flex-row items-center bg-white rounded-full border border-slate-100 px-2 h-[52px] shadow-sm shadow-slate-200 mr-4">
+                <View ref={step1Ref} className="flex-row items-center bg-white rounded-full border border-slate-100 px-2 h-[52px] shadow-sm shadow-slate-200 mr-4">
                     <TouchableOpacity
                         onPress={() => setAmount((Math.max(0.5, parseFloat(amount) - 0.5)).toString())}
                         className="w-10 h-10 items-center justify-center rounded-full active:bg-slate-50"
@@ -417,20 +453,22 @@ export default function FoodDetailScreen() {
                 </View>
 
                 {/* Add Button */}
-                <TouchableOpacity
-                    onPress={() => setShowAddModal(true)}
-                    className="flex-1 h-[52px]"
-                    style={{ shadowColor: '#EA580C', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 8, elevation: 4 }}
-                    activeOpacity={0.8}
-                >
-                    <LinearGradient
-                        colors={['#FB923C', '#EA580C']}
-                        start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-                        style={{ width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center', borderRadius: 999 }}
+                <View ref={step2Ref} className="flex-1 h-[52px]">
+                    <TouchableOpacity
+                        onPress={() => setShowAddModal(true)}
+                        className="flex-1 h-[52px]"
+                        style={{ shadowColor: '#EA580C', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 8, elevation: 4 }}
+                        activeOpacity={0.8}
                     >
-                        <Text className="text-[16px] font-bold text-white tracking-wide">Thêm món ăn</Text>
-                    </LinearGradient>
-                </TouchableOpacity>
+                        <LinearGradient
+                            colors={['#FB923C', '#EA580C']}
+                            start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+                            style={{ width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center', borderRadius: 999 }}
+                        >
+                            <Text className="text-[16px] font-bold text-white tracking-wide">Thêm món ăn</Text>
+                        </LinearGradient>
+                    </TouchableOpacity>
+                </View>
             </BlurView>
 
             {/* ==== DIARY MODAL (GIỮ LẠI LOGIC CHỈ CẢI TIẾN NHẸ UI) ==== */}

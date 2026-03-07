@@ -11,6 +11,8 @@ import { BlurView } from "expo-blur";
 import Svg, { Defs, RadialGradient as SvgRadialGradient, Rect, Stop, Path } from "react-native-svg";
 import { userService } from "../../services/userService";
 import { foodService } from "../../services/foodService";
+import { authService } from "../../services/authService";
+import { useWalkthrough } from "../../context/WalkthroughContext";
 import { AnimatedProgressBar } from "../../components/ui/AnimatedProgressBar";
 import { AnimatedCalorieGauge } from "../../components/ui/AnimatedCalorieGauge";
 
@@ -499,6 +501,36 @@ export default function DiaryScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [dailyLog, setDailyLog] = useState<any>(null);
 
+  const { startWalkthrough, registerStep, unregisterStep } = useWalkthrough();
+  const step1Ref = React.useRef<View>(null);
+  const step2Ref = React.useRef<View>(null);
+
+  useEffect(() => {
+    registerStep("diary_step1", step1Ref, () => { });
+    registerStep("diary_step2", step2Ref, () => { });
+    return () => {
+      unregisterStep("diary_step1");
+      unregisterStep("diary_step2");
+    };
+  }, []);
+
+  useEffect(() => {
+    const checkTutorial = async () => {
+      if (!isLoading) {
+        const hasSeen = await authService.checkEpicTutorial('diary');
+        if (!hasSeen) {
+          setTimeout(() => {
+            startWalkthrough([
+              { name: 'diary_step1', title: 'Tổng Quan Trong Ngày', content: 'Cập nhật nhanh Năng lượng và Nhóm chất (Đạm, Đường, Béo) bạn đã nạp trong ngày.' },
+              { name: 'diary_step2', title: 'Thực đơn Bữa Ăn', content: 'Ghi chép và theo dõi xem từng buổi Sáng/Trưa/Tối bạn đã nạp vào những món gì.' }
+            ], 'diary');
+          }, 50);
+        }
+      }
+    };
+    checkTutorial();
+  }, [isLoading, startWalkthrough]);
+
   const scrollY = useSharedValue(0);
   const scrollHandler = useAnimatedScrollHandler({
     onScroll: (e) => {
@@ -702,24 +734,28 @@ export default function DiaryScreen() {
           </View>
         ) : (
           <>
-            <DailyOverviewCard data={dailyLog} />
-
-            <View className="px-5 mb-4">
-              <Text className="text-[24px] font-black text-slate-800 tracking-tight">
-                Thực đơn chi tiết
-              </Text>
+            <View ref={step1Ref}>
+              <DailyOverviewCard data={dailyLog} />
             </View>
 
-            {(["breakfast", "lunch", "dinner", "snack"] as const).map(
-              (type) => (
-                <MealCard
-                  key={type}
-                  mealType={type}
-                  meal={dailyLog?.meals?.[type]}
-                  onRefresh={() => fetchDailyData(selectedDate)}
-                />
-              ),
-            )}
+            <View ref={step2Ref}>
+              <View className="px-5 mb-4">
+                <Text className="text-[24px] font-black text-slate-800 tracking-tight">
+                  Thực đơn chi tiết
+                </Text>
+              </View>
+
+              {(["breakfast", "lunch", "dinner", "snack"] as const).map(
+                (type) => (
+                  <MealCard
+                    key={type}
+                    mealType={type}
+                    meal={dailyLog?.meals?.[type]}
+                    onRefresh={() => fetchDailyData(selectedDate)}
+                  />
+                ),
+              )}
+            </View>
 
             <MicronutrientsCard data={dailyLog} />
           </>

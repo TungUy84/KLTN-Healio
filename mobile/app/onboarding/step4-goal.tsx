@@ -38,9 +38,9 @@ export default function Step4Goal() {
     // Helper để hiển thị thông báo trạng thái (AC3)
     const getReason = () => {
         if (currentW === 0 || targetW === 0) return 'Nhập cân nặng để xem mục tiêu';
-        if (targetW < currentW) return `Bạn muốn giảm ${(currentW - targetW).toFixed(1).replace(/\.0$/, '')} kg 🔥`;
-        if (targetW > currentW) return `Bạn muốn tăng ${(targetW - currentW).toFixed(1).replace(/\.0$/, '')} kg 💪`;
-        return 'Bạn muốn duy trì cân nặng 🧘';
+        if (targetW < currentW) return `Bạn muốn giảm ${(currentW - targetW).toFixed(1).replace(/\.0$/, '')} kg`;
+        if (targetW > currentW) return `Bạn muốn tăng ${(targetW - currentW).toFixed(1).replace(/\.0$/, '')} kg`;
+        return 'Bạn muốn duy trì cân nặng';
     };
 
     return (
@@ -70,10 +70,6 @@ export default function Step4Goal() {
 
                 {/* Header Content */}
                 <Animated.View entering={FadeInDown.delay(100).springify()} className="items-center mt-4">
-                    <View className="flex-row items-center bg-white/60 px-4 py-2 rounded-full border border-white mb-6 shadow-sm shadow-emerald-100 backdrop-blur-md">
-                        <Ionicons name="flag" size={16} color="#059669" />
-                        <Text className="text-emerald-700 font-bold ml-2 tracking-widest text-[12px] uppercase">Hành trình</Text>
-                    </View>
                     <Text className="text-[36px] font-black text-slate-800 text-center mb-3 tracking-tighter shadow-sm">Mục tiêu của bạn</Text>
                     <Text className="text-slate-600 text-center text-[16px] font-medium px-4">
                         Hãy cho chúng tôi biết cân nặng mong muốn của bạn.

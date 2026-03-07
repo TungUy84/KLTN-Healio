@@ -51,10 +51,6 @@ export default function Step3Activity() {
 
                 {/* Header Content */}
                 <Animated.View entering={FadeInDown.delay(100).springify()} className="items-center mt-4">
-                    <View className="flex-row items-center bg-white/60 px-4 py-2 rounded-full border border-white mb-6 shadow-sm shadow-emerald-100 backdrop-blur-md">
-                        <Ionicons name="fitness" size={16} color="#059669" />
-                        <Text className="text-emerald-700 font-bold ml-2 tracking-widest text-[12px] uppercase">Thói quen</Text>
-                    </View>
                     <Text className="text-[36px] font-black text-slate-800 text-center mb-3 tracking-tighter shadow-sm">Mức độ vận động</Text>
                     <Text className="text-slate-600 text-center text-[16px] font-medium px-4">
                         Chọn cường độ phù hợp nhất với sinh hoạt hàng ngày.

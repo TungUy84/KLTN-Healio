@@ -12,6 +12,7 @@ export interface UserProfileUpdate {
   goal_weight?: number;
   allergies?: string[];
   diet_preset_code?: string;
+  has_seen_tutorial?: boolean;
 }
 
 export interface CalculatedMetrics {

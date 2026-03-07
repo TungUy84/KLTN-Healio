@@ -509,7 +509,7 @@ exports.getProfile = async (req, res) => {
     try {
         const userId = req.user.id;
         const user = await User.findByPk(userId, {
-            attributes: ['id', 'email', 'full_name', 'role', 'avatar'],
+            attributes: ['id', 'email', 'full_name', 'role', 'avatar', 'has_seen_tutorial'],
             include: [
                 { model: UserProfile },
                 { model: UserNutritionTarget, include: [DietPreset] }
@@ -764,6 +764,23 @@ exports.getDietPresets = async (req, res) => {
         let presets = await DietPreset.findAll();
         res.json(presets);
     } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
+
+// Tutorial Walkthrough Endpoints
+exports.markTutorialSeen = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const user = await User.findByPk(userId);
+
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        await user.update({ has_seen_tutorial: true });
+
+        res.json({ success: true, message: 'Tutorial marked as seen' });
+    } catch (err) {
+        console.error('markTutorialSeen Error:', err);
         res.status(500).json({ message: err.message });
     }
 };

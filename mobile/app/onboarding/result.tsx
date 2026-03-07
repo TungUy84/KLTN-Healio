@@ -188,132 +188,141 @@ export default function ResultScreen() {
     const bmiInfo = getBMIInfo(metrics.bmi);
 
     return (
-        <SafeAreaView className="flex-1 bg-white">
+        <View className="flex-1 bg-white">
             <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
             <AnimatedBackground color1={currentTheme[0]} color2={currentTheme[1]} color3={currentTheme[2]} />
 
-            {/* Header */}
-            <View className="px-8 py-4 pt-6 flex-row items-center border-b border-white/20 z-10">
-                <Pressable onPress={() => router.back()} className="w-11 h-11 bg-white/40 rounded-full items-center justify-center active:bg-white/60 backdrop-blur-md shadow-sm border border-white/50">
-                    <Ionicons name="chevron-back" size={24} color="#0f172a" />
-                </Pressable>
-                <Text className="flex-1 text-center text-[22px] font-black text-slate-800 tracking-tight mr-11">Tổng kết lộ trình</Text>
-            </View>
+            {/* Header Style giống Step 1-5 */}
+            <SafeAreaView edges={['top']} className="px-8 pb-4 pt-6">
+                {/* Navbar */}
+                <View className="flex-row justify-between items-center mb-6">
+                    <Pressable onPress={() => router.back()} className="w-11 h-11 bg-white/40 rounded-full items-center justify-center active:bg-white/60 backdrop-blur-md border border-white/50 shadow-sm shadow-emerald-100">
+                        <Ionicons name="arrow-back" size={24} color="#064e3b" />
+                    </Pressable>
+                </View>
 
-            <ScrollView className="flex-1 px-8 pt-6" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
-                <Animated.Text entering={FadeInDown.delay(100).springify()} className="text-slate-700 text-center text-[15px] font-medium mb-8 leading-6 px-2 shadow-sm">
-                    Dựa trên thông tin của bạn, Healio đã tạo ra một kỷ nguyên mới cho sức khỏe của bạn.
-                </Animated.Text>
+                {/* Header Content */}
+                <Animated.View entering={FadeInDown.delay(100).springify()} className="items-center mt-0">
+                    <Text className="text-[36px] font-black text-slate-800 text-center mb-3 tracking-tighter shadow-sm">Tổng kết lộ trình</Text>
+                    <Text className="text-slate-600 text-center text-[16px] font-medium px-4">
+                        Dựa trên thông tin của bạn, Healio đã tính toán và đưa ra lộ trình phù hợp với bạn.
+                    </Text>
+                </Animated.View>
+            </SafeAreaView>
 
+            {/* Content Area */}
+            <ScrollView className="flex-1 px-8 pt-8" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 150 }}>
                 {/* Hero Card - Glassmorphism Look */}
-                <Animated.View entering={FadeInDown.delay(200).springify()} className="bg-white/40 rounded-[40px] p-8 mb-8 shadow-2xl shadow-emerald-500/20 items-center relative overflow-hidden border border-white/60 backdrop-blur-2xl">
-                    <View className="absolute top-0 right-0 w-64 h-64 bg-white/20 rounded-full -mr-20 -mt-20 blur-2xl" />
-                    <View className="absolute bottom-0 left-0 w-48 h-48 bg-white/20 rounded-full -ml-16 -mb-16 blur-2xl" />
+                <Animated.View entering={FadeInDown.delay(200).springify()}>
+                    <Text className="text-slate-700 text-[15px] font-bold mb-3 ml-1 tracking-tight">Mục tiêu hằng ngày</Text>
+                    <View className="bg-white/40 rounded-[40px] p-8 mb-8 shadow-2xl shadow-emerald-500/20 items-center relative overflow-hidden border border-white/60 backdrop-blur-2xl">
+                        <View className="absolute top-0 right-0 w-64 h-64 bg-white/20 rounded-full -mr-20 -mt-20 blur-2xl" />
+                        <View className="absolute bottom-0 left-0 w-48 h-48 bg-white/20 rounded-full -ml-16 -mb-16 blur-2xl" />
 
-                    <View className="bg-white/60 px-5 py-2 rounded-full mb-4 border border-white/80 shadow-sm flex-row items-center">
-                        <Ionicons name="flame" size={16} color="#059669" style={{ marginRight: 6 }} />
-                        <Text className="text-emerald-800 text-[12px] font-bold uppercase tracking-widest">Mục tiêu hằng ngày</Text>
-                    </View>
+                        <View className="flex-row items-baseline mb-5 mt-2">
+                            <Text className="text-[64px] font-black text-slate-800 mr-2 tracking-tighter drop-shadow-md">{Math.round(metrics.daily_calories).toLocaleString()}</Text>
+                            <Text className="text-[20px] font-bold text-slate-600">kcal</Text>
+                        </View>
 
-                    <View className="flex-row items-baseline mb-5">
-                        <Text className="text-[64px] font-black text-slate-800 mr-2 tracking-tighter drop-shadow-md">{Math.round(metrics.daily_calories).toLocaleString()}</Text>
-                        <Text className="text-[20px] font-bold text-slate-600">Kcal</Text>
-                    </View>
-
-                    <View className="bg-slate-800 px-6 py-3 rounded-full flex-row items-center shadow-xl shadow-slate-900/30">
-                        <Ionicons name="flag" size={18} color="#bef264" style={{ marginRight: 8 }} />
-                        <Text className="text-white font-bold text-[15px] tracking-wide">{getGoalLabel(data.goalType)}</Text>
+                        <View className="bg-white/50 px-6 py-3 rounded-full flex-row items-center border border-white/60 shadow-sm shadow-emerald-100">
+                            <Ionicons name="flag" size={18} color="#059669" style={{ marginRight: 8 }} />
+                            <Text className="text-emerald-800 font-bold text-[15px] tracking-wide">{getGoalLabel(data.goalType)}</Text>
+                        </View>
                     </View>
                 </Animated.View>
 
                 {/* 3 Stats Row: BMI, BMR, TDEE */}
-                <Animated.View entering={FadeInDown.delay(300).springify()} className="flex-row gap-3 mb-8">
-                    {/* BMI */}
-                    <View className="flex-1 bg-white/60 p-5 rounded-[28px] items-center border border-white/60 shadow-lg shadow-blue-100 backdrop-blur-xl relative overflow-hidden">
-                        <View className="w-12 h-12 bg-blue-100 rounded-full items-center justify-center mb-4">
-                            <Ionicons name="pulse" size={24} color="#3b82f6" />
-                        </View>
-                        <Text className="text-slate-500 text-[12px] font-bold uppercase mb-1 tracking-widest">BMI</Text>
-                        <Text className="text-slate-800 text-[26px] font-black mb-3 tracking-tight">{metrics.bmi}</Text>
-                        <View className={`px-3 py-1.5 rounded-full border shadow-sm ${bmiInfo.bg} ${bmiInfo.color.replace('text-', 'border-').replace('500', '200')}`}>
-                            <Text className={`text-[11px] font-bold ${bmiInfo.color}`}>{bmiInfo.label}</Text>
-                        </View>
-                    </View>
-
-                    <View className="flex-1 gap-3">
-                        {/* BMR */}
-                        <View className="flex-1 bg-white/60 p-4 rounded-[28px] items-center justify-center border border-white/60 shadow-lg shadow-orange-100 backdrop-blur-xl flex-row">
-                            <View className="w-10 h-10 bg-orange-100 rounded-full items-center justify-center mr-3">
-                                <Ionicons name="bonfire" size={20} color="#f97316" />
+                <Animated.View entering={FadeInDown.delay(300).springify()}>
+                    <Text className="text-slate-700 text-[15px] font-bold mb-3 ml-1 tracking-tight">Chỉ số cơ thể</Text>
+                    <View className="flex-row gap-3 mb-8">
+                        {/* BMI */}
+                        <View className="flex-1 bg-white/60 p-5 rounded-[28px] items-center border border-white/60 shadow-lg shadow-blue-100 backdrop-blur-xl relative overflow-hidden">
+                            <View className="w-12 h-12 bg-blue-100 rounded-full items-center justify-center mb-4">
+                                <Ionicons name="pulse" size={24} color="#3b82f6" />
                             </View>
-                            <View>
-                                <Text className="text-slate-500 text-[11px] font-bold uppercase mb-0.5 tracking-widest">BMR</Text>
-                                <Text className="text-slate-800 text-[18px] font-black tracking-tight">{Math.round(metrics.bmr)}</Text>
+                            <Text className="text-slate-500 text-[12px] font-bold uppercase mb-1 tracking-widest">BMI</Text>
+                            <Text className="text-slate-800 text-[26px] font-black mb-3 tracking-tight">{metrics.bmi}</Text>
+                            <View className={`px-3 py-1.5 rounded-full border shadow-sm ${bmiInfo.bg} ${bmiInfo.color.replace('text-', 'border-').replace('500', '200')}`}>
+                                <Text className={`text-[11px] font-bold ${bmiInfo.color}`}>{bmiInfo.label}</Text>
                             </View>
                         </View>
 
-                        {/* TDEE */}
-                        <View className="flex-1 bg-white/60 p-4 rounded-[28px] items-center justify-center border border-white/60 shadow-lg shadow-purple-100 backdrop-blur-xl flex-row">
-                            <View className="w-10 h-10 bg-purple-100 rounded-full items-center justify-center mr-3">
-                                <Ionicons name="flash" size={20} color="#a855f7" />
+                        <View className="flex-1 gap-3">
+                            {/* BMR */}
+                            <View className="flex-1 bg-white/60 p-4 rounded-[28px] items-center justify-center border border-white/60 shadow-lg shadow-orange-100 backdrop-blur-xl flex-row">
+                                <View className="w-10 h-10 bg-orange-100 rounded-full items-center justify-center mr-3">
+                                    <Ionicons name="bonfire" size={20} color="#f97316" />
+                                </View>
+                                <View>
+                                    <Text className="text-slate-500 text-[11px] font-bold uppercase mb-0.5 tracking-widest">BMR</Text>
+                                    <Text className="text-slate-800 text-[18px] font-black tracking-tight">{Math.round(metrics.bmr)}</Text>
+                                </View>
                             </View>
-                            <View>
-                                <Text className="text-slate-500 text-[11px] font-bold uppercase mb-0.5 tracking-widest">TDEE</Text>
-                                <Text className="text-slate-800 text-[18px] font-black tracking-tight">{Math.round(metrics.tdee)}</Text>
+
+                            {/* TDEE */}
+                            <View className="flex-1 bg-white/60 p-4 rounded-[28px] items-center justify-center border border-white/60 shadow-lg shadow-purple-100 backdrop-blur-xl flex-row">
+                                <View className="w-10 h-10 bg-purple-100 rounded-full items-center justify-center mr-3">
+                                    <Ionicons name="flash" size={20} color="#a855f7" />
+                                </View>
+                                <View>
+                                    <Text className="text-slate-500 text-[11px] font-bold uppercase mb-0.5 tracking-widest">TDEE</Text>
+                                    <Text className="text-slate-800 text-[18px] font-black tracking-tight">{Math.round(metrics.tdee)}</Text>
+                                </View>
                             </View>
                         </View>
                     </View>
                 </Animated.View>
 
                 {/* Macro Distribution */}
-                {/* Macro Distribution */}
-                <Animated.View entering={FadeInDown.delay(400).springify()} className="bg-white/60 p-6 rounded-[32px] shadow-xl shadow-slate-200/50 border border-white/60 mb-6 backdrop-blur-xl">
-                    <View className="flex-row justify-between items-center mb-8">
-                        <Text className="text-[20px] font-black text-slate-800 tracking-tight">Phân bổ chất</Text>
-                        <View className="bg-white/80 px-4 py-2 rounded-full shadow-sm border border-slate-100">
-                            <Text className="text-[13px] font-bold text-slate-700">{data.dietPreset?.name || 'Cân bằng'}</Text>
+                <Animated.View entering={FadeInDown.delay(400).springify()}>
+                    <Text className="text-slate-700 text-[15px] font-bold mb-3 ml-1 tracking-tight">Phân bổ dinh dưỡng</Text>
+                    <View className="bg-white/60 p-6 rounded-[32px] shadow-xl shadow-slate-200/50 border border-white/60 mb-6 backdrop-blur-xl">
+                        <View className="flex-row justify-between items-center mb-8">
+                            <View className="bg-white/80 px-4 py-2 rounded-full shadow-sm border border-slate-100">
+                                <Text className="text-[13px] font-bold text-slate-700">{data.dietPreset?.name || 'Cân bằng'}</Text>
+                            </View>
                         </View>
-                    </View>
 
-                    <View className="flex-row items-center justify-between px-1">
-                        {/* Donut Chart */}
-                        <MacroDonut protein={pPercent} carb={cPercent} fat={fPercent} />
+                        <View className="flex-row items-center justify-between px-1">
+                            {/* Donut Chart */}
+                            <MacroDonut protein={pPercent} carb={cPercent} fat={fPercent} />
 
-                        {/* Legend */}
-                        <View className="flex-1 ml-6 justify-center gap-6">
-                            {/* Carbs - Green */}
-                            <View className="flex-row items-center justify-between">
-                                <View className="flex-row items-center">
-                                    <View className="w-4 h-4 rounded-full bg-[#10b981] mr-3 shadow-md shadow-emerald-200 border-2 border-white" />
-                                    <Text className="text-slate-700 font-bold text-[15px]">Carbs</Text>
+                            {/* Legend */}
+                            <View className="flex-1 ml-6 justify-center gap-6">
+                                {/* Carbs - Green */}
+                                <View className="flex-row items-center justify-between">
+                                    <View className="flex-row items-center">
+                                        <View className="w-4 h-4 rounded-full bg-[#10b981] mr-3 shadow-md shadow-emerald-200 border-2 border-white" />
+                                        <Text className="text-slate-700 font-bold text-[15px]">Carbs</Text>
+                                    </View>
+                                    <View className="items-end">
+                                        <Text className="text-slate-900 font-black text-[16px]">{cPercent}%</Text>
+                                        <Text className="text-slate-500 text-[13px] font-bold">{Math.round(metrics.carb || 0)}g</Text>
+                                    </View>
                                 </View>
-                                <View className="items-end">
-                                    <Text className="text-slate-900 font-black text-[16px]">{cPercent}%</Text>
-                                    <Text className="text-slate-500 text-[13px] font-bold">{Math.round(metrics.carb || 0)}g</Text>
-                                </View>
-                            </View>
 
-                            {/* Protein - Orange */}
-                            <View className="flex-row items-center justify-between">
-                                <View className="flex-row items-center">
-                                    <View className="w-4 h-4 rounded-full bg-[#f97316] mr-3 shadow-md shadow-orange-200 border-2 border-white" />
-                                    <Text className="text-slate-700 font-bold text-[15px]">Protein</Text>
+                                {/* Protein - Orange */}
+                                <View className="flex-row items-center justify-between">
+                                    <View className="flex-row items-center">
+                                        <View className="w-4 h-4 rounded-full bg-[#f97316] mr-3 shadow-md shadow-orange-200 border-2 border-white" />
+                                        <Text className="text-slate-700 font-bold text-[15px]">Protein</Text>
+                                    </View>
+                                    <View className="items-end">
+                                        <Text className="text-slate-900 font-black text-[16px]">{pPercent}%</Text>
+                                        <Text className="text-slate-400 text-[12px] font-medium">{Math.round(metrics.protein || 0)}g</Text>
+                                    </View>
                                 </View>
-                                <View className="items-end">
-                                    <Text className="text-slate-900 font-black text-[16px]">{pPercent}%</Text>
-                                    <Text className="text-slate-400 text-[12px] font-medium">{Math.round(metrics.protein || 0)}g</Text>
-                                </View>
-                            </View>
 
-                            {/* Fat - Blue */}
-                            <View className="flex-row items-center justify-between">
-                                <View className="flex-row items-center">
-                                    <View className="w-3.5 h-3.5 rounded-full bg-blue-500 mr-3 shadow-sm shadow-blue-200" />
-                                    <Text className="text-slate-600 font-bold text-[14px]">Fat</Text>
-                                </View>
-                                <View className="items-end">
-                                    <Text className="text-slate-900 font-black text-[16px]">{fPercent}%</Text>
-                                    <Text className="text-slate-400 text-[12px] font-medium">{Math.round(metrics.fat || 0)}g</Text>
+                                {/* Fat - Blue */}
+                                <View className="flex-row items-center justify-between">
+                                    <View className="flex-row items-center">
+                                        <View className="w-3.5 h-3.5 rounded-full bg-blue-500 mr-3 shadow-sm shadow-blue-200" />
+                                        <Text className="text-slate-600 font-bold text-[14px]">Fat</Text>
+                                    </View>
+                                    <View className="items-end">
+                                        <Text className="text-slate-900 font-black text-[16px]">{fPercent}%</Text>
+                                        <Text className="text-slate-400 text-[12px] font-medium">{Math.round(metrics.fat || 0)}g</Text>
+                                    </View>
                                 </View>
                             </View>
                         </View>
@@ -322,15 +331,14 @@ export default function ResultScreen() {
 
             </ScrollView>
 
-            {/* Bottom Button */}
-            <View className="absolute bottom-6 left-6 right-6 z-50">
+            {/* Bottom Button - Đáy Cố Định Nổi Bật */}
+            <View className="absolute bottom-8 left-8 right-8 z-50">
                 <Animated.View entering={FadeInDown.delay(500).springify()}>
                     <Pressable
-                        className={`w-full h-[72px] rounded-[36px] flex-row items-center justify-between px-2 shadow-2xl active:scale-[0.98] transition-all bg-slate-900 shadow-slate-900/30 overflow-hidden relative`}
+                        className={`h-[72px] rounded-[36px] flex-row items-center justify-between px-2 shadow-xl transition-all active:scale-[0.98] active:opacity-90 bg-slate-900 shadow-slate-900/20`}
                         onPress={handleFinish}
                         disabled={loading}
                     >
-                        <View className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-400 to-teal-500 opacity-20" />
                         {loading ? (
                             <View className="flex-1 items-center justify-center">
                                 <ActivityIndicator color="white" />
@@ -338,16 +346,16 @@ export default function ResultScreen() {
                         ) : (
                             <>
                                 <View className="pl-6 flex-1 items-center">
-                                    <Text className="text-white text-[18px] font-bold tracking-wide text-center uppercase">Bắt đầu hành trình</Text>
+                                    <Text className="text-white text-[18px] font-bold tracking-wide text-center">Bắt đầu hành trình</Text>
                                 </View>
                                 <View className="w-14 h-14 rounded-full items-center justify-center shadow-md bg-emerald-500 shadow-emerald-500/50">
-                                    <Ionicons name="rocket" size={24} color="white" />
+                                    <Ionicons name="arrow-forward" size={24} color="white" />
                                 </View>
                             </>
                         )}
                     </Pressable>
                 </Animated.View>
             </View>
-        </SafeAreaView>
+        </View>
     );
 }

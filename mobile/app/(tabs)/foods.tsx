@@ -12,6 +12,8 @@ import { BlurView } from 'expo-blur';
 import Svg, { Defs, RadialGradient as SvgRadialGradient, Rect, Stop, Path } from 'react-native-svg';
 import { foodService, Food } from '../../services/foodService';
 import { userService } from '../../services/userService';
+import { authService } from '../../services/authService';
+import { useWalkthrough } from '../../context/WalkthroughContext';
 
 const { width } = Dimensions.get('window');
 const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
@@ -161,6 +163,42 @@ export default function FoodsScreen() {
         opacity: interpolate(scrollY.value, [0, 50], [0, 1], Extrapolation.CLAMP)
     }));
 
+    // Walkthrough Logic
+    const { startWalkthrough, registerStep, unregisterStep } = useWalkthrough();
+    const searchRef = React.useRef<View>(null);
+    const categoryRef = React.useRef<View>(null);
+    const favoriteRef = React.useRef<View>(null);
+
+    useEffect(() => {
+        registerStep("funds_search", searchRef, () => { });
+        registerStep("funds_category", categoryRef, () => { });
+        registerStep("funds_favorite", favoriteRef, () => { });
+        return () => {
+            unregisterStep("funds_search");
+            unregisterStep("funds_category");
+            unregisterStep("funds_favorite");
+        };
+    }, []);
+
+    useEffect(() => {
+        const checkTutorial = async () => {
+            const hasSeen = await authService.checkEpicTutorial('foods');
+            if (!hasSeen) {
+                setTimeout(() => {
+                    startWalkthrough([
+                        { name: 'funds_search', title: 'Tìm kiếm Món Ăn', content: 'Nhấn vào đây để gõ tên món ăn bạn muốn tìm kiếm, từ phở, bún, đến các món nhậu.' },
+                        { name: 'funds_category', title: 'Lọc Theo Bữa', content: 'Chọn nhanh danh sách thực đơn phù hợp cho các buổi Sáng, Trưa, Tối, hoặc các chế độ đặc biệt.' },
+                        { name: 'funds_favorite', title: 'Mục Yêu Thích', content: 'Những món bạn đã thả tim sẽ được lưu giữ tại đây để dễ dàng thêm vào thực đơn lần sau.' }
+                    ], 'foods');
+                }, 50);
+            }
+        };
+        // Chỉ chạy sau khi load xong popular foods cho mượt
+        if (!loading && popularFoods.length > 0) {
+            checkTutorial();
+        }
+    }, [popularFoods.length, loading, startWalkthrough]);
+
     useEffect(() => {
         userService.getProfile().then(user => {
             if (user?.UserNutritionTarget?.DietPreset?.code) {
@@ -280,32 +318,38 @@ export default function FoodsScreen() {
                         <Text className="text-[22px] font-black text-slate-800 tracking-tight">Món Ăn</Text>
                     </View>
 
-                    <TouchableOpacity className="w-11 h-11 rounded-full bg-white/60 items-center justify-center border border-white/60 shadow-sm shadow-slate-200" onPress={() => router.push('/food/favorites')}>
-                        <Feather name="heart" size={20} color="#F43F5E" />
-                    </TouchableOpacity>
+                    <View ref={favoriteRef}>
+                        <TouchableOpacity className="w-11 h-11 rounded-full bg-white/60 items-center justify-center border border-white/60 shadow-sm shadow-slate-200" onPress={() => router.push('/food/favorites')}>
+                            <Feather name="heart" size={20} color="#F43F5E" />
+                        </TouchableOpacity>
+                    </View>
                 </View>
 
                 {/* 2. Scrollable Filters */}
                 <View className="px-5 flex-row items-center">
-                    <TouchableOpacity onPress={() => router.push('/food/food-search')} className="w-[48px] h-[48px] rounded-full bg-white/60 items-center justify-center border border-white/60 shadow-sm shadow-slate-200 mr-3">
-                        <Feather name="search" size={20} color="#334155" />
-                    </TouchableOpacity>
-                    <FlatList
-                        horizontal
-                        showsHorizontalScrollIndicator={false}
-                        data={CATEGORIES}
-                        keyExtractor={i => i.id}
-                        contentContainerStyle={{ paddingRight: 20 }}
-                        renderItem={({ item }) => (
-                            <AnimatedTouchableOpacity
-                                layout={LinearTransition.springify()}
-                                onPress={() => setActiveCategory(item.id)}
-                                className={`mr-3 px-5 py-3.5 rounded-full border shadow-sm ${activeCategory === item.id ? 'bg-white border-white shadow-slate-200' : 'bg-white/40 border-white/40 shadow-transparent'}`}
-                            >
-                                <Text className={`text-[15px] font-bold ${activeCategory === item.id ? 'text-slate-800' : 'text-slate-500'}`}>{item.name}</Text>
-                            </AnimatedTouchableOpacity>
-                        )}
-                    />
+                    <View ref={searchRef} className="mr-3">
+                        <TouchableOpacity onPress={() => router.push('/food/food-search')} className="w-[48px] h-[48px] rounded-full bg-white/60 items-center justify-center border border-white/60 shadow-sm shadow-slate-200 mr-3">
+                            <Feather name="search" size={20} color="#334155" />
+                        </TouchableOpacity>
+                    </View>
+                    <View ref={categoryRef} className="flex-1">
+                        <FlatList
+                            horizontal
+                            showsHorizontalScrollIndicator={false}
+                            data={CATEGORIES}
+                            keyExtractor={i => i.id}
+                            contentContainerStyle={{ paddingRight: 20 }}
+                            renderItem={({ item }) => (
+                                <AnimatedTouchableOpacity
+                                    layout={LinearTransition.springify()}
+                                    onPress={() => setActiveCategory(item.id)}
+                                    className={`mr-3 px-5 py-3.5 rounded-full border shadow-sm ${activeCategory === item.id ? 'bg-white border-white shadow-slate-200' : 'bg-white/40 border-white/40 shadow-transparent'}`}
+                                >
+                                    <Text className={`text-[15px] font-bold ${activeCategory === item.id ? 'text-slate-800' : 'text-slate-500'}`}>{item.name}</Text>
+                                </AnimatedTouchableOpacity>
+                            )}
+                        />
+                    </View>
                 </View>
             </BlurView>
 

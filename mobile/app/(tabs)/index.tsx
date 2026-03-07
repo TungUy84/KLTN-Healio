@@ -1,9 +1,11 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StatusBar, RefreshControl, Image, ImageBackground, Modal, ActivityIndicator, Alert, DeviceEventEmitter, Dimensions } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StatusBar, RefreshControl, Image, ImageBackground, Modal, ActivityIndicator, Alert, DeviceEventEmitter, Dimensions, InteractionManager } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Feather, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { Wheat, Beef, Droplet, Flame } from 'lucide-react-native';
+import { Wheat, Beef, Droplet, Flame, UtensilsCrossed } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeInUp, FadeInLeft, FadeInRight, LinearTransition, useSharedValue, useAnimatedStyle, withSpring, interpolate, useAnimatedScrollHandler, Extrapolation } from 'react-native-reanimated';
+import { useWalkthrough } from '../../context/WalkthroughContext';
+import { authService } from '../../services/authService';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Defs, RadialGradient as SvgRadialGradient, Rect, Stop } from 'react-native-svg';
@@ -115,6 +117,7 @@ export default function SuperAppHomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [refreshing, setRefreshing] = useState(false);
+  const mountTime = useRef(Date.now());
 
   // --- ANIMATED HEADER SETUP ---
   const scrollY = useSharedValue(0);
@@ -162,6 +165,25 @@ export default function SuperAppHomeScreen() {
 
   const IMAGE_BASE_URL = process.env.EXPO_PUBLIC_API_URL?.replace('/api', '') || 'http://10.0.2.2:3000';
 
+  // Walkthrough Refs & Logic
+  const { startWalkthrough, registerStep, unregisterStep } = useWalkthrough();
+  const step1Ref = useRef<View>(null);
+  const step2Ref = useRef<View>(null);
+  const step3Ref = useRef<View>(null);
+
+  useEffect(() => {
+    // Đăng ký các component vào hệ thống measure
+    registerStep('step1', step1Ref, () => { });
+    registerStep('step2', step2Ref, () => { });
+    registerStep('step3', step3Ref, () => { });
+
+    return () => {
+      unregisterStep('step1');
+      unregisterStep('step2');
+      unregisterStep('step3');
+    };
+  }, []);
+
   const fetchMetrics = async () => {
     try {
       const tzOffset = new Date().getTimezoneOffset() * 60000;
@@ -174,6 +196,21 @@ export default function SuperAppHomeScreen() {
 
       setMetrics(metricsData);
       setUserProfile(profile);
+
+      // Kích hoạt Walkthrough Home nếu user chưa xem bao giờ
+      // Do PostgreSQL cache có thể trả về null, ta kiểm tra !== true
+      if (profile && profile.has_seen_tutorial !== true) {
+        // Xoá mọi cờ đã xem đối với các màn hình con khác lưu trong máy điện thoại
+        await authService.resetAllEpicTutorials();
+
+        setTimeout(() => {
+          startWalkthrough([
+            { name: 'step1', title: 'Quản lý Năng lượng', content: 'Vòng tròn hiển thị lượng Calo bạn đã tiêu thụ so với mục tiêu. Các thanh bên cạnh báo mức độ nạp Đạm, Tinh bột, Béo.' },
+            { name: 'step2', title: 'Thao tác Nhanh', content: 'Truy cập Nhật ký ăn uống, tìm kiếm Món ăn nhanh chóng với các phím tắt này.' },
+            { name: 'step3', title: 'Trợ lý AI Healio', content: 'Không biết trưa nay ăn gì? Hãy để Trợ lý ảo AI gợi ý thực đơn hoàn hảo dành riêng cho mục tiêu của bạn.' }
+          ]);
+        }, 50);
+      }
 
       const newLog: any = { eaten: 0, carbs: 0, protein: 0, fat: 0, meals: { breakfast: { calories: 0 }, lunch: { calories: 0 }, dinner: { calories: 0 }, snack: { calories: 0 } } };
       if (Array.isArray(logsData)) {
@@ -311,7 +348,7 @@ export default function SuperAppHomeScreen() {
         {/* KHỐI 3: HERO CALORIES SIÊU BỰ NHƯ THIẾT KẾ #1 */}
         <Animated.View entering={FadeInDown.delay(200).springify()} className="px-6 mb-4 mt-2">
           {/* === Macro Banner style giống ai-plan nhưng bg transparent  === */}
-          <View className="py-2">
+          <View ref={step1Ref} className="py-2">
             <Text className="text-xl font-black text-slate-800 tracking-tight mb-6">Năng lượng {"&"} Dinh dưỡng</Text>
             <View style={{ flexDirection: 'row', gap: 16, alignItems: 'center' }}>
 
@@ -371,7 +408,7 @@ export default function SuperAppHomeScreen() {
 
         {/* KHỐI 4: MENU 4 MÓN 1 HÀNG */}
         <Animated.View entering={FadeInDown.delay(400).springify()} className="px-4 mb-6">
-          <View className="flex-row justify-between items-start">
+          <View ref={step2Ref} className="flex-row justify-between items-start rounded-2xl py-2 px-1">
             <TouchableOpacity onPress={() => router.push('/diary')} activeOpacity={0.7} className="items-center w-[18%]">
               <View className="w-[56px] h-[56px] rounded-[15px] bg-green-100 items-center justify-center mb-1.5 shadow-sm shadow-emerald-200">
                 <Ionicons name="calendar" size={26} color="#047857" />
@@ -386,7 +423,7 @@ export default function SuperAppHomeScreen() {
               <Text className="text-slate-700 font-bold text-[10.5px] text-center" numberOfLines={1}>Món Ăn</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity onPress={() => router.push('/ai-plan' as any)} activeOpacity={0.7} className="items-center w-[18%]">
+            <TouchableOpacity ref={step3Ref} onPress={() => router.push('/ai-plan' as any)} activeOpacity={0.7} className="items-center w-[18%]">
               <View className="w-[56px] h-[56px] rounded-[15px] bg-pink-100 items-center justify-center mb-1.5 shadow-sm shadow-pink-200 relative">
                 <View className="absolute top-0 right-0 w-3 h-3 bg-red-500 rounded-full border-2 border-white" />
                 <Ionicons name="sparkles" size={26} color="#BE123C" />
