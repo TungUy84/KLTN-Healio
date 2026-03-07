@@ -2,6 +2,8 @@ import { Stack } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { OnboardingProvider } from '../context/OnboardingContext';
+import { WalkthroughProvider } from '../context/WalkthroughContext';
+import WalkthroughOverlay from '../components/ui/WalkthroughOverlay';
 import '../global.css';
 
 import { useFonts, Roboto_400Regular, Roboto_500Medium, Roboto_700Bold, Roboto_900Black } from '@expo-google-fonts/roboto';
@@ -44,12 +46,15 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <OnboardingProvider>
-          <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#fff' } }}>
-            <Stack.Screen name="index" />
-            <Stack.Screen name="auth/sign-up" />
-            <Stack.Screen name="onboarding" />
-            <Stack.Screen name="(tabs)" />
-          </Stack>
+          <WalkthroughProvider>
+            <WalkthroughOverlay />
+            <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#fff' } }}>
+              <Stack.Screen name="index" />
+              <Stack.Screen name="auth/sign-up" />
+              <Stack.Screen name="onboarding" />
+              <Stack.Screen name="(tabs)" />
+            </Stack>
+          </WalkthroughProvider>
         </OnboardingProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

@@ -69,10 +69,42 @@ export const authService = {
     return response.data;
   },
 
-  // PB_05: Logout
   logout: async () => {
     await AsyncStorage.removeItem('userToken');
     await AsyncStorage.removeItem('userInfo');
+  },
+
+  // API Call để đánh dấu User đã hoàn thành Walkthrough
+  markTutorialSeen: async () => {
+    const response = await api.put('/users/tutorial-seen');
+    return response.data;
+  },
+
+  // === LOCAL STORAGE WALKTHROUGHS FOR SUB-EPICS (DIARY, FOODS, A-IPLAN) ===
+  checkEpicTutorial: async (epicKey: string) => {
+    // Trả về true nếu ĐÃ XEM, false nếu CHƯA XEM
+    try {
+      const val = await AsyncStorage.getItem(`@epic_tutorial_${epicKey}`);
+      return val === 'true';
+    } catch { return false; }
+  },
+  markEpicTutorialSeen: async (epicKey: string) => {
+    try {
+      await AsyncStorage.setItem(`@epic_tutorial_${epicKey}`, 'true');
+    } catch { }
+  },
+  resetAllEpicTutorials: async () => {
+    try {
+      await AsyncStorage.multiRemove([
+        '@epic_tutorial_diary',
+        '@epic_tutorial_food_detail',
+        '@epic_tutorial_ai-plan',
+        '@healio_tutorial_diary',
+        '@healio_tutorial_food_detail',
+        '@healio_tutorial_ai-plan'
+      ]);
+    } catch (e) { console.error('Error resetting epic tutorials:', e); }
   }
 };
 
+export default authService;

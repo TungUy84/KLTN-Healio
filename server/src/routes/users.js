@@ -37,6 +37,9 @@ router.post('/weight-log', userController.logWeight);
 router.get('/weight-log', userController.getWeightHistory);
 router.put('/change-password', userController.changePassword);
 
+// Tutorial Walkthrough
+router.put('/tutorial-seen', userController.markTutorialSeen);
+
 // PB_19: Favorites
 router.get('/favorites', userController.getFavorites);
 router.post('/favorites/toggle', userController.toggleFavorite);

@@ -11,6 +11,9 @@ import { foodService } from '../../services/foodService';
 import { aiService, MealPlanSuggestion } from '../../services/aiService';
 import { AnimatedProgressBar } from '../../components/ui/AnimatedProgressBar';
 import { AnimatedCalorieGauge } from '../../components/ui/AnimatedCalorieGauge';
+import { useWalkthrough } from '../../context/WalkthroughContext';
+import { InteractionManager } from 'react-native';
+import { authService } from '../../services/authService';
 
 const CACHE_KEY = '@ai_meal_plan_cache';
 const IMAGE_BASE_URL = process.env.EXPO_PUBLIC_API_URL?.replace('/api', '') || 'http://10.0.2.2:5000';
@@ -28,11 +31,44 @@ export default function AiPlanScreen() {
     const [isApplying, setIsApplying] = useState(false);
     const [mealPlan, setMealPlan] = useState<MealPlanSuggestion | null>(null);
     const [metrics, setMetrics] = useState<CalculatedMetrics | null>(null);
+    const mountTime = React.useRef(Date.now());
 
     useEffect(() => {
         loadOrGeneratePlan(false);
         userService.getCalculatedMetrics().then(setMetrics).catch(() => { });
     }, []);
+
+    // Walkthrough Logic
+    const { startWalkthrough, registerStep, unregisterStep } = useWalkthrough();
+    const step1Ref = React.useRef<View>(null);
+    const step2Ref = React.useRef<View>(null);
+
+    useEffect(() => {
+        registerStep("ai_step1", step1Ref, () => { });
+        registerStep("ai_step2", step2Ref, () => { });
+
+        return () => {
+            unregisterStep("ai_step1");
+            unregisterStep("ai_step2");
+        };
+    }, []);
+
+    useEffect(() => {
+        const checkTutorial = async () => {
+            if (!aiLoading && mealPlan) { // Chỉ show sau khi loading xong
+                const hasSeen = await authService.checkEpicTutorial('ai-plan');
+                if (!hasSeen) {
+                    setTimeout(() => {
+                        startWalkthrough([
+                            { name: 'ai_step1', title: 'Tự động lên Thực Đơn', content: 'Bấm vào đây để AI phân tích lại chỉ số Body của bạn và gợi ý ra một Thực Đơn hoàn toàn mới cho ngày hôm nay' },
+                            { name: 'ai_step2', title: 'Giám sát Dinh Dưỡng', content: 'Mức Calo và Macro của thực đơn mẫu sẽ được tính toán bám sát với Mục Tiêu mà hệ thống tính ra cho riêng bạn.' }
+                        ], 'ai-plan');
+                    }, 50);
+                }
+            }
+        };
+        checkTutorial();
+    }, [aiLoading, mealPlan, startWalkthrough]);
 
     const loadOrGeneratePlan = async (forceRegenerate = false) => {
         try {
@@ -139,13 +175,15 @@ export default function AiPlanScreen() {
                     >
                         <ArrowLeft size={20} color="#374151" />
                     </TouchableOpacity>
-                    <TouchableOpacity
-                        onPress={() => loadOrGeneratePlan(true)}
-                        disabled={aiLoading || isApplying}
-                        style={{ backgroundColor: 'rgba(255,255,255,0.6)', width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', opacity: (aiLoading || isApplying) ? 0.5 : 1 }}
-                    >
-                        <RefreshCw size={18} color="#374151" />
-                    </TouchableOpacity>
+                    <View ref={step1Ref}>
+                        <TouchableOpacity
+                            onPress={() => loadOrGeneratePlan(true)}
+                            disabled={aiLoading || isApplying}
+                            style={{ backgroundColor: 'rgba(255,255,255,0.6)', width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', opacity: (aiLoading || isApplying) ? 0.5 : 1 }}
+                        >
+                            <RefreshCw size={18} color="#374151" />
+                        </TouchableOpacity>
+                    </View>
                 </View>
                 <View style={{ marginTop: 4 }}>
                     <Text className="text-slate-800 font-black text-2xl tracking-tight">Thực đơn AI</Text>
@@ -171,7 +209,7 @@ export default function AiPlanScreen() {
                     contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 4, paddingBottom: 120 }}
                 >
                     {/* === Macro Banner === */}
-                    <View className="bg-white rounded-3xl p-5 mb-5 border border-slate-100 shadow-sm shadow-slate-200">
+                    <View ref={step2Ref} className="bg-white rounded-3xl p-5 mb-5 border border-slate-100 shadow-sm shadow-slate-200">
                         <Text className="text-slate-400 text-xs font-black uppercase tracking-wider mb-4">Tổng Dinh Dưỡng Thực Đơn</Text>
                         <View style={{ flexDirection: 'row', gap: 16, alignItems: 'center' }}>
 
