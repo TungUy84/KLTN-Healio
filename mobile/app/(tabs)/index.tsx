@@ -315,7 +315,7 @@ export default function SuperAppHomeScreen() {
             <TouchableOpacity onPress={() => router.push('/profile')} className="w-full h-full">
               <Image
                 source={{
-                  uri: resolveImg(userProfile?.avatar) || 'https://ui-avatars.com/api/?background=10B981&color=fff&name='
+                  uri: resolveImg(userProfile?.avatar) ?? `https://ui-avatars.com/api/?background=10B981&color=fff&name=${encodeURIComponent(userProfile?.full_name || 'U')}`
                 }}
                 className="w-full h-full object-cover"
               />
@@ -437,13 +437,6 @@ export default function SuperAppHomeScreen() {
               </View>
               <Text className="text-slate-700 font-bold text-[10.5px] text-center" numberOfLines={1}>Thống Kê</Text>
             </TouchableOpacity>
-
-            {/* <TouchableOpacity onPress={() => router.push('/profile')} activeOpacity={0.7} className="items-center w-[18%]">
-              <View className="w-[56px] h-[56px] rounded-[15px] bg-slate-100 items-center justify-center mb-1.5 shadow-sm shadow-slate-300">
-                <Ionicons name="person" size={26} color="#334155" />
-              </View>
-              <Text className="text-slate-700 font-bold text-[10.5px] text-center" numberOfLines={1}>Tài Khoản</Text>
-            </TouchableOpacity> */}
           </View>
         </Animated.View>
 

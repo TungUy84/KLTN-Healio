@@ -48,29 +48,12 @@ const Login = () => {
                     <h1 className="text-5xl font-bold text-slate-800 leading-tight mb-4">
                         Quản trị hệ thống <br />
                         <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-500">
-                            Healio Nutrition
+                            Healio
                         </span>
                     </h1>
                     <p className="text-slate-500 text-lg leading-relaxed max-w-lg">
-                        Chào mừng quản trị viên. Hãy đăng nhập để quản lý thực đơn, người dùng và theo dõi các chỉ số sức khỏe của hệ thống.
+                        Chào mừng quản trị viên. Hãy đăng nhập để quản lý và theo dõi các chỉ số sức khỏe của hệ thống.
                     </p>
-                </div>
-
-                <div className="grid grid-cols-2 gap-6 mt-8">
-                    <div className="bg-white/60 backdrop-blur-sm p-5 rounded-2xl border border-white shadow-sm">
-                        <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center text-emerald-600 mb-3">
-                            <Leaf size={20} />
-                        </div>
-                        <h3 className="font-bold text-slate-800">Dữ liệu chuẩn</h3>
-                        <p className="text-xs text-slate-500 mt-1">Kho nguyên liệu & món ăn được kiểm duyệt kỹ lưỡng.</p>
-                    </div>
-                    <div className="bg-white/60 backdrop-blur-sm p-5 rounded-2xl border border-white shadow-sm">
-                        <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600 mb-3">
-                            <ShieldCheck size={20} />
-                        </div>
-                        <h3 className="font-bold text-slate-800">Bảo mật cao</h3>
-                        <p className="text-xs text-slate-500 mt-1">Hệ thống phân quyền và bảo vệ dữ liệu người dùng.</p>
-                    </div>
                 </div>
             </div>
 
@@ -150,7 +133,7 @@ const Login = () => {
                     </form>
 
                     <div className="mt-8 text-center">
-                        <p className="text-xs text-slate-400">© 2026 Healio Nutrition System. All rights reserved.</p>
+                        <p className="text-xs text-slate-400">© 2026 Healio System. All rights reserved.</p>
                     </div>
                 </div>
             </div>

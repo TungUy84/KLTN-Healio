@@ -53,7 +53,7 @@ export default function Step3Activity() {
                 <Animated.View entering={FadeInDown.delay(100).springify()} className="items-center mt-4">
                     <Text className="text-[36px] font-black text-slate-800 text-center mb-3 tracking-tighter shadow-sm">Mức độ vận động</Text>
                     <Text className="text-slate-600 text-center text-[16px] font-medium px-4">
-                        Chọn cường độ phù hợp nhất với sinh hoạt hàng ngày.
+                        Chọn mức độ vận động của bạn.
                     </Text>
                 </Animated.View>
             </SafeAreaView>

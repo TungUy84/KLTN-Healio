@@ -167,7 +167,7 @@ const FoodList: React.FC = () => {
                         className="flex items-center gap-2 px-4 py-2 text-indigo-700 bg-indigo-50 rounded-xl hover:bg-indigo-100 transition-colors font-medium border border-indigo-100"
                     >
                         <Sparkles size={18} />
-                        🗣👨‍🍳🔥Let Him Cook!
+                        AI Chef
                     </button>
                     <Link
                         to="/foods/new"

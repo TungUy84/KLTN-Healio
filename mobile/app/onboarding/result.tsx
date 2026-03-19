@@ -180,10 +180,10 @@ export default function ResultScreen() {
     };
 
     const getBMIInfo = (bmi: number) => {
-        if (bmi < 18.5) return { label: 'Thiếu cân', color: 'text-blue-500', bg: 'bg-blue-100' };
-        if (bmi < 24.9) return { label: 'Bình thường', color: 'text-emerald-500', bg: 'bg-emerald-100' };
-        if (bmi < 29.9) return { label: 'Thừa cân', color: 'text-orange-500', bg: 'bg-orange-100' };
-        return { label: 'Béo phì', color: 'text-red-500', bg: 'bg-red-100' };
+        if (bmi < 18.5) return { label: 'Thiếu cân', color: 'text-blue-500', bg: 'bg-blue-100', border: 'border-[0.5px] border-blue-300/50' };
+        if (bmi < 24.9) return { label: 'Bình thường', color: 'text-emerald-500', bg: 'bg-emerald-100', border: 'border-[0.5px] border-emerald-300/50' };
+        if (bmi < 29.9) return { label: 'Thừa cân', color: 'text-orange-500', bg: 'bg-orange-100', border: 'border-[0.5px] border-orange-300/50' };
+        return { label: 'Béo phì', color: 'text-red-500', bg: 'bg-red-100', border: 'border-[0.5px] border-red-300/50' };
     };
     const bmiInfo = getBMIInfo(metrics.bmi);
 
@@ -242,7 +242,7 @@ export default function ResultScreen() {
                             </View>
                             <Text className="text-slate-500 text-[12px] font-bold uppercase mb-1 tracking-widest">BMI</Text>
                             <Text className="text-slate-800 text-[26px] font-black mb-3 tracking-tight">{metrics.bmi}</Text>
-                            <View className={`px-3 py-1.5 rounded-full border shadow-sm ${bmiInfo.bg} ${bmiInfo.color.replace('text-', 'border-').replace('500', '200')}`}>
+                            <View className={`px-3 py-1.5 rounded-full shadow-sm ${bmiInfo.bg} ${bmiInfo.border}`}>
                                 <Text className={`text-[11px] font-bold ${bmiInfo.color}`}>{bmiInfo.label}</Text>
                             </View>
                         </View>

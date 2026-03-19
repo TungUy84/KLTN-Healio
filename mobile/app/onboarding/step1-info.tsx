@@ -84,7 +84,7 @@ export default function Step1Info() {
                             <Animated.View entering={FadeInDown.delay(200).springify()}>
                                 <Text className="text-slate-700 text-[15px] font-bold mb-3 ml-1 tracking-tight">Tên hiển thị</Text>
                                 <View className="flex-row items-center border border-white/60 rounded-[24px] px-5 h-[68px] bg-white/70 shadow-lg shadow-slate-200/50 backdrop-blur-xl focus:border-emerald-500 transition-colors">
-                                    <View className="w-10 h-10 rounded-full bg-slate-100 items-center justify-center mr-3">
+                                    <View className="w-10 h-10 rounded-full items-center justify-center mr-3">
                                         <Ionicons name="text" size={20} color="#64748b" />
                                     </View>
                                     <TextInput
@@ -137,7 +137,7 @@ export default function Step1Info() {
                                     onPress={() => setShowDatePicker(true)}
                                     className="flex-row items-center border border-white/60 rounded-[24px] px-5 h-[68px] bg-white/70 shadow-lg shadow-slate-200/50 backdrop-blur-xl active:bg-white/90 transition-colors"
                                 >
-                                    <View className="w-10 h-10 rounded-full bg-emerald-100 items-center justify-center mr-3">
+                                    <View className="w-10 h-10 rounded-full items-center justify-center mr-3">
                                         <Ionicons name="calendar-outline" size={20} color="#10b981" />
                                     </View>
                                     <Text className="flex-1 text-[18px] font-bold text-slate-800 tracking-tight">
