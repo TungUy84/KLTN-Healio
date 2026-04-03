@@ -150,7 +150,7 @@ export default function Step5Diet() {
 
                 {/* Header Content */}
                 <Animated.View entering={FadeInDown.delay(100).springify()} className="items-center mt-4">
-                    <Text className="text-[36px] font-black text-slate-800 text-center mb-3 tracking-tighter shadow-sm">Chế độ ăn đồ</Text>
+                    <Text className="text-[36px] font-black text-slate-800 text-center mb-3 tracking-tighter shadow-sm">Chế độ ăn</Text>
                     <Text className="text-slate-600 text-center text-[16px] font-medium px-4">
                         Chọn tỷ lệ dinh dưỡng phù hợp với mục tiêu.
                     </Text>

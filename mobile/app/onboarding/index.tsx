@@ -48,12 +48,11 @@ export default function WelcomeScreen() {
           {/* Nút to, bo tròn đặc biệt kiểu Pill */}
           <Pressable
             onPress={() => router.push('/onboarding/step1-info')}
-            className="bg-slate-900 h-[72px] rounded-[36px] flex-row items-center justify-between px-2 shadow-xl shadow-slate-900/20 active:opacity-90 active:scale-[0.98] transition-all"
+            className="bg-slate-900 h-[72px] rounded-[36px] flex-row items-center justify-center px-2 shadow-xl shadow-slate-900/20 active:opacity-90 active:scale-[0.98] transition-all relative"
           >
-            <View className="pl-6">
-              <Text className="text-white text-[18px] font-bold tracking-wide">Bắt đầu hành trình</Text>
-            </View>
-            <View className="w-14 h-14 bg-emerald-500 rounded-full items-center justify-center shadow-md shadow-emerald-600/50">
+            <Text className="text-white text-[18px] font-bold tracking-wide">Bắt đầu hành trình</Text>
+
+            <View className="absolute right-2 w-14 h-14 bg-emerald-500 rounded-full items-center justify-center shadow-md shadow-emerald-600/50">
               <Ionicons name="arrow-forward" size={24} color="white" />
             </View>
           </Pressable>

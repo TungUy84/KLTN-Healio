@@ -40,7 +40,7 @@ WebBrowser.maybeCompleteAuthSession();
 
 export default function SignInScreen() {
     const router = useRouter();
-    const [email, setEmail] = useState('tunguychim@gmail.com');
+    const [email, setEmail] = useState('tunguykim@gmail.com');
     const [password, setPassword] = useState('Tunguytv@2004');
     const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);

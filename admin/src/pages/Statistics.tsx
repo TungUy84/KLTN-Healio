@@ -63,7 +63,18 @@ const Statistics: React.FC = () => {
     const handleExport = async () => {
         try {
             toast.loading('Đang xuất báo cáo...');
-            await statsService.exportReport();
+            const blob = await statsService.exportReport();
+            
+            // Render file từ Blob
+            const url = window.URL.createObjectURL(new Blob([blob]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', 'Healio_Report.xlsx');
+            document.body.appendChild(link);
+            link.click();
+            link.parentNode?.removeChild(link);
+            window.URL.revokeObjectURL(url);
+            
             toast.dismiss();
             toast.success('Xuất báo cáo thành công!');
         } catch (error) {
