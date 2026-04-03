@@ -31,7 +31,21 @@ const app = express();
 // Middleware
 app.use(cors());
 app.use(bodyParser.json());
-// Serve uploads folder
+// Serve uploads folder with Auto-Fix for mangled Vietnamese filenames (Multer Latin1 issue)
+const fs = require('fs');
+const path = require('path');
+app.use('/uploads', (req, res, next) => {
+    try {
+        const decoded = decodeURIComponent(req.url);
+        const originalPath = path.join(__dirname, 'uploads', decoded);
+        if (!fs.existsSync(originalPath)) {
+            // Translate real UTF-8 "Bánh" into Multer's mangled Latin-1 "BÃ¡nh"
+            const mangled = Buffer.from(decoded, 'utf8').toString('latin1');
+            req.url = encodeURI(mangled);
+        }
+    } catch(err) {}
+    next();
+});
 app.use('/uploads', express.static('uploads'));
 
 // Routes
