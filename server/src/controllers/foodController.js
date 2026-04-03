@@ -252,10 +252,11 @@ exports.createFood = async (req, res) => {
 
         // Handle Diet Presets (new logic)
         if (parsedDietTags.length > 0) {
+            const cleanTags = parsedDietTags.map(t => typeof t === 'string' ? t.toUpperCase().replace(/\s+/g, '_') : t);
             // Find IDs for these codes
             const presets = await DietPreset.findAll({
                 where: {
-                    code: { [Op.in]: parsedDietTags }
+                    code: { [Op.in]: cleanTags }
                 },
                 attributes: ['id']
             });
@@ -334,7 +335,7 @@ exports.updateFood = async (req, res) => {
                     parsedDietTags = [];
                 }
             }
-            const cleanTags = Array.isArray(parsedDietTags) ? parsedDietTags : [];
+            const cleanTags = Array.isArray(parsedDietTags) ? parsedDietTags.map(t => typeof t === 'string' ? t.toUpperCase().replace(/\s+/g, '_') : t) : [];
 
             // Update Association
             const presets = await DietPreset.findAll({

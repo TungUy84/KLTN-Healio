@@ -289,14 +289,8 @@ exports.getSystemStats = async (req, res) => {
 
         // B. Active Rate (Bar)
         const totalUsers = await User.count({ where: { role: 'user' } });
-        const sevenDaysAgo = new Date();
-        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-        const activeUsers7d = await UserDailyLog.count({
-            distinct: true,
-            col: 'user_id',
-            where: { createdAt: { [Op.gte]: sevenDaysAgo } }
-        });
-        const inactiveUsers = totalUsers - activeUsers7d;
+        const activatedUsers = await User.count({ where: { role: 'user', status: 'active' } });
+        const inactiveUsers = totalUsers - activatedUsers;
 
         // C. Role Distribution (Pie)
         const roles = await User.findAll({
@@ -306,8 +300,8 @@ exports.getSystemStats = async (req, res) => {
 
         res.json({
             activeRate: [
-                { name: 'Active (7d)', value: activeUsers7d },
-                { name: 'Inactive', value: inactiveUsers > 0 ? inactiveUsers : 0 }
+                { name: 'Đã kích hoạt', value: activatedUsers },
+                { name: 'Chưa kích hoạt', value: inactiveUsers > 0 ? inactiveUsers : 0 }
             ],
             roles: roles.map(r => ({ name: r.role, value: parseInt(r.get('count')) }))
         });

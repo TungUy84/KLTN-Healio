@@ -36,7 +36,7 @@ const SectionSystem = ({ data, growthData }: any) => {
                 {/* 2. Active Rate */}
                 <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
                     <h3 className="font-semibold text-gray-700 mb-4 flex items-center gap-2">
-                        <Activity size={18} className="text-blue-500" /> Tỷ lệ Active (7 ngày)
+                        <Activity size={18} className="text-blue-500" /> Tỷ lệ Tài khoản xác thực
                     </h3>
                     <div className="h-[250px]">
                         <ResponsiveContainer width="100%" height="100%">
