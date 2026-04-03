@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { authService } from '../services/authService';
 import { useNavigate } from 'react-router-dom';
-import { Mail, Lock, ArrowRight, Loader2, Leaf, ShieldCheck } from 'lucide-react';
+import { Mail, Lock, ArrowRight, Loader2 } from 'lucide-react';
 import logo from '../assets/logohealio.png';
 
 const Login = () => {
