@@ -103,7 +103,7 @@ const RawFoodForm: React.FC = () => {
                 fiber_g: data.fiber_g
             });
             if (data.image) {
-                setPreviewImage(`http://localhost:3000${data.image}`);
+                setPreviewImage(`${data.image}`);
             }
 
             // Convert json object to array for form inputs

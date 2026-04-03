@@ -330,7 +330,7 @@ const FoodList: React.FC = () => {
                                         <td className="p-4 text-center">
                                             {food.image ? (
                                                 <img
-                                                    src={`http://localhost:3000${food.image}`}
+                                                    src={`${food.image}`}
                                                     alt={food.name}
                                                     className="w-10 h-10 object-cover rounded-lg shadow-sm border border-gray-100 mx-auto"
                                                 />

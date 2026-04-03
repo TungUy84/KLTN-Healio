@@ -332,7 +332,7 @@ const FoodForm: React.FC = () => {
                 description: data.cooking || data.description || ''
             });
             if (data.image) {
-                setPreviewImage(`http://localhost:3000${data.image}`);
+                setPreviewImage(`${data.image}`);
             }
             setMealCategories(data.meal_categories || []);
             setStatus(data.status || 'active');

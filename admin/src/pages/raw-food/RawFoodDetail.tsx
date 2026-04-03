@@ -80,7 +80,7 @@ const RawFoodDetail: React.FC = () => {
                     <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
                         <div className="w-full aspect-square rounded-xl overflow-hidden border border-gray-100 bg-gray-50 mb-6 flex items-center justify-center relative group">
                             {food.image ? (
-                                <img src={`http://localhost:3000${food.image}`} alt={food.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                                <img src={`${food.image}`} alt={food.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
                             ) : (
                                 <span className="text-gray-400 font-medium">Không có hình ảnh</span>
                             )}

@@ -113,7 +113,7 @@ const FoodDetail: React.FC = () => {
                         <div className="w-full aspect-square rounded-xl overflow-hidden bg-gray-50 relative group">
                             {food.image ? (
                                 <img
-                                    src={`http://localhost:3000${food.image}`}
+                                    src={`${food.image}`}
                                     alt={food.name}
                                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                                 />
