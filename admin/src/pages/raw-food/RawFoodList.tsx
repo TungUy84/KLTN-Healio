@@ -371,7 +371,7 @@ const RawFoodList: React.FC = () => {
                                         <td className="p-4 text-center">
                                             {food.image ? (
                                                 <img
-                                                    src={`http://localhost:3000${food.image}`}
+                                                    src={`${food.image}`}
                                                     alt={food.name}
                                                     className="w-12 h-12 object-cover rounded-xl shadow-sm border border-gray-100 mx-auto"
                                                 />

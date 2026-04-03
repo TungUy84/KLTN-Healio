@@ -352,7 +352,7 @@ const UserList: React.FC = () => {
                                                     <div className="relative shrink-0">
                                                         {u.avatar ? (
                                                             <img
-                                                                src={u.avatar.startsWith('http') ? u.avatar : `http://localhost:3000${u.avatar}`}
+                                                                src={u.avatar.startsWith('http') ? u.avatar : `${u.avatar}`}
                                                                 alt=""
                                                                 className="w-10 h-10 rounded-full object-cover ring-2 ring-white shadow-sm border border-gray-100"
                                                             />
