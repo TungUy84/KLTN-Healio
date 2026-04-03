@@ -35,7 +35,7 @@ const SectionNutrition = ({ data }: any) => {
                         <ResponsiveContainer width="100%" height="100%">
                             <PieChart>
                                 <Pie data={data?.macroDist || []} cx="50%" cy="50%" innerRadius={60} outerRadius={80} dataKey="value" paddingAngle={2} label={({ name, value }) => `${name} ${value}%`}>
-                                    {data?.macroDist?.map((entry: any, index: number) => (
+                                    {data?.macroDist?.map((_: any, index: number) => (
                                         <Cell key={`cell-${index}`} fill={index === 0 ? '#10B981' : index === 1 ? '#3B82F6' : '#F59E0B'} />
                                     ))}
                                 </Pie>
